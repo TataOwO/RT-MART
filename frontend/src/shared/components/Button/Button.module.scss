@@ -1,6 +1,3 @@
-@import '../../styles/variables';
-@import '../../styles/mixins';
-
 .btn {
   @include button-base;
   padding: $spacing-md $spacing-xl;
