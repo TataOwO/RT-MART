@@ -41,7 +41,7 @@ function Header({ isFixed = true }) {
           {/* Logo Section */}
           <div className={styles.logo}>
             <Link to="/">
-              <img src="/RT-Mart_logo.png" alt="RT-MART Logo"/>
+              <img src="/RT-Mart_logo.png"/>
             </Link>
           </div>
 
