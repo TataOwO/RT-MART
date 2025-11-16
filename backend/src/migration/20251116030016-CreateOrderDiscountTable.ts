@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateOrderDiscountTable20251116030016 implements MigrationInterface {
+export class CreateOrderDiscountTable20251116030016
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE order_discount (
@@ -15,17 +17,29 @@ export class CreateOrderDiscountTable20251116030016 implements MigrationInterfac
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX IDX_orderdiscount_order_id ON order_discount(order_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_orderdiscount_discount_id ON order_discount(discount_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_orderdiscount_order_id ON order_discount(order_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_orderdiscount_discount_id ON order_discount(discount_id)`,
+    );
 
     // -- 複合索引 (唯一約束)
-    await queryRunner.query(`CREATE UNIQUE INDEX UQ_orderdiscount_order_id_type ON order_discount(order_id, discount_type)`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX UQ_orderdiscount_order_id_type ON order_discount(order_id, discount_type)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IDX_orderdiscount_order_id ON order_discount`);
-    await queryRunner.query(`DROP INDEX IDX_orderdiscount_discount_id ON order_discount`);
-    await queryRunner.query(`DROP INDEX UQ_orderdiscount_order_id_type ON order_discount`);
+    await queryRunner.query(
+      `DROP INDEX IDX_orderdiscount_order_id ON order_discount`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_orderdiscount_discount_id ON order_discount`,
+    );
+    await queryRunner.query(
+      `DROP INDEX UQ_orderdiscount_order_id_type ON order_discount`,
+    );
     await queryRunner.query(`DROP TABLE order_discount`);
   }
 }

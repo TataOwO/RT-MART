@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateDiscountTable20251116030015 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -22,18 +22,28 @@ export class CreateDiscountTable20251116030015 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_discount_code ON discount(discount_code)`);
-    await queryRunner.query(`CREATE INDEX IDX_discount_type ON discount(discount_type)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_discount_code ON discount(discount_code)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_discount_type ON discount(discount_type)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_discount_type_active_period ON discount(discount_type, is_active, start_datetime, end_datetime)`);
-    await queryRunner.query(`CREATE INDEX IDX_discount_created_by ON discount(created_by_type, created_by_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_discount_type_active_period ON discount(discount_type, is_active, start_datetime, end_datetime)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_discount_created_by ON discount(created_by_type, created_by_id)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_discount_code ON discount`);
     await queryRunner.query(`DROP INDEX IDX_discount_type ON discount`);
-    await queryRunner.query(`DROP INDEX IDX_discount_type_active_period ON discount`);
+    await queryRunner.query(
+      `DROP INDEX IDX_discount_type_active_period ON discount`,
+    );
     await queryRunner.query(`DROP INDEX IDX_discount_created_by ON discount`);
     await queryRunner.query(`DROP TABLE discount`);
   }

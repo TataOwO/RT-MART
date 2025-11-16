@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateProductImageTable20251116030008 implements MigrationInterface {
+export class CreateProductImageTable20251116030008
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE product_image (
@@ -13,15 +15,23 @@ export class CreateProductImageTable20251116030008 implements MigrationInterface
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_productimage_product_id ON product_image(product_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_productimage_product_id ON product_image(product_id)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_productimage_product_id_display_order ON product_image(product_id, display_order)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_productimage_product_id_display_order ON product_image(product_id, display_order)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IDX_productimage_product_id ON product_image`);
-    await queryRunner.query(`DROP INDEX IDX_productimage_product_id_display_order ON product_image`);
+    await queryRunner.query(
+      `DROP INDEX IDX_productimage_product_id ON product_image`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_productimage_product_id_display_order ON product_image`,
+    );
     await queryRunner.query(`DROP TABLE product_image`);
   }
 }

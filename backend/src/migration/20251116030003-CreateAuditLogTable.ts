@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateAuditLogTable20251116030003 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -24,21 +24,35 @@ export class CreateAuditLogTable20251116030003 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_auditlog_event_id ON audit_log(event_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_auditlog_user_id ON audit_log(user_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_auditlog_event_timestamp ON audit_log(event_timestamp)`);
-    await queryRunner.query(`CREATE INDEX IDX_auditlog_request_id ON audit_log(request_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_auditlog_event_id ON audit_log(event_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_auditlog_user_id ON audit_log(user_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_auditlog_event_timestamp ON audit_log(event_timestamp)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_auditlog_request_id ON audit_log(request_id)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_auditlog_table_record ON audit_log(table_name, record_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_auditlog_table_record ON audit_log(table_name, record_id)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_auditlog_event_id ON audit_log`);
     await queryRunner.query(`DROP INDEX IDX_auditlog_user_id ON audit_log`);
-    await queryRunner.query(`DROP INDEX IDX_auditlog_event_timestamp ON audit_log`);
+    await queryRunner.query(
+      `DROP INDEX IDX_auditlog_event_timestamp ON audit_log`,
+    );
     await queryRunner.query(`DROP INDEX IDX_auditlog_request_id ON audit_log`);
-    await queryRunner.query(`DROP INDEX IDX_auditlog_table_record ON audit_log`);
+    await queryRunner.query(
+      `DROP INDEX IDX_auditlog_table_record ON audit_log`,
+    );
     await queryRunner.query(`DROP TABLE audit_log`);
   }
 }

@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateSeasonalDiscountTable20251116030017 implements MigrationInterface {
+export class CreateSeasonalDiscountTable20251116030017
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE seasonal_discount (

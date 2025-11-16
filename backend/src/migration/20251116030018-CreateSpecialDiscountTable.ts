@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateSpecialDiscountTable20251116030018 implements MigrationInterface {
+export class CreateSpecialDiscountTable20251116030018
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE special_discount (
@@ -17,17 +19,29 @@ export class CreateSpecialDiscountTable20251116030018 implements MigrationInterf
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_specialdiscount_store_id ON special_discount(store_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_specialdiscount_product_type_id ON special_discount(product_type_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_specialdiscount_store_id ON special_discount(store_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_specialdiscount_product_type_id ON special_discount(product_type_id)`,
+    );
 
     // -- 複合索引 (唯一約束)
-    await queryRunner.query(`CREATE UNIQUE INDEX UQ_specialdiscount_store_producttype_discount ON special_discount(store_id, product_type_id, discount_id)`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX UQ_specialdiscount_store_producttype_discount ON special_discount(store_id, product_type_id, discount_id)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IDX_specialdiscount_store_id ON special_discount`);
-    await queryRunner.query(`DROP INDEX IDX_specialdiscount_product_type_id ON special_discount`);
-    await queryRunner.query(`DROP INDEX UQ_specialdiscount_store_producttype_discount ON special_discount`);
+    await queryRunner.query(
+      `DROP INDEX IDX_specialdiscount_store_id ON special_discount`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_specialdiscount_product_type_id ON special_discount`,
+    );
+    await queryRunner.query(
+      `DROP INDEX UQ_specialdiscount_store_producttype_discount ON special_discount`,
+    );
     await queryRunner.query(`DROP TABLE special_discount`);
   }
 }

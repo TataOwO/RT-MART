@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateStoreTable20251116030005 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -21,17 +21,25 @@ export class CreateStoreTable20251116030005 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_store_seller_id ON store(seller_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_store_store_name ON store(store_name)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_store_seller_id ON store(seller_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_store_store_name ON store(store_name)`,
+    );
 
     // -- 複合索引 (for active stores ranking)
-    await queryRunner.query(`CREATE INDEX IDX_store_deleted_at_average_rating ON store(deleted_at, average_rating)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_store_deleted_at_average_rating ON store(deleted_at, average_rating)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_store_seller_id ON store`);
     await queryRunner.query(`DROP INDEX IDX_store_store_name ON store`);
-    await queryRunner.query(`DROP INDEX IDX_store_deleted_at_average_rating ON store`);
+    await queryRunner.query(
+      `DROP INDEX IDX_store_deleted_at_average_rating ON store`,
+    );
     await queryRunner.query(`DROP TABLE store`);
   }
 }

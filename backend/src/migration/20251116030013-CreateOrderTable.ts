@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateOrderTable20251116030013 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -41,16 +41,32 @@ export class CreateOrderTable20251116030013 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_order_order_number ON \`order\`(order_number)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_user_id ON \`order\`(user_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_store_id ON \`order\`(store_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_order_status ON \`order\`(order_status)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_idempotency_key ON \`order\`(idempotency_key)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_created_at ON \`order\`(created_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_order_number ON \`order\`(order_number)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_user_id ON \`order\`(user_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_store_id ON \`order\`(store_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_order_status ON \`order\`(order_status)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_idempotency_key ON \`order\`(idempotency_key)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_created_at ON \`order\`(created_at)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_order_user_id_created_at ON \`order\`(user_id, created_at)`);
-    await queryRunner.query(`CREATE INDEX IDX_order_store_id_created_at ON \`order\`(store_id, created_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_user_id_created_at ON \`order\`(user_id, created_at)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_order_store_id_created_at ON \`order\`(store_id, created_at)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -58,10 +74,16 @@ export class CreateOrderTable20251116030013 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX IDX_order_user_id ON \`order\``);
     await queryRunner.query(`DROP INDEX IDX_order_store_id ON \`order\``);
     await queryRunner.query(`DROP INDEX IDX_order_order_status ON \`order\``);
-    await queryRunner.query(`DROP INDEX IDX_order_idempotency_key ON \`order\``);
+    await queryRunner.query(
+      `DROP INDEX IDX_order_idempotency_key ON \`order\``,
+    );
     await queryRunner.query(`DROP INDEX IDX_order_created_at ON \`order\``);
-    await queryRunner.query(`DROP INDEX IDX_order_user_id_created_at ON \`order\``);
-    await queryRunner.query(`DROP INDEX IDX_order_store_id_created_at ON \`order\``);
+    await queryRunner.query(
+      `DROP INDEX IDX_order_user_id_created_at ON \`order\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_order_store_id_created_at ON \`order\``,
+    );
     await queryRunner.query(`DROP TABLE \`order\``);
   }
 }

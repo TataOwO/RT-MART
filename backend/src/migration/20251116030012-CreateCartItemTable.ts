@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateCartItemTable20251116030012 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -16,15 +16,21 @@ export class CreateCartItemTable20251116030012 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_cartitem_cart_id ON cart_item(cart_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_cartitem_cart_id ON cart_item(cart_id)`,
+    );
 
     // -- 複合索引 (唯一約束)
-    await queryRunner.query(`CREATE UNIQUE INDEX UQ_cartitem_cart_id_product_id ON cart_item(cart_id, product_id)`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX UQ_cartitem_cart_id_product_id ON cart_item(cart_id, product_id)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_cartitem_cart_id ON cart_item`);
-    await queryRunner.query(`DROP INDEX UQ_cartitem_cart_id_product_id ON cart_item`);
+    await queryRunner.query(
+      `DROP INDEX UQ_cartitem_cart_id_product_id ON cart_item`,
+    );
     await queryRunner.query(`DROP TABLE cart_item`);
   }
 }

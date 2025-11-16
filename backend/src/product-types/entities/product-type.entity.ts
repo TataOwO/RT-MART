@@ -5,15 +5,11 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
-  Tree,
-  TreeChildren,
-  TreeParent,
   Index,
 } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 
 @Entity('ProductType')
-@Tree('closure-table')
 @Index(['typeCode'])
 @Index(['parentTypeId'])
 export class ProductType {
@@ -33,14 +29,12 @@ export class ProductType {
   isActive: boolean;
 
   // Relations
-  @TreeParent()
   @ManyToOne(() => ProductType, (type) => type.children, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'parent_type_id' })
   parent?: ProductType;
 
-  @TreeChildren()
   @OneToMany(() => ProductType, (type) => type.parent)
   children?: ProductType[];
 

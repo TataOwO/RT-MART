@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateProductTable20251116030007 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -22,21 +22,37 @@ export class CreateProductTable20251116030007 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_product_store_id ON product(store_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_product_product_type_id ON product(product_type_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_product_product_name ON product(product_name)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_product_store_id ON product(store_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_product_product_type_id ON product(product_type_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_product_product_name ON product(product_name)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_product_store_id_product_type_id ON product(store_id, product_type_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_product_price_deleted_at ON product(price, deleted_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_product_store_id_product_type_id ON product(store_id, product_type_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_product_price_deleted_at ON product(price, deleted_at)`,
+    );
   }
-  
+
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_product_store_id ON product`);
-    await queryRunner.query(`DROP INDEX IDX_product_product_type_id ON product`);
+    await queryRunner.query(
+      `DROP INDEX IDX_product_product_type_id ON product`,
+    );
     await queryRunner.query(`DROP INDEX IDX_product_product_name ON product`);
-    await queryRunner.query(`DROP INDEX IDX_product_store_id_product_type_id ON product`);
-    await queryRunner.query(`DROP INDEX IDX_product_price_deleted_at ON product`);
+    await queryRunner.query(
+      `DROP INDEX IDX_product_store_id_product_type_id ON product`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_product_price_deleted_at ON product`,
+    );
     await queryRunner.query(`DROP TABLE product`);
   }
 }

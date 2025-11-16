@@ -52,8 +52,8 @@ services:
       - DB_USER=${DB_USER:-rt_mart_user}
       - DB_PASSWORD=${DB_PASSWORD:-rt_mart_and_the_user_password_yeah_very_cool123*}
       - DB_NAME=${DB_NAME:-rt_mart_db}
-      # TypeORM settings (development only)
-      - TYPEORM_SYNCHRONIZE=true
+      # TypeORM settings
+      - TYPEORM_SYNCHRONIZE=false
       - TYPEORM_LOGGING=true
     env_file:
       # Load additional environment variables from .env file

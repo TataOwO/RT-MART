@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateUserTokenTable20251116030001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -15,17 +15,27 @@ export class CreateUserTokenTable20251116030001 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_usertoken_user_id ON user_token(user_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_usertoken_token_hash ON user_token(token_hash)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_usertoken_user_id ON user_token(user_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_usertoken_token_hash ON user_token(token_hash)`,
+    );
 
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_usertoken_user_id_is_revoked_expires_at ON user_token(user_id, is_revoked, expires_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_usertoken_user_id_is_revoked_expires_at ON user_token(user_id, is_revoked, expires_at)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_usertoken_user_id ON user_token`);
-    await queryRunner.query(`DROP INDEX IDX_usertoken_token_hash ON user_token`);
-    await queryRunner.query(`DROP INDEX IDX_usertoken_user_id_is_revoked_expires_at ON user_token`);
+    await queryRunner.query(
+      `DROP INDEX IDX_usertoken_token_hash ON user_token`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_usertoken_user_id_is_revoked_expires_at ON user_token`,
+    );
     await queryRunner.query(`DROP TABLE user_token`);
   }
 }

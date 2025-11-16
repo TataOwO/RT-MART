@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,11 +19,11 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Check if loginId or email already exists
+    // Check if loginId or email already exists (excluding soft-deleted users)
     const existingUser = await this.userRepository.findOne({
       where: [
-        { loginId: createUserDto.loginId },
-        { email: createUserDto.email },
+        { loginId: createUserDto.loginId, deletedAt: IsNull() },
+        { email: createUserDto.email, deletedAt: IsNull() },
       ],
     });
 
@@ -53,7 +53,12 @@ export class UsersService {
     const limit = parseInt(queryDto.limit || '10', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string | ReturnType<typeof Like>> = {};
+    const where: Record<
+      string,
+      string | ReturnType<typeof Like> | ReturnType<typeof IsNull>
+    > = {
+      deletedAt: IsNull(), // Only return non-deleted users
+    };
 
     if (queryDto.role) {
       where.role = queryDto.role;
@@ -75,7 +80,7 @@ export class UsersService {
 
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { userId: id },
+      where: { userId: id, deletedAt: IsNull() },
     });
 
     if (!user) {
@@ -87,13 +92,13 @@ export class UsersService {
 
   async findByLoginId(loginId: string): Promise<User | null> {
     return await this.userRepository.findOne({
-      where: { loginId },
+      where: { loginId, deletedAt: IsNull() },
     });
   }
 
   async findByEmail(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
-      where: { email },
+      where: { email, deletedAt: IsNull() },
     });
   }
 
@@ -144,5 +149,57 @@ export class UsersService {
 
     await this.userRepository.restore(id);
     return await this.findOne(id);
+  }
+
+  /**
+   * Find all deleted users (for admin purposes)
+   */
+  async findDeleted(
+    queryDto: QueryUserDto,
+  ): Promise<{ data: User[]; total: number }> {
+    const page = parseInt(queryDto.page || '1', 10);
+    const limit = parseInt(queryDto.limit || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, string | ReturnType<typeof Like>> = {};
+
+    if (queryDto.role) {
+      where.role = queryDto.role;
+    }
+
+    if (queryDto.search) {
+      where.name = Like(`%${queryDto.search}%`);
+    }
+
+    const [data, total] = await this.userRepository.findAndCount({
+      where,
+      skip,
+      take: limit,
+      order: { deletedAt: 'DESC' },
+      withDeleted: true,
+    });
+
+    // Filter only deleted users
+    const deletedData = data.filter((user) => user.deletedAt !== null);
+    const deletedTotal = deletedData.length;
+
+    return { data: deletedData, total: deletedTotal };
+  }
+
+  /**
+   * Permanently delete a user (hard delete)
+   * Should only be used by admin with caution
+   */
+  async permanentlyDelete(id: string): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { userId: id },
+      withDeleted: true,
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    await this.userRepository.remove(user);
   }
 }

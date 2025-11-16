@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -24,98 +24,102 @@ export class OrdersService {
     private readonly cartsService: CartsService,
     private readonly shippingAddressesService: ShippingAddressesService,
     private readonly inventoryService: InventoryService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(userId: string, createDto: CreateOrderDto): Promise<Order> {
-    // Get cart with items
+    // Get cart with items (outside transaction)
     const { cart } = await this.cartsService.getCartSummary(userId);
 
     if (!cart.items || cart.items.length === 0) {
       throw new BadRequestException('Cart is empty');
     }
 
-    // Get shipping address
+    // Get shipping address (outside transaction)
     const shippingAddress = await this.shippingAddressesService.findOne(
       createDto.shippingAddressId,
       userId,
     );
 
-    // Group items by store
-    const itemsByStore = new Map<string, typeof cart.items>();
-    for (const item of cart.items) {
-      const storeId = item.product.storeId;
-      if (!itemsByStore.has(storeId)) {
-        itemsByStore.set(storeId, []);
-      }
-      itemsByStore.get(storeId)!.push(item);
-    }
-
-    const orders: Order[] = [];
-
-    // Create one order per store
-    for (const [storeId, items] of itemsByStore.entries()) {
-      let subtotal = 0;
-
-      // Reserve inventory for all items
-      for (const item of items) {
-        await this.inventoryService.reserveStock(item.productId, {
-          quantity: item.quantity,
-        });
-        subtotal += Number(item.product.price) * item.quantity;
+    // Use transaction for order creation
+    return await this.dataSource.transaction(async (manager) => {
+      // Group items by store
+      const itemsByStore = new Map<string, typeof cart.items>();
+      for (const item of cart.items) {
+        const storeId = item.product.storeId;
+        if (!itemsByStore.has(storeId)) {
+          itemsByStore.set(storeId, []);
+        }
+        itemsByStore.get(storeId)!.push(item);
       }
 
-      const shippingFee = 60; // Default shipping fee
-      const totalAmount = subtotal + shippingFee;
+      const orders: Order[] = [];
 
-      // Generate order number
-      const orderNumber = this.generateOrderNumber();
+      // Create one order per store
+      for (const [storeId, items] of itemsByStore.entries()) {
+        let subtotal = 0;
 
-      // Create order
-      const order = this.orderRepository.create({
-        orderNumber,
-        userId,
-        storeId,
-        subtotal,
-        shippingFee,
-        totalDiscount: 0,
-        totalAmount,
-        paymentMethod: createDto.paymentMethod,
-        shippingAddressSnapshot: shippingAddress,
-        notes: createDto.notes,
-        orderStatus: OrderStatus.PENDING_PAYMENT,
-      });
+        // Reserve inventory for all items
+        for (const item of items) {
+          await this.inventoryService.reserveStock(item.productId, {
+            quantity: item.quantity,
+          });
+          subtotal += Number(item.product.price) * item.quantity;
+        }
 
-      const savedOrder = await this.orderRepository.save(order);
+        const shippingFee = 60; // Default shipping fee
+        const totalAmount = subtotal + shippingFee;
 
-      // Create order items
-      for (const item of items) {
-        const orderItem = this.orderItemRepository.create({
-          orderId: savedOrder.orderId,
-          productId: item.productId,
-          productSnapshot: {
-            productId: item.product.productId,
-            productName: item.product.productName,
-            price: item.product.price,
-            images: item.product.images,
-          },
-          quantity: item.quantity,
-          originalPrice: item.product.price,
-          itemDiscount: 0,
-          unitPrice: item.product.price,
-          subtotal: Number(item.product.price) * item.quantity,
+        // Generate order number
+        const orderNumber = this.generateOrderNumber();
+
+        // Create order
+        const order = manager.create(Order, {
+          orderNumber,
+          userId,
+          storeId,
+          subtotal,
+          shippingFee,
+          totalDiscount: 0,
+          totalAmount,
+          paymentMethod: createDto.paymentMethod,
+          shippingAddressSnapshot: shippingAddress,
+          notes: createDto.notes,
+          orderStatus: OrderStatus.PENDING_PAYMENT,
         });
 
-        await this.orderItemRepository.save(orderItem);
+        const savedOrder = await manager.save(Order, order);
+
+        // Create order items
+        for (const item of items) {
+          const orderItem = manager.create(OrderItem, {
+            orderId: savedOrder.orderId,
+            productId: item.productId,
+            productSnapshot: {
+              productId: item.product.productId,
+              productName: item.product.productName,
+              price: item.product.price,
+              images: item.product.images,
+            },
+            quantity: item.quantity,
+            originalPrice: item.product.price,
+            itemDiscount: 0,
+            unitPrice: item.product.price,
+            subtotal: Number(item.product.price) * item.quantity,
+          });
+
+          await manager.save(OrderItem, orderItem);
+        }
+
+        orders.push(savedOrder);
       }
 
-      orders.push(savedOrder);
-    }
+      // Clear cart after successful order creation (within transaction)
+      await this.cartsService.clearCart(userId);
 
-    // Clear cart after successful order creation
-    await this.cartsService.clearCart(userId);
-
-    // Return first order (or implement logic to return all orders)
-    return await this.findOne(orders[0].orderId, userId);
+      // Return first order (or implement logic to return all orders)
+      return await this.findOne(orders[0].orderId, userId);
+    });
   }
 
   async findAll(
@@ -170,45 +174,48 @@ export class OrdersService {
     // Validate status transition
     this.validateStatusTransition(order.orderStatus, updateDto.status);
 
-    order.orderStatus = updateDto.status;
+    // Use transaction for status update with inventory changes
+    return await this.dataSource.transaction(async (manager) => {
+      order.orderStatus = updateDto.status;
 
-    // Update timestamps based on status
-    switch (updateDto.status) {
-      case OrderStatus.PAID:
-        order.paidAt = new Date();
-        // Commit reserved inventory
-        for (const item of order.items || []) {
-          if (item.productId) {
-            await this.inventoryService.commitReserved(
-              item.productId,
-              item.quantity,
-            );
+      // Update timestamps based on status
+      switch (updateDto.status) {
+        case OrderStatus.PAID:
+          order.paidAt = new Date();
+          // Commit reserved inventory
+          for (const item of order.items || []) {
+            if (item.productId) {
+              await this.inventoryService.commitReserved(
+                item.productId,
+                item.quantity,
+              );
+            }
           }
-        }
-        break;
-      case OrderStatus.SHIPPED:
-        order.shippedAt = new Date();
-        break;
-      case OrderStatus.DELIVERED:
-        order.deliveredAt = new Date();
-        break;
-      case OrderStatus.COMPLETED:
-        order.completedAt = new Date();
-        break;
-      case OrderStatus.CANCELLED:
-        order.cancelledAt = new Date();
-        // Release reserved inventory
-        for (const item of order.items || []) {
-          if (item.productId) {
-            await this.inventoryService.releaseReserved(item.productId, {
-              quantity: item.quantity,
-            });
+          break;
+        case OrderStatus.SHIPPED:
+          order.shippedAt = new Date();
+          break;
+        case OrderStatus.DELIVERED:
+          order.deliveredAt = new Date();
+          break;
+        case OrderStatus.COMPLETED:
+          order.completedAt = new Date();
+          break;
+        case OrderStatus.CANCELLED:
+          order.cancelledAt = new Date();
+          // Release reserved inventory
+          for (const item of order.items || []) {
+            if (item.productId) {
+              await this.inventoryService.releaseReserved(item.productId, {
+                quantity: item.quantity,
+              });
+            }
           }
-        }
-        break;
-    }
+          break;
+      }
 
-    return await this.orderRepository.save(order);
+      return await manager.save(Order, order);
+    });
   }
 
   async cancelOrder(id: string, userId: string): Promise<Order> {

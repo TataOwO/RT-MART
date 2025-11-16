@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateOrderItemTable20251116030014 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -19,13 +19,19 @@ export class CreateOrderItemTable20251116030014 implements MigrationInterface {
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_orderitem_order_id ON order_item(order_id)`);
-    await queryRunner.query(`CREATE INDEX IDX_orderitem_product_id ON order_item(product_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_orderitem_order_id ON order_item(order_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IDX_orderitem_product_id ON order_item(product_id)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IDX_orderitem_order_id ON order_item`);
-    await queryRunner.query(`DROP INDEX IDX_orderitem_product_id ON order_item`);
+    await queryRunner.query(
+      `DROP INDEX IDX_orderitem_product_id ON order_item`,
+    );
     await queryRunner.query(`DROP TABLE order_item`);
   }
 }

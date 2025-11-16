@@ -2,7 +2,6 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  CreateDateColumn,
   ManyToOne,
   JoinColumn,
   BeforeInsert,
@@ -21,7 +20,7 @@ export class AuditLog {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'audit_id' })
   auditId: string;
 
-  @Column({ type: 'uuid', unique: true, name: 'event_id' })
+  @Column({ type: 'char', length: 36, unique: true, name: 'event_id' })
   eventId: string;
 
   @Column({
@@ -34,7 +33,7 @@ export class AuditLog {
   @Column({ type: 'varchar', length: 100, name: 'table_name' })
   tableName: string;
 
-  @Column({ type: 'varchar', length: 100, name: 'record_id' })
+  @Column({ type: 'bigint', name: 'record_id' })
   recordId: string;
 
   @Column({ type: 'varchar', length: 20 })
@@ -97,9 +96,6 @@ export class AuditLog {
     comment: 'SHA-256 of concatenated fields',
   })
   checksum: string | null;
-
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
-  createdAt: Date;
 
   // Relations
   @ManyToOne(() => User, (user) => user.auditLogs, { onDelete: 'SET NULL' })

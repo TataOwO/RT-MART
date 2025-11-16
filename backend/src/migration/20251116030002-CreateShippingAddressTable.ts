@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateShippingAddressTable20251116030002 implements MigrationInterface {
+export class CreateShippingAddressTable20251116030002
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE shipping_address (
@@ -19,14 +21,22 @@ export class CreateShippingAddressTable20251116030002 implements MigrationInterf
     `);
 
     // -- 單一欄位索引
-    await queryRunner.query(`CREATE INDEX IDX_shippingaddress_user_id ON shipping_address(user_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_shippingaddress_user_id ON shipping_address(user_id)`,
+    );
     // -- 複合索引
-    await queryRunner.query(`CREATE INDEX IDX_shippingaddress_user_id_is_default ON shipping_address(user_id, is_default)`);
+    await queryRunner.query(
+      `CREATE INDEX IDX_shippingaddress_user_id_is_default ON shipping_address(user_id, is_default)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IDX_shippingaddress_user_id ON shipping_address`);
-    await queryRunner.query(`DROP INDEX IDX_shippingaddress_user_id_is_default ON shipping_address`);
+    await queryRunner.query(
+      `DROP INDEX IDX_shippingaddress_user_id ON shipping_address`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IDX_shippingaddress_user_id_is_default ON shipping_address`,
+    );
     await queryRunner.query(`DROP TABLE shipping_address`);
   }
 }

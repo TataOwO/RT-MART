@@ -7,6 +7,7 @@ import {
   DeleteDateColumn,
   OneToOne,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { Seller } from '../../sellers/entities/seller.entity';
 import { ShippingAddress } from '../../shipping-addresses/entities/shipping-address.entity';
@@ -23,6 +24,12 @@ export enum UserRole {
 }
 
 @Entity('User')
+@Index(['loginId']) // Already unique, but explicit index for faster lookups
+@Index(['email']) // Already unique, but explicit index for faster lookups
+@Index(['role']) // For filtering by role
+@Index(['deletedAt']) // For soft delete queries
+@Index(['role', 'deletedAt']) // Composite index for active users by role
+@Index(['createdAt']) // For sorting by registration date
 export class User {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'user_id' })
   userId: string;
