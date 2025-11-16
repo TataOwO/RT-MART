@@ -44,8 +44,9 @@ export class OrdersService {
     // Use transaction for order creation
     return await this.dataSource.transaction(async (manager) => {
       // Group items by store
-      const itemsByStore = new Map<string, typeof cart.items>();
-      for (const item of cart.items) {
+      const cartItems = cart.items!; // Safe because we checked above
+      const itemsByStore = new Map<string, typeof cartItems>();
+      for (const item of cartItems) {
         const storeId = item.product.storeId;
         if (!itemsByStore.has(storeId)) {
           itemsByStore.set(storeId, []);
