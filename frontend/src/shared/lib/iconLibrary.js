@@ -12,6 +12,9 @@ import {
   faSignOutAlt,
   faTimes,
   faBars,
+  faGlobe,
+  faChevronDown,
+  faEnvelope,
 } from '@fortawesome/free-solid-svg-icons';
 
 // 註冊所有圖標到 FontAwesome 庫
@@ -22,4 +25,7 @@ library.add(
   faSignOutAlt,
   faTimes,
   faBars,
+  faGlobe,
+  faChevronDown,
+  faEnvelope,
 );
