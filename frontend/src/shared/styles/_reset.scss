@@ -18,8 +18,8 @@ body {
   font-size: $font-base;
   font-weight: 400;
   line-height: 1.5;
-  color: var(--text-primary);
-  background: var(--bg-primary);
+  color: $text-primary;
+  background: $bg-primary;
   min-height: 100vh;
 }
 

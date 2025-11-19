@@ -1,5 +1,5 @@
 .header {
-  background: var(--bg-secondary);
+  background: $bg-secondary;
   box-shadow: $shadow-sm;
   transition: $transition-base;
 
@@ -79,13 +79,13 @@
   background: transparent;
   border: none;
   border-radius: $border-radius-md;
-  color: var(--text-primary);
+  color: $text-primary;
   cursor: pointer;
   transition: $transition-fast;
 
   &:hover {
-    background: var(--bg-tertiary);
-    color: var(--primary-color);
+    background: $bg-tertiary;
+    color: $primary-color;
   }
 
   @include mobile {
@@ -104,7 +104,7 @@
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  background: var(--primary-color);
+  background: $primary-color;
   color: white;
   font-size: $font-xs;
   font-weight: 600;
@@ -124,12 +124,12 @@
     height: 40px;
     background: transparent;
     border: none;
-    color: var(--text-primary);
+    color: $text-primary;
     cursor: pointer;
     transition: $transition-fast;
 
     &:hover {
-      color: var(--primary-color);
+      color: $primary-color;
     }
   }
 }
@@ -141,8 +141,8 @@
   @include mobile {
     display: block;
     padding: $spacing-md;
-    border-top: 1px solid var(--border);
-    background: var(--bg-secondary);
+    border-top: 1px solid $border;
+    background: $bg-secondary;
     animation: slideInDown 0.3s ease-out;
 
     nav ul {
@@ -154,7 +154,7 @@
         a {
           display: block;
           padding: $spacing-md;
-          color: var(--text-primary);
+          color: $text-primary;
           font-size: $font-base;
           font-weight: 500;
           text-decoration: none;
@@ -162,8 +162,8 @@
           transition: $transition-fast;
 
           &:hover {
-            background: var(--bg-tertiary);
-            color: var(--primary-color);
+            background: $bg-tertiary;
+            color: $primary-color;
           }
         }
       }
@@ -187,7 +187,7 @@
   display: inline-flex;
   align-items: center;
   padding: $spacing-sm $spacing-lg;
-  background: var(--primary-color);
+  background: $primary-color;
   color: white;
   font-size: $font-sm;
   font-weight: 600;
@@ -196,7 +196,7 @@
   transition: $transition-fast;
 
   &:hover {
-    background: var(--primary-hover);
+    background: $primary-hover;
     transform: translateY(-1px);
   }
 
@@ -224,7 +224,7 @@
   overflow: hidden;
 
   &:hover {
-    background: var(--bg-tertiary);
+    background: $bg-tertiary;
   }
 
   @include mobile {
@@ -245,7 +245,7 @@
   top: calc(100% + $spacing-sm);
   right: 0;
   min-width: 240px;
-  background: var(--bg-secondary);
+  background: $bg-secondary;
   border-radius: $border-radius-md;
   box-shadow: $shadow-lg;
   padding: $spacing-sm 0;
@@ -270,19 +270,19 @@
 
 .userInfo {
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid $border-color;
   margin-bottom: $spacing-xs;
 
   .userName {
     font-size: $font-base;
     font-weight: 600;
-    color: var(--text-primary);
+    color: $text-primary;
     margin: 0 0 $spacing-xs 0;
   }
 
   .userEmail {
     font-size: $font-xs;
-    color: var(--text-tertiary);
+    color: $text-tertiary;
     margin: 0;
     word-break: break-word;
   }
@@ -290,7 +290,7 @@
 
 .divider {
   height: 1px;
-  background: var(--border-color);
+  background: $border-color;
   margin: $spacing-xs 0;
 }
 
@@ -302,23 +302,23 @@
   padding: $spacing-sm $spacing-lg;
   background: none;
   border: none;
-  color: var(--text-primary);
+  color: $text-primary;
   font-size: $font-sm;
   text-align: left;
   cursor: pointer;
   transition: $transition-fast;
 
   &:hover {
-    background: var(--bg-tertiary);
-    color: var(--primary-color);
+    background: $bg-tertiary;
+    color: $primary-color;
   }
 
   &.logout {
-    color: var(--error-color);
+    color: $error-color;
 
     &:hover {
       background: rgba(255, 66, 79, 0.1);
-      color: var(--error-color);
+      color: $error-color;
     }
   }
 }

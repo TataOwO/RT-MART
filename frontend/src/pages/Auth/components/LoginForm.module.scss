@@ -27,25 +27,25 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: var(--primary-color);
+    accent-color: $primary-color;
   }
 
   span {
-    color: var(--text-secondary);
+    color: $text-secondary;
   }
 
   &:hover span {
-    color: var(--text-primary);
+    color: $text-primary;
   }
 }
 
 .forgotPassword {
-  color: var(--primary-color);
+  color: $primary-color;
   text-decoration: none;
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--primary-hover);
+    color: $primary-hover;
     text-decoration: underline;
   }
 }
