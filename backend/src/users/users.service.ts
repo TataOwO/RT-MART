@@ -27,11 +27,15 @@ export class UsersService {
       ],
     });
 
+    //conflict
     if (existingUser) {
       if (existingUser.loginId === createUserDto.loginId) {
         throw new ConflictException('Login ID already exists');
       }
       throw new ConflictException('Email already exists');
+    }
+    if (!Object.values(UserRole).includes(createUserDto.role as UserRole)) {
+      throw new ConflictException('Invalid user role');
     }
 
     // Hash password
