@@ -24,7 +24,7 @@
 .input {
   width: 100%;
   padding: $spacing-md;
-  font-size: $font-base;
+  font-size: $font-md;
   color: $text-primary;
   background: $bg-secondary;
   border: 1px solid $border-color;
@@ -115,7 +115,8 @@
 
 // 錯誤訊息震動動畫
 @keyframes shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   25% {
@@ -127,7 +128,7 @@
 }
 
 // Dark mode adjustments
-[data-theme='dark'] {
+[data-theme="dark"] {
   .input {
     background: $bg-primary;
     border-color: rgba(255, 255, 255, 0.1);

@@ -25,13 +25,17 @@
 
   // 裝飾性背景圖案
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px
+    );
     background-size: 50px 50px;
     animation: float 20s linear infinite;
   }
@@ -86,7 +90,7 @@
   line-height: 1.6;
 
   @include tablet {
-    font-size: $font-base;
+    font-size: $font-md;
   }
 }
 
@@ -141,7 +145,7 @@
     color: $primary-color;
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       bottom: -2px;
       left: 0;
@@ -217,7 +221,7 @@
 }
 
 /* ===== Dark Mode 調整 ===== */
-[data-theme='dark'] {
+[data-theme="dark"] {
   .rightPanel {
     background: $bg-primary;
   }

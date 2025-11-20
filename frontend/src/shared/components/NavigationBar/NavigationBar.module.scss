@@ -24,7 +24,7 @@
       display: block;
       padding: $spacing-sm $spacing-md;
       color: $text-primary;
-      font-size: $font-base;
+      font-size: $font-md;
       font-weight: 500;
       text-decoration: none;
       transition: $transition-fast;
@@ -39,7 +39,7 @@
         font-weight: 600;
 
         &::after {
-          content: '';
+          content: "";
           position: absolute;
           bottom: -2px;
           left: 50%;
