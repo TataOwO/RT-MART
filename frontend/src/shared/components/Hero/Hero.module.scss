@@ -5,16 +5,20 @@
   overflow: hidden;
 }
 
+// 外層 wrapper - 提供 padding 與 ProductCard 對齊
+.carouselWrapper {
+  @include container($desktop-lg);
+}
+
+// 內層 container - 控制輪播圖溢出
 .carouselContainer {
   position: relative;
-  width: 100%;
-  max-width: $desktop-lg;
-  margin: 0 auto;
   overflow: hidden;
 }
 
 .carouselTrack {
   display: flex;
+  width: 100%;
   transition: transform 0.5s ease-in-out;
 }
 

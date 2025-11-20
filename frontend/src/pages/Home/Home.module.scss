@@ -5,10 +5,10 @@
 
 // Products Section
 .productsSection {
-  padding: $spacing-xxl $spacing-lg;
+  padding: $spacing-xxl 0;
 
   @include mobile {
-    padding: $spacing-xl $spacing-md;
+    padding: $spacing-xl 0;
   }
 }
 

@@ -43,40 +43,42 @@ const Hero = ({ banners = [], autoPlayInterval = 4000, height = 400 }) => {
 
   return (
     <section className={styles.hero}>
-      <div className={styles.carouselContainer}>
-        <div
-          className={styles.carouselTrack}
-          style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
-        >
-          {banners.map((banner) => (
-            <div
-              key={banner.id}
-              className={styles.carouselSlide}
-              style={{ height: `${height}px` }}
-              onClick={() => handleBannerClick(banner)}
-              role={banner.link ? "button" : undefined}
-              tabIndex={banner.link ? 0 : undefined}
-            >
-              <img src={banner.imageUrl} alt={banner.alt} />
-            </div>
-          ))}
-        </div>
-
-        {/* Dot Indicators - 只在有多個輪播圖時顯示 */}
-        {banners.length > 1 && (
-          <div className={styles.carouselDots}>
-            {banners.map((_, index) => (
-              <button
-                key={index}
-                className={`${styles.dot} ${
-                  index === currentBannerIndex ? styles.dotActive : ""
-                }`}
-                onClick={() => handleDotClick(index)}
-                aria-label={`切換到第 ${index + 1} 張輪播圖`}
-              />
+      <div className={styles.carouselWrapper}>
+        <div className={styles.carouselContainer}>
+          <div
+            className={styles.carouselTrack}
+            style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
+          >
+            {banners.map((banner) => (
+              <div
+                key={banner.id}
+                className={styles.carouselSlide}
+                style={{ height: `${height}px` }}
+                onClick={() => handleBannerClick(banner)}
+                role={banner.link ? "button" : undefined}
+                tabIndex={banner.link ? 0 : undefined}
+              >
+                <img src={banner.imageUrl} alt={banner.alt} />
+              </div>
             ))}
           </div>
-        )}
+
+          {/* Dot Indicators - 只在有多個輪播圖時顯示 */}
+          {banners.length > 1 && (
+            <div className={styles.carouselDots}>
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  className={`${styles.dot} ${
+                    index === currentBannerIndex ? styles.dotActive : ""
+                  }`}
+                  onClick={() => handleDotClick(index)}
+                  aria-label={`切換到第 ${index + 1} 張輪播圖`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
