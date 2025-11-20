@@ -1,13 +1,13 @@
 /**
  * SignUpForm Component - 註冊表單
- * 功能：姓名 + Email + Password + 確認密碼 + 密碼強度檢查
+ * 功能：用戶名 + Email + 電話 + Password + 確認密碼 + 密碼強度檢查
+ * 注意：註冊時 name = loginId，後續可透過個人設定更改 name
  */
 
 import { useState } from 'react';
 import FormInput from '../../../shared/components/FormInput';
 import PasswordStrength from './PasswordStrength';
 import {
-  validateName,
   validateUsername,
   validateEmail,
   validatePhone,
@@ -19,7 +19,6 @@ import styles from './SignUpForm.module.scss';
 const SignUpForm = ({ onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
     loginId: '',
-    name: '',
     email: '',
     phone: '',
     password: '',
@@ -79,9 +78,6 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
       case 'loginId':
         error = validateUsername(value);
         break;
-      case 'name':
-        error = validateName(value);
-        break;
       case 'email':
         error = validateEmail(value);
         break;
@@ -110,7 +106,6 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
   const validateAll = () => {
     const newErrors = {
       loginId: validateUsername(formData.loginId),
-      name: validateName(formData.name),
       email: validateEmail(formData.email),
       phone: validatePhone(formData.phone),
       password: validatePasswordStrength(formData.password),
@@ -123,9 +118,9 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
     }
 
     setErrors(newErrors);
-    setTouched({ loginId: true, name: true, email: true, phone: true, password: true, confirmPassword: true, agreeTerms: true });
+    setTouched({ loginId: true, email: true, phone: true, password: true, confirmPassword: true, agreeTerms: true });
 
-    return !newErrors.loginId && !newErrors.name && !newErrors.email && !newErrors.phone && !newErrors.password && !newErrors.confirmPassword && !newErrors.agreeTerms;
+    return !newErrors.loginId && !newErrors.email && !newErrors.phone && !newErrors.password && !newErrors.confirmPassword && !newErrors.agreeTerms;
   };
 
   // 處理表單提交
@@ -141,7 +136,7 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
     try {
       await onSubmit({
         loginId: formData.loginId,
-        name: formData.name,
+        name: formData.loginId, // 註冊時 name = loginId
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
@@ -156,7 +151,7 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
     <form className={styles.signUpForm} onSubmit={handleSubmit}>
       {/* 帳號輸入 (login_id) */}
       <FormInput
-        label="帳號" // TODO: i18n
+        label="用戶名" // TODO: i18n
         type="text"
         name="loginId"
         value={formData.loginId}
@@ -166,21 +161,6 @@ const SignUpForm = ({ onSubmit, isLoading }) => {
         placeholder="4-20 個英數字" // TODO: i18n
         disabled={isLoading}
         autoComplete="username"
-        required
-      />
-
-      {/* 姓名輸入 */}
-      <FormInput
-        label="姓名" // TODO: i18n
-        type="text"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        error={touched.name ? errors.name : null}
-        placeholder="請輸入您的姓名" // TODO: i18n
-        disabled={isLoading}
-        autoComplete="name"
         required
       />
 

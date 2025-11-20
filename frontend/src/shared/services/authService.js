@@ -63,8 +63,8 @@ export const login = async (identifier, password) => {
 
 /**
  * 註冊（Mock 版本）
- * @param {string} loginId
- * @param {string} name
+ * @param {string} loginId - 登入帳號（永久，不可更改）
+ * @param {string} name - 使用者名稱（註冊時 = loginId，後續可透過個人設定更改）
  * @param {string} email
  * @param {string} phone
  * @param {string} password

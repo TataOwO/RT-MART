@@ -3,7 +3,7 @@
  * 支援：success / error / info / warning 四種類型
  */
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Icon from '../Icon';
 import {
   faCheckCircle,
   faExclamationCircle,
@@ -29,7 +29,7 @@ const Alert = ({ type = 'info', message, onClose, className }) => {
     <div className={`${styles.alert} ${styles[type]} ${className || ''}`} role="alert">
       {/* Icon */}
       <div className={styles.icon}>
-        <FontAwesomeIcon icon={icon} />
+        <Icon icon={icon} />
       </div>
 
       {/* Message */}
@@ -43,7 +43,7 @@ const Alert = ({ type = 'info', message, onClose, className }) => {
           onClick={onClose}
           aria-label="關閉訊息" // TODO: i18n
         >
-          <FontAwesomeIcon icon={faTimes} />
+          <Icon icon={faTimes} />
         </button>
       )}
     </div>

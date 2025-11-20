@@ -221,9 +221,9 @@
 }
 
 /* ===== Dark Mode 調整 ===== */
-[data-theme="dark"] {
+[data-theme='dark'] {
   .rightPanel {
-    background: $bg-primary;
+    background: var(--bg-primary);
   }
 
   .tabs {
