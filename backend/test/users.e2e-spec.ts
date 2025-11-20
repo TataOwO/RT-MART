@@ -154,7 +154,7 @@ describe('UsersController (e2e)', () => {
 
   it('PATCH /users/:id → update user data with conflict login id → 409', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/users/${testUserId[2]}`)
+      .patch(`/users/${testUserId[1]}`)
       .send({ loginId: `${testUserLoginId[0]}` })
       .expect(409);
 
@@ -218,16 +218,29 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/users/:id/permanent (DELETE) → permanently delete user by id', async () => {
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        loginId: testUserLoginId[2],
+        password: '.abc12345678',
+      })
+      .expect(201);
+
+    let accessToken = loginRes.body.accessToken;
+
     const res = await request(app.getHttpServer())
       .delete(`/users/${testUserId[0]}/permanent`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     await request(app.getHttpServer())
       .delete(`/users/${testUserId[1]}/permanent`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     await request(app.getHttpServer())
       .delete(`/users/${testUserId[2]}/permanent`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     expect(res.body).toHaveProperty(

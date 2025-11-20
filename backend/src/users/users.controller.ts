@@ -9,6 +9,7 @@ import {
   Query,
   UseInterceptors,
   ClassSerializerInterceptor,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -90,6 +92,7 @@ export class UsersController {
   }
  
   //Permanently delete user by id
+  @UseGuards(JwtAuthGuard)
   @Delete(':id/permanent')
   async hardRemove(@Param('id') id: string) {
     await this.usersService.permanentlyDelete(id);
