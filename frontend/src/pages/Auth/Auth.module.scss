@@ -215,18 +215,3 @@
     }
   }
 }
-
-/* ===== Dark Mode 調整 ===== */
-[data-theme='dark'] {
-  .rightPanel {
-    background: var(--bg-primary);
-  }
-
-  .tabs {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .footer {
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
-}

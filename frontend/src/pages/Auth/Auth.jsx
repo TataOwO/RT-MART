@@ -55,6 +55,7 @@ const Auth = () => {
       setIsLoading(true);
       setAlert({ type: '', message: '' });
 
+      // 註冊時 formData.name = formData.loginId，後續可透過個人設定更改
       await register(formData.loginId, formData.name, formData.email, formData.phone, formData.password);
 
       // 註冊成功（自動登入）
