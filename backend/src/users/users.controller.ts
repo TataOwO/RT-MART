@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -27,16 +28,14 @@ import { RolesGuard } from './../auth/guards/roles.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  //Post
-  //Create a new user (with loginId, name, password, email (phone, role optional))
+  //Create user (with loginId, name, password, email (phone, role optional))
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
     return plainToInstance(UserResponseDto, user);
   }
 
-  //Get
-  //Find all users with pagination and filtering:
+  //Get users: Find all users with pagination and filtering:
   //page & limit & filtering by `role` & `search` by name
   @Get()
   async findAll(@Query() queryDto: QueryUserDto) {
@@ -49,7 +48,10 @@ export class UsersController {
     };
   }
 
-  //Find all of deleted users
+  //Get deleted users: Find all deleted users with pagination and filtering:
+  //page & limit & filtering by `role` & `search` by name
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('deleted')
   async findAllDeleted(@Query() queryDto: QueryUserDto) {
    const { data, total } = await this.usersService.findDeleted(queryDto);
@@ -61,11 +63,65 @@ export class UsersController {
     };
   }
 
-  //Find a single user by ID
+  //Get a single user: Find a user by ID
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const user = await this.usersService.findOne(id);
     return plainToInstance(UserResponseDto, user);
+  }
+
+// Update own data: User updates their own data
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  async updateMe(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+    const userId = req.user.userId;
+    const user = await this.usersService.update(userId, updateUserDto);
+    return plainToInstance(UserResponseDto, user);
+  }
+
+  //Update user data: Update by ID
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const user = await this.usersService.update(id, updateUserDto);
+    return plainToInstance(UserResponseDto, user);
+  }
+  
+  //Delete own account: User deletes their own account
+  @UseGuards(JwtAuthGuard)
+  @Delete('me')
+  async removeMe(@Req() req) {
+    const userId = req.user.userId;
+    await this.usersService.remove(userId);
+    return { message: 'Your account has been deleted successfully' };
+  }
+
+  //Delete user: Delete by ID
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.usersService.remove(id);
+    return { message: 'User deleted successfully' };
+  }
+
+  //Restore user: Restore a soft-deleted user by ID
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/restore')
+  async restore(@Param('id') id: string) {
+    const user = await this.usersService.restore(id);
+    return plainToInstance(UserResponseDto, user);
+  }
+ 
+  //Permanently delete user: Permanently delete by ID
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id/permanent')
+  async hardRemove(@Param('id') id: string) {
+    await this.usersService.permanentlyDelete(id);
+    return { message: 'User permanently deleted successfully' };
   }
 
   // Health check endpoint
@@ -78,36 +134,4 @@ export class UsersController {
     };
   }
 
-  //patch
-  //Update a user by ID
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    const user = await this.usersService.update(id, updateUserDto);
-    return plainToInstance(UserResponseDto, user);
-  }
-
-  //delete
-  //Delete a user by ID
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.usersService.remove(id);
-    return { message: 'User deleted successfully' };
-  }
- 
-  //Permanently delete user by id
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete(':id/permanent')
-  async hardRemove(@Param('id') id: string) {
-    await this.usersService.permanentlyDelete(id);
-    return { message: 'User permanently deleted successfully' };
-  }
-
-  //post
-  //Restore a soft-deleted user by ID
-  @Post(':id/restore')
-  async restore(@Param('id') id: string) {
-    const user = await this.usersService.restore(id);
-    return plainToInstance(UserResponseDto, user);
-  }
 }
