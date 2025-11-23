@@ -51,7 +51,7 @@ describe('UsersController (e2e)', () => {
       .expect(200);
 
     expect(res.body).toHaveProperty('status', 'ok');
-    expect(res.body).toHaveProperty('module', 'users');
+    expect(res.body).toHaveProperty('module', 'auth');
     expect(res.body).toHaveProperty('timestamp');
   });
 
