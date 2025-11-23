@@ -1,3 +1,4 @@
+import { access } from "fs";
 
 export let buyerUser = {
     userId: 0,
@@ -6,7 +7,11 @@ export let buyerUser = {
     password: '!abc12345678', 
     email: 'buyer_user@example.com', 
     phone: '0912345678', 
-    role: 'buyer'
+    role: 'buyer',
+    cookie: {
+        accessToken: '',
+        refreshToken: '',
+    }
 };
 
 export let sellerUser = {
@@ -16,7 +21,11 @@ export let sellerUser = {
     password: '?abc12345678', 
     email: 'seller_user@example.com',
     phone: '0912345678',
-    role: 'seller'
+    role: 'seller',
+    cookie: {
+        accessToken: '',
+        refreshToken: '',
+    }
 };
 
 export let adminUser = {
@@ -26,5 +35,9 @@ export let adminUser = {
     password: '.abc12345678',
     email: 'admin_user@example.com',
     phone: '0912345678',
-    role: 'admin'
+    role: 'admin',
+    cookie: {
+        accessToken: '',
+        refreshToken: '',
+    }
 };

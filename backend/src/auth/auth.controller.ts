@@ -78,13 +78,10 @@ export class AuthController {
     if (refreshToken) {
       await this.authService.logout(refreshToken);
     }
-
-    // 清除 cookie
     res.clearCookie('refreshToken');
     res.clearCookie('accessToken');
     return { success: true };
   }
-
 
   @Get('test/health')
   getHealth(): object {

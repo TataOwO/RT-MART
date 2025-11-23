@@ -135,10 +135,6 @@ export class AuthService {
       await this.tokenRepository.save(tokenEntity);
     }
   }
-  
-  async validateUser(userId: string) {
-    return this.usersService.findOne(userId);
-  }
 
   /**
    * 定時清理過期的 token
