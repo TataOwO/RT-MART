@@ -30,7 +30,7 @@ const UserMenu = () => {
   if (!isAuthenticated) {
     return (
       <Link to="/auth">
-        <Button variant="primary">登入</Button>
+        <Button variant="login">登入</Button>
       </Link>
     );
   }

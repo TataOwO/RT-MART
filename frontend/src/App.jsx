@@ -1,28 +1,25 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./shared/contexts/AuthContext";
-import HeaderA from "./shared/components/Header/HeaderA";
-import HeaderB from "./shared/components/Header/HeaderB";
-import HeaderC from "./shared/components/Header/HeaderC";
+import Header from "./shared/components/Header";
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth/Auth";
+import ProductDetail from "./pages/Product/ProductDetail";
 import "./shared/lib/iconLibrary";
 
 // Header Wrapper Component to handle conditional rendering
 function AppHeader() {
   const location = useLocation();
 
-  // Determine which header to show based on current route
   if (location.pathname === "/auth") {
-    return <HeaderB />;
+    return <Header variant="simple" />;
   }
 
   if (location.pathname.startsWith("/seller") || location.pathname.startsWith("/admin")) {
-    return <HeaderC />;
+    return <Header variant="admin" />;
   }
 
-  // Default to HeaderA for all other routes
-  return <HeaderA />;
+  return <Header />;
 }
 
 function AppContent() {
@@ -35,7 +32,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/search" element={<h2>商品搜索頁面開發中...</h2>} />
-          <Route path="/product/:product_id" element={<h2>商品詳情頁開發中...</h2>} />
+          <Route path="/product/:product_id" element={<ProductDetail />} />
           <Route path="/store/:store_id" element={<h2>商店頁面開發中...</h2>} />
           <Route path="/cart" element={<h2>購物車頁面開發中...</h2>} />
           <Route path="/checkout" element={<h2>結帳頁面開發中...</h2>} />
