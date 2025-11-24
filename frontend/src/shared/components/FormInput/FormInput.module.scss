@@ -13,11 +13,11 @@
   display: block;
   font-size: $font-sm;
   font-weight: 500;
-  color: var(--text-primary);
+  color: $text-primary;
   margin-bottom: $spacing-xs;
 
   .required {
-    color: var(--error-color);
+    color: $error-color;
   }
 }
 
@@ -30,32 +30,32 @@
 .input {
   width: 100%;
   padding: $spacing-md;
-  font-size: $font-base;
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  font-size: $font-md;
+  color: $text-primary;
+  background: $bg-secondary;
+  border: 1px solid $border-color;
   border-radius: $border-radius-md;
   transition: all 0.3s ease;
   outline: none;
 
   &::placeholder {
-    color: var(--text-tertiary);
+    color: $text-tertiary;
   }
 
   &:focus {
-    border-color: var(--primary-color);
+    border-color: $primary-color;
     box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.1);
   }
 
   &:disabled {
-    background: var(--bg-tertiary);
+    background: $bg-tertiary;
     cursor: not-allowed;
     opacity: 0.6;
   }
 
   // 有錯誤時
   &.error {
-    border-color: var(--error-color);
+    border-color: $error-color;
 
     &:focus {
       box-shadow: 0 0 0 3px rgba(255, 66, 79, 0.1);
@@ -76,7 +76,7 @@
 .icon {
   position: absolute;
   left: $spacing-md;
-  color: var(--text-tertiary);
+  color: $text-tertiary;
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -89,7 +89,7 @@
   right: $spacing-md;
   background: none;
   border: none;
-  color: var(--text-tertiary);
+  color: $text-tertiary;
   cursor: pointer;
   padding: $spacing-xs;
   display: flex;
@@ -99,11 +99,11 @@
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--text-secondary);
+    color: $text-secondary;
   }
 
   &:focus {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid $primary-color;
     outline-offset: 2px;
     border-radius: $border-radius-sm;
   }
@@ -115,13 +115,14 @@
   gap: $spacing-xs;
   margin-top: $spacing-xs;
   font-size: $font-xs;
-  color: var(--error-color);
+  color: $error-color;
   animation: shake 0.3s ease;
 }
 
 // 錯誤訊息震動動畫
 @keyframes shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   25% {
@@ -133,13 +134,13 @@
 }
 
 // Dark mode adjustments
-[data-theme='dark'] {
+[data-theme="dark"] {
   .input {
-    background: var(--bg-primary);
+    background: $bg-primary;
     border-color: rgba(255, 255, 255, 0.1);
 
     &:focus {
-      border-color: var(--primary-color);
+      border-color: $primary-color;
     }
   }
 }

@@ -49,8 +49,8 @@
 // Success 樣式
 .alert.success {
   background-color: rgba(38, 170, 153, 0.1);
-  border-color: var(--success-color);
-  color: var(--success-color);
+  border-color: $success-color;
+  color: $success-color;
 
   [data-theme='dark'] & {
     background-color: rgba(38, 170, 153, 0.15);
@@ -60,8 +60,8 @@
 // Error 樣式
 .alert.error {
   background-color: rgba(255, 66, 79, 0.1);
-  border-color: var(--error-color);
-  color: var(--error-color);
+  border-color: $error-color;
+  color: $error-color;
 
   [data-theme='dark'] & {
     background-color: rgba(255, 66, 79, 0.15);

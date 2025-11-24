@@ -19,15 +19,15 @@
       margin-top: 2px;
       cursor: pointer;
       flex-shrink: 0;
-      accent-color: var(--primary-color);
+      accent-color: $primary-color;
     }
 
     span {
-      color: var(--text-secondary);
+      color: $text-secondary;
       line-height: 1.5;
 
       a {
-        color: var(--primary-color);
+        color: $primary-color;
         text-decoration: none;
 
         &:hover {
@@ -37,7 +37,7 @@
     }
 
     &:hover span {
-      color: var(--text-primary);
+      color: $text-primary;
     }
   }
 
@@ -45,7 +45,7 @@
     margin-top: $spacing-xs;
     margin-left: calc(16px + $spacing-xs);
     font-size: $font-xs;
-    color: var(--error-color);
+    color: $error-color;
   }
 }
 

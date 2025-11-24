@@ -1,7 +1,7 @@
 .authPage {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: $bg-primary;
 
   @include mobile {
     flex-direction: column;
@@ -11,7 +11,7 @@
 /* ===== 左側面板 - 品牌視覺 ===== */
 .leftPanel {
   flex: 1;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #ff6b4a 100%);
+  background: linear-gradient(135deg, $primary-color 0%, #ff6b4a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,13 +25,17 @@
 
   // 裝飾性背景圖案
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px
+    );
     background-size: 50px 50px;
     animation: float 20s linear infinite;
   }
@@ -86,7 +90,7 @@
   line-height: 1.6;
 
   @include tablet {
-    font-size: $font-base;
+    font-size: $font-md;
   }
 }
 
@@ -97,7 +101,7 @@
   align-items: center;
   justify-content: center;
   padding: $spacing-xxl $spacing-xl;
-  background: var(--bg-secondary);
+  background: $bg-secondary;
 
   @include tablet {
     flex: 0.6;
@@ -118,7 +122,7 @@
   display: flex;
   gap: $spacing-md;
   margin-bottom: $spacing-xl;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid $border-color;
 }
 
 .tab {
@@ -128,26 +132,26 @@
   padding: $spacing-md;
   font-size: $font-lg;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: $text-tertiary;
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
 
   &:hover:not(:disabled) {
-    color: var(--text-secondary);
+    color: $text-secondary;
   }
 
   &.active {
-    color: var(--primary-color);
+    color: $primary-color;
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       bottom: -2px;
       left: 0;
       right: 0;
       height: 2px;
-      background: var(--primary-color);
+      background: $primary-color;
       animation: slideIn 0.3s ease;
     }
   }
@@ -188,24 +192,24 @@
 .footer {
   text-align: center;
   padding-top: $spacing-lg;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid $border-color;
 
   p {
     font-size: $font-sm;
-    color: var(--text-secondary);
+    color: $text-secondary;
   }
 
   .linkButton {
     background: none;
     border: none;
-    color: var(--primary-color);
+    color: $primary-color;
     font-weight: 600;
     cursor: pointer;
     margin-left: $spacing-xs;
     transition: color 0.2s ease;
 
     &:hover:not(:disabled) {
-      color: var(--primary-hover);
+      color: $primary-hover;
       text-decoration: underline;
     }
 
@@ -213,5 +217,20 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+}
+
+/* ===== Dark Mode 調整 ===== */
+[data-theme='dark'] {
+  .rightPanel {
+    background: var(--bg-primary);
+  }
+
+  .tabs {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .footer {
+    border-top-color: rgba(255, 255, 255, 0.1);
   }
 }

@@ -5,7 +5,7 @@
 
 import { post } from './api';
 
-// Mock 用戶資料庫（僅供開發測試-->接入api后腰刪除）
+// Mock 用戶資料庫（僅供開發測試-->接入api后要刪除）
 const mockUsers = [
   {
     id: "1",
