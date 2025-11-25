@@ -4,7 +4,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -16,6 +19,6 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   }
 
   async validate(req: Request, payload: any) {
-    return payload; 
+    return payload;
   }
 }

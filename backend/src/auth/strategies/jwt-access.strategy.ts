@@ -4,7 +4,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 @Injectable()
-export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') {
+export class JwtAccessStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-access',
+) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

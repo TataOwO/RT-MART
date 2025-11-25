@@ -41,24 +41,30 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    
-    const accessToken = this.jwtService.sign({
+
+    const accessToken = this.jwtService.sign(
+      {
         sub: user.userId,
         loginId: user.loginId,
         role: user.role,
-      }, {
-      expiresIn: '15m',
-      secret: process.env.ACCESS_SECRET,
-    });
+      },
+      {
+        expiresIn: '15m',
+        secret: process.env.ACCESS_SECRET,
+      },
+    );
 
-    const refreshToken = this.jwtService.sign({
-      sub: user.userId,
-      loginId: user.loginId,
-      role: user.role,
-    }, {
-      expiresIn: '1d',
-      secret: process.env.REFRESH_SECRET,
-    });
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: user.userId,
+        loginId: user.loginId,
+        role: user.role,
+      },
+      {
+        expiresIn: '1d',
+        secret: process.env.REFRESH_SECRET,
+      },
+    );
 
     const decoded = this.jwtService.decode(refreshToken) as any;
     const createdAt = new Date(decoded.iat * 1000);
@@ -96,7 +102,8 @@ export class AuthService {
     });
 
     if (!tokenEntity) throw new UnauthorizedException('Token not found');
-    if (tokenEntity.expiresAt < new Date()) throw new UnauthorizedException('Token expired');
+    if (tokenEntity.expiresAt < new Date())
+      throw new UnauthorizedException('Token expired');
     if (tokenEntity.isRevoked) throw new UnauthorizedException('Token revoked');
 
     const isValid = await bcrypt.compare(refreshToken, tokenEntity.tokenHash);
@@ -126,7 +133,7 @@ export class AuthService {
 
     const userId = payload.sub;
     const createdAt = new Date(payload.iat * 1000);
-    
+
     const tokenEntity = await this.tokenRepository.findOne({
       where: { userId, createdAt },
     });

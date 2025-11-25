@@ -30,37 +30,43 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authService.login(loginDto);
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', result.refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
     return plainToInstance(AuthTokenResponseDto, result);
   }
 
   @Post('refresh')
-  async refresh(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies['refreshToken'];
     const result = await this.authService.refreshTokens(refreshToken);
-    
+
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
       path: '/',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 60 * 1000,
     });
     return this.authService.refreshTokens(refreshToken);
   }
