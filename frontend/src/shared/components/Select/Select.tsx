@@ -27,7 +27,7 @@ interface SelectProps {
   onChange: (value: string) => void;
   variant?: 'default' | 'compact' | 'topbar';
   placeholder?: string;
-  icon?: IconProp | null;
+  icon?: IconProp | string | null;
   ariaLabel?: string;
   disabled?: boolean;
   className?: string;
@@ -169,7 +169,7 @@ const Select = ({
   };
 
   // 渲染圖示 (支援 string 或 icon object)
-  const renderIcon = (iconProp: IconProp) => {
+  const renderIcon = (iconProp: IconProp | string) => {
     if (!iconProp) return null;
     return <Icon icon={iconProp} className={styles.icon} />;
   };

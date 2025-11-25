@@ -78,7 +78,7 @@ function ImageGallery({ images }: ImageGalleryProps) {
 
           <Button
             iconOnly
-            icon="faChevron-right"
+            icon="chevron-right"
             onClick={handleNext}
             ariaLabel="下一張圖片"
             className={`${styles.navButton} ${styles.navButtonRight}`}

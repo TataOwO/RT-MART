@@ -10,7 +10,7 @@ interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   fullWidth?: boolean;
-  icon?: IconProp | null;
+  icon?: IconProp | string | null;
   iconOnly?: boolean;
   badge?: string | number | null;
   className?: string;

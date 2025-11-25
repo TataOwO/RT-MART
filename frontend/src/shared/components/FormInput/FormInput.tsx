@@ -20,7 +20,7 @@ interface FormInputProps {
   disabled?: boolean;
   autoComplete?: string;
   required?: boolean;
-  icon?: IconProp;
+  icon?: IconProp | string;
   className?: string;
   [key: string]: any;
 }
