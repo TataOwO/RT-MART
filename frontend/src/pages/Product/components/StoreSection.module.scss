@@ -128,3 +128,117 @@
     width: 100%;
   }
 }
+
+// ========== Detailed Variant Styles ==========
+.detailed {
+  .storeAvatar {
+    width: 100px;
+    height: 100px;
+
+    svg {
+      font-size: 3rem;
+    }
+
+    @include mobile {
+      width: 80px;
+      height: 80px;
+
+      svg {
+        font-size: 2.5rem;
+      }
+    }
+  }
+
+  .storeName {
+    font-size: $font-xl;
+
+    @include mobile {
+      font-size: $font-lg;
+    }
+  }
+
+  .totalRatings {
+    color: $text-tertiary;
+    font-weight: 400;
+  }
+}
+
+.storeDescription {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+
+  p {
+    margin: 0;
+    color: $text-secondary;
+    line-height: 1.6;
+    font-size: $font-sm;
+
+    &.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    &.expanded {
+      display: block;
+    }
+  }
+
+  @include mobile {
+    p {
+      font-size: $font-xs;
+    }
+  }
+}
+
+.expandButton {
+  margin-top: $spacing-xs;
+  background: none;
+  border: none;
+  color: $primary-color;
+  font-size: $font-sm;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
+
+  @include mobile {
+    font-size: $font-xs;
+  }
+}
+
+.contactInfo {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-sm;
+  color: $text-secondary;
+
+  svg {
+    color: $text-tertiary;
+    flex-shrink: 0;
+  }
+
+  @include mobile {
+    font-size: $font-xs;
+  }
+}
