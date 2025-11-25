@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ImageGallery.module.scss';
 import Button from '../../../shared/components/Button';
 import Icon from "../../../shared/components/Icon/Icon";
@@ -46,6 +46,35 @@ function ImageGallery({ images }: ImageGalleryProps) {
     e.stopPropagation();
     handleNext();
   };
+
+  // 鍵盤導航
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          handlePrevious();
+          break;
+        case 'ArrowRight':
+          handleNext();
+          break;
+        case 'Escape':
+          if (isLightboxOpen) {
+            closeLightbox();
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    // 添加鍵盤事件監聽
+    window.addEventListener('keydown', handleKeyDown);
+
+    // 清理函數：移除事件監聽
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, images.length]);
 
   // 如果沒有圖片，顯示預設佔位符
   if (!images || images.length === 0) {
