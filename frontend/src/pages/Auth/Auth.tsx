@@ -89,7 +89,8 @@ const Auth = () => {
           <div className={styles.logo}>
             <span className={styles.logoText}>RT-MART</span>
           </div>
-          <h1 className={styles.slogan}>您的線上購物首選平台</h1> {/* TODO: i18n */}
+          <h1 className={styles.slogan}>您的線上購物首選平台</h1>
+          {/* TODO: i18n */}
           <p className={styles.description}>
             探索數萬種商品，享受便捷的購物體驗 {/* TODO: i18n */}
           </p>
@@ -102,15 +103,19 @@ const Auth = () => {
           {/* Tab 切換 */}
           <div className={styles.tabs}>
             <button
-              className={`${styles.tab} ${activeTab === 'login' ? styles.active : ''}`}
-              onClick={() => handleTabChange('login')}
+              className={`${styles.tab} ${
+                activeTab === "login" ? styles.active : ""
+              }`}
+              onClick={() => handleTabChange("login")}
               disabled={loading}
             >
               登入 {/* TODO: i18n */}
             </button>
             <button
-              className={`${styles.tab} ${activeTab === 'signup' ? styles.active : ''}`}
-              onClick={() => handleTabChange('signup')}
+              className={`${styles.tab} ${
+                activeTab === "signup" ? styles.active : ""
+              }`}
+              onClick={() => handleTabChange("signup")}
               disabled={loading}
             >
               註冊 {/* TODO: i18n */}
@@ -122,13 +127,13 @@ const Auth = () => {
             <Alert
               type={alert.type as AlertType}
               message={alert.message}
-              onClose={() => setAlert({ type: '', message: '' })}
+              onClose={() => setAlert({ type: "", message: "" })} // 清空後，alert 消失(if (!message) return null;)
             />
           )}
 
           {/* 表單內容 */}
           <div className={styles.formContent}>
-            {activeTab === 'login' ? (
+            {activeTab === "login" ? (
               <LoginForm onSubmit={handleLogin} isLoading={loading} />
             ) : (
               <SignUpForm onSubmit={handleRegister} isLoading={loading} />
@@ -137,12 +142,12 @@ const Auth = () => {
 
           {/* 底部連結 */}
           <div className={styles.footer}>
-            {activeTab === 'login' ? (
+            {activeTab === "login" ? (
               <p>
                 還沒有帳號？
                 <button
                   className={styles.linkButton}
-                  onClick={() => handleTabChange('signup')}
+                  onClick={() => handleTabChange("signup")}
                   disabled={loading}
                 >
                   立即註冊
@@ -154,7 +159,7 @@ const Auth = () => {
                 已經有帳號了？
                 <button
                   className={styles.linkButton}
-                  onClick={() => handleTabChange('login')}
+                  onClick={() => handleTabChange("login")}
                   disabled={loading}
                 >
                   立即登入

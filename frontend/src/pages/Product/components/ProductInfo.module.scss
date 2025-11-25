@@ -1,7 +1,7 @@
 .productInfo {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-xs;
   width: 100%;
 }
 
@@ -66,7 +66,7 @@
 
 // 價格區
 .priceSection {
-  padding: $spacing-lg;
+  padding: $spacing-md;
   background-color: $bg-secondary;
   border-radius: $border-radius-md;
 }

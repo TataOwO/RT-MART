@@ -36,7 +36,7 @@ const Alert = ({ type = 'info', message, onClose, className }: AlertProps) => {
       {/* Message */}
       <div className={styles.message}>{message}</div>
 
-      {/* Close Button (可選) */}
+      {/* Close Button*/}
       {onClose && (
         <button
           type="button"
