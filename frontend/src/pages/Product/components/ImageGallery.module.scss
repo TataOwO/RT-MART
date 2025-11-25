@@ -71,8 +71,8 @@
 
   &:hover {
     background-color: $primary-color;
-    color: $text-white;
-    transform: translateY(-50%) scale(1.1);
+    color: $text-white !important;
+    transform: translateY(-50%) scale(1.1) !important;
   }
 
   svg {

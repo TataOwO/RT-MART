@@ -158,6 +158,7 @@ function ReviewSection({ reviews, statistics }: ReviewSectionProps) {
               { value: '1', label: '1 星' },
               { value: 'hasImage', label: '有圖片' },
             ]}
+            variant="compact"
             ariaLabel="篩選評價"
           />
         </div>
@@ -173,6 +174,7 @@ function ReviewSection({ reviews, statistics }: ReviewSectionProps) {
               { value: 'highest', label: '評分最高' },
               { value: 'lowest', label: '評分最低' },
             ]}
+            variant="compact"
             ariaLabel="排序方式"
           />
         </div>

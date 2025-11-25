@@ -139,13 +139,6 @@ function PurchasePanel({ stock, productId, productData }: PurchasePanelProps) {
 
   return (
     <div className={styles.purchasePanel}>
-      {/* Alert 提示 */}
-      {alert && (
-        <div className={styles.alertContainer}>
-          <Alert type={alert.type} message={alert.message} />
-        </div>
-      )}
-
       {/* 數量選擇器 */}
       <div className={styles.quantitySection}>
         <label className={styles.quantityLabel}>數量</label>
@@ -203,6 +196,13 @@ function PurchasePanel({ stock, productId, productData }: PurchasePanelProps) {
           立即購買
         </Button>
       </div>
+      
+      {/* Alert 提示 */}
+      {alert && (
+        <div className={styles.alertContainer}>
+          <Alert type={alert.type} message={alert.message} />
+        </div>
+      )}
 
       {/* 庫存不足提示 */}
       {stock === 0 && (

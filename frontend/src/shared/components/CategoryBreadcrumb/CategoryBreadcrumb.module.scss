@@ -9,23 +9,14 @@
 }
 
 .breadcrumbItem {
-  color: #1890ff;
+  color: #40a9ff;
   cursor: pointer;
   transition: color 0.2s ease;
 
   &:hover {
-    color: #40a9ff;
+    color: $info-color;
+    font-weight: 600;
     text-decoration: underline;
-  }
-
-  &:last-child {
-    color: #333;
-    cursor: default;
-    font-weight: 500;
-
-    &:hover {
-      text-decoration: none;
-    }
   }
 }
 
