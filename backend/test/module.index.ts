@@ -10,7 +10,7 @@ import { ProductsModule } from '../src/products/products.module';
 import { SellersModule } from '../src/sellers/sellers.module';
 import { ShippingAddressesModule } from '../src/shipping-addresses/shipping-addresses.module';
 import { StoresModule } from '../src/stores/stores.module';
-import { UsersModule } from '../src/users/users.module'
+import { UsersModule } from '../src/users/users.module';
 
 export const AppModules = [
   AuditLogsModule,

@@ -21,14 +21,30 @@ describe('UsersController (e2e)', () => {
 
   it('/register (POST) → User register', async () => {
     await AuthPostTest.registerUser(app);
-    await AuthPostTest.registerUserWithConflict(app, buyerUser.loginId, 'unique_email@example.com');
-    await AuthPostTest.registerUserWithConflict(app, 'unique_loginId', buyerUser.email);
+    await AuthPostTest.registerUserWithConflict(
+      app,
+      buyerUser.loginId,
+      'unique_email@example.com',
+    );
+    await AuthPostTest.registerUserWithConflict(
+      app,
+      'unique_loginId',
+      buyerUser.email,
+    );
   });
 
   it('/login (POST) → User login', async () => {
     await AuthPostTest.loginUser(app);
-    await AuthPostTest.loginUserWithInvalidCredentials(app, buyerUser.loginId, 'wrongpassword');
-    await AuthPostTest.loginUserWithInvalidCredentials(app, 'wrongloginId', buyerUser.password);
+    await AuthPostTest.loginUserWithInvalidCredentials(
+      app,
+      buyerUser.loginId,
+      'wrongpassword',
+    );
+    await AuthPostTest.loginUserWithInvalidCredentials(
+      app,
+      'wrongloginId',
+      buyerUser.password,
+    );
   });
 
   it('/register (POST) → Refresh access token', async () => {
@@ -41,7 +57,7 @@ describe('UsersController (e2e)', () => {
     await AuthGetTest.getUserProfileWithWrongAccessTokenCookie(app);
   });
 
-  it ('/logout (POST) → User logout', async () => {
+  it('/logout (POST) → User logout', async () => {
     await AuthPostTest.logoutUser(app);
   });
 
