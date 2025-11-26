@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-sm $spacing-lg;
+  padding: $spacing-sm $spacing-xl;
   background: none;
   border: none;
   cursor: pointer;
@@ -34,6 +34,7 @@
 
   &:hover {
     color: $text-primary;
+    background-color: $bg-tertiary;
   }
 
   @include mobile {
@@ -68,11 +69,9 @@
 
 // Underline variant - 參考蝦皮風格
 .underline {
-  border-bottom: 2px solid $border-color;
   gap: $spacing-lg;
 
   .tabItem {
-    padding: $spacing-md $spacing-xs;
     padding-bottom: calc($spacing-md - 1px);
     border-radius: 0;
 

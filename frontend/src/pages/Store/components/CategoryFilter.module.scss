@@ -2,7 +2,9 @@
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  padding: $spacing-lg 0;
+  padding: $spacing-md 0;
+  background-color: $card-bg;
+  border-radius: $border-radius-md;
   margin-bottom: $spacing-lg;
 
   @include mobile {
