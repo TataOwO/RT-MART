@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { CartHistoryService } from './cart-history.service';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
-import type { AuthRequest } from '../common/types';
+import type { AuthRequest } from '../common/types/request.types';
 
 @Controller('cart-history')
 @UseGuards(JwtAccessGuard)
@@ -22,7 +22,7 @@ export class CartHistoryController {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '10', 10);
     // JwtAccessGuard ensures req.user exists and has userId
-    const userId = req.user.userId as string;
+    const userId = req.user.userId;
 
     const { data, total } = await this.cartHistoryService.findAllByUser(
       userId,
@@ -44,7 +44,7 @@ export class CartHistoryController {
     @Param('id') id: string,
   ): Promise<unknown> {
     // JwtAccessGuard ensures req.user exists and has userId
-    const userId = req.user.userId as string;
+    const userId = req.user.userId;
     return await this.cartHistoryService.findOne(id, userId);
   }
 

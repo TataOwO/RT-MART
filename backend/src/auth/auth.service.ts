@@ -9,6 +9,7 @@ import { UserToken } from './entities/user-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UserRole } from '../users/entities/user.entity';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -41,34 +42,49 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    
-    const accessToken = this.jwtService.sign({
+
+    const accessToken = this.jwtService.sign(
+      {
         sub: user.userId,
         loginId: user.loginId,
         role: user.role,
-      }, {
-      expiresIn: '15m',
-      secret: process.env.ACCESS_SECRET,
-    });
+      },
+      {
+        expiresIn: '15m',
+        secret: process.env.ACCESS_SECRET,
+      },
+    );
 
-    const refreshToken = this.jwtService.sign({
-      sub: user.userId,
-      loginId: user.loginId,
-      role: user.role,
-    }, {
-      expiresIn: '1d',
-      secret: process.env.REFRESH_SECRET,
-    });
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: user.userId,
+        loginId: user.loginId,
+        role: user.role,
+      },
+      {
+        expiresIn: '1d',
+        secret: process.env.REFRESH_SECRET,
+      },
+    );
 
-    const decoded = this.jwtService.decode(refreshToken) as any;
-    const createdAt = new Date(decoded.iat * 1000);
+    const decoded: JwtPayload | null | string =
+      this.jwtService.decode(refreshToken);
+    if (!decoded || typeof decoded === 'string') {
+      throw new UnauthorizedException('Invalid token format');
+    }
+    const jwtPayload: JwtPayload = decoded;
+    const createdAt = jwtPayload.iat
+      ? new Date(jwtPayload.iat * 1000)
+      : new Date();
 
     // Store token hash
     await this.tokenRepository.save({
       userId: user.userId,
       tokenHash: await bcrypt.hash(refreshToken, 10),
       createdAt,
-      expiresAt: new Date(decoded.exp * 1000),
+      expiresAt: jwtPayload.exp
+        ? new Date(jwtPayload.exp * 1000)
+        : new Date(Date.now() + 24 * 60 * 60 * 1000),
       isRevoked: false,
     });
 
@@ -79,9 +95,9 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string) {
-    let payload: any;
+    let payload: JwtPayload;
     try {
-      payload = this.jwtService.verify(refreshToken, {
+      payload = this.jwtService.verify<JwtPayload>(refreshToken, {
         secret: process.env.REFRESH_SECRET,
       });
     } catch {
@@ -89,14 +105,15 @@ export class AuthService {
     }
 
     const userId = payload.sub;
-    const createdAt = new Date(payload.iat * 1000);
+    const createdAt = payload.iat ? new Date(payload.iat * 1000) : new Date();
 
     const tokenEntity = await this.tokenRepository.findOne({
       where: { userId, createdAt },
     });
 
     if (!tokenEntity) throw new UnauthorizedException('Token not found');
-    if (tokenEntity.expiresAt < new Date()) throw new UnauthorizedException('Token expired');
+    if (tokenEntity.expiresAt < new Date())
+      throw new UnauthorizedException('Token expired');
     if (tokenEntity.isRevoked) throw new UnauthorizedException('Token revoked');
 
     const isValid = await bcrypt.compare(refreshToken, tokenEntity.tokenHash);
@@ -115,9 +132,9 @@ export class AuthService {
   }
 
   async revokeToken(refreshToken: string): Promise<void> {
-    let payload: any;
+    let payload: JwtPayload;
     try {
-      payload = this.jwtService.verify(refreshToken, {
+      payload = this.jwtService.verify<JwtPayload>(refreshToken, {
         secret: process.env.REFRESH_SECRET,
       });
     } catch {
@@ -125,8 +142,8 @@ export class AuthService {
     }
 
     const userId = payload.sub;
-    const createdAt = new Date(payload.iat * 1000);
-    
+    const createdAt = payload.iat ? new Date(payload.iat * 1000) : new Date();
+
     const tokenEntity = await this.tokenRepository.findOne({
       where: { userId, createdAt },
     });

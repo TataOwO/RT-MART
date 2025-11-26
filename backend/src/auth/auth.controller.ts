@@ -13,10 +13,10 @@ import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthResponseDto, AuthTokenResponseDto } from './dto/auth-response.dto';
+import { AuthTokenResponseDto } from './dto/auth-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { JwtAccessGuard, JwtRefreshGuard } from './guards/jwt-auth.guard';
-import type { AuthRequest } from '../common/types';
+import type { AuthRequest, CookieRequest } from '../common/types/request.types';
 
 @Controller('auth')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -32,38 +32,47 @@ export class AuthController {
 
   //User login: sign in with loginId and password, return accessToken and refreshToken in httpOnly cookies
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authService.login(loginDto);
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', result.refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
     return plainToInstance(AuthTokenResponseDto, result);
   }
 
   //Refresh access token: provide refreshToken in httpOnly cookie, return new accessToken in httpOnly cookie
   @Post('refresh')
-  async refresh(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: CookieRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies['refreshToken'];
+    if (!refreshToken) {
+      throw new Error('Refresh token not found');
+    }
     const result = await this.authService.refreshTokens(refreshToken);
-    
+
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
       path: '/',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 60 * 1000,
     });
     return this.authService.refreshTokens(refreshToken);
   }
@@ -78,7 +87,10 @@ export class AuthController {
   //User logout: invalidate refreshToken, clear accessToken and refreshToken cookies
   @UseGuards(JwtRefreshGuard)
   @Post('logout')
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async logout(
+    @Req() req: CookieRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies['refreshToken'];
     if (refreshToken) {
       await this.authService.logout(refreshToken);
