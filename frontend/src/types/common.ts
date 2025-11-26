@@ -27,3 +27,17 @@ export interface ProductCardProps {
   soldCount?: number | string;
   onClick?: (id: string | number) => void;
 }
+
+export interface TabItem {
+  key: string;
+  label: string;
+  count?: number;
+}
+
+export interface TabProps {
+  items: TabItem[];
+  activeTab: string;
+  onChange: (key: string) => void;
+  variant?: "default" | "underline" | "pills";
+  className?: string;
+}
