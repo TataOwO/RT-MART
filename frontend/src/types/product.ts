@@ -1,12 +1,4 @@
-// Store related types
-export interface Store {
-  id: string;
-  name: string;
-  avatar: string;
-  productCount: number;
-  rating: number;
-  joinDate: string;
-}
+import type { Store } from './store';
 
 // Product type (category) related types
 export interface ProductType {
