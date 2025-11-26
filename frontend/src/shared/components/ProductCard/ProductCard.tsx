@@ -1,15 +1,5 @@
+import type { ProductCardProps } from '@/types';
 import styles from './ProductCard.module.scss';
-
-interface ProductCardProps {
-  id: string | number;
-  name: string;
-  currentPrice: number;
-  originalPrice?: number;
-  image?: string;
-  rating?: number;
-  soldCount?: string;
-  onClick?: (id: string | number) => void;
-}
 
 function ProductCard({
   id,

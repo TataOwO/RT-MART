@@ -16,3 +16,14 @@ export interface SelectProps {
   disabled?: boolean;
   className?: string;
 }
+
+export interface ProductCardProps {
+  id: string | number;
+  name: string;
+  currentPrice: number;
+  originalPrice?: number | null;
+  image?: string;
+  rating?: number;
+  soldCount?: number | string;
+  onClick?: (id: string | number) => void;
+}
