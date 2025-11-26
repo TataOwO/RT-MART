@@ -1,5 +1,20 @@
 import { access } from "fs";
 
+// to-do: edit to seed admin
+export const adminTester = Object.freeze({
+    userId: 1,
+    loginId: 'admin_tester',
+    name: 'chuni',
+    password: 'iCantFindMyCat', 
+    email: 'chuni2005@gmail.com', 
+    phone: '0905952960', 
+    role: 'admin',
+    cookie: {
+        accessToken: '',
+        refreshToken: '',
+    }
+});
+
 export let buyerUser = {
     userId: 0,
     loginId: 'buyer_user', 

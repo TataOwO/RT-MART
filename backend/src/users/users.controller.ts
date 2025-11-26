@@ -18,7 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
+import { JwtAccessGuard, JwtRefreshGuard } from './../auth/guards/jwt-auth.guard';
 import { UserRole } from './entities/user.entity';
 import { Roles } from './../auth/decorators/roles.decorator';
 import { RolesGuard } from './../auth/guards/roles.guard';
@@ -28,7 +28,9 @@ import { RolesGuard } from './../auth/guards/roles.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  //Create user (with loginId, name, password, email (phone, role optional))
+  //Create user: create with loginId, name, password, email (phone, role optional)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
@@ -51,7 +53,7 @@ export class UsersController {
   //Get deleted users: Find all deleted users with pagination and filtering:
   //page & limit & filtering by `role` & `search` by name
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('deleted')
   async findAllDeleted(@Query() queryDto: QueryUserDto) {
    const { data, total } = await this.usersService.findDeleted(queryDto);
@@ -71,7 +73,7 @@ export class UsersController {
   }
 
 // Update own data: User updates their own data
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAccessGuard)
   @Patch('me')
   async updateMe(@Req() req, @Body() updateUserDto: UpdateUserDto) {
     const userId = req.user.userId;
@@ -81,7 +83,7 @@ export class UsersController {
 
   //Update user data: Update by ID
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const user = await this.usersService.update(id, updateUserDto);
@@ -89,7 +91,7 @@ export class UsersController {
   }
   
   //Delete own account: User deletes their own account
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAccessGuard)
   @Delete('me')
   async removeMe(@Req() req) {
     const userId = req.user.userId;
@@ -99,7 +101,7 @@ export class UsersController {
 
   //Delete user: Delete by ID
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
@@ -108,7 +110,7 @@ export class UsersController {
 
   //Restore user: Restore a soft-deleted user by ID
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Post(':id/restore')
   async restore(@Param('id') id: string) {
     const user = await this.usersService.restore(id);
@@ -117,7 +119,7 @@ export class UsersController {
  
   //Permanently delete user: Permanently delete by ID
   @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Delete(':id/permanent')
   async hardRemove(@Param('id') id: string) {
     await this.usersService.permanentlyDelete(id);

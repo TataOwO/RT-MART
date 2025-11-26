@@ -16,7 +16,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Check if loginId or email already exists (excluding soft-deleted users)
@@ -136,7 +136,6 @@ export class UsersService {
 
     return await this.userRepository.save(user);
   }
-
 
   /**
    * Internal method to update user role

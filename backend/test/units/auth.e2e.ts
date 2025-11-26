@@ -13,7 +13,7 @@ describe('UsersController (e2e)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-  }, 1000);
+  }, 15000);
 
   afterAll(async () => {
     await app.close();
@@ -26,7 +26,7 @@ describe('UsersController (e2e)', () => {
   });
 
   it('/login (POST) → User login', async () => {
-    await AuthPostTest.loginUser(app);
+    await AuthPostTest.loginUser(app, buyerUser.loginId, buyerUser.password);
     await AuthPostTest.loginUserWithInvalidCredentials(app, buyerUser.loginId, 'wrongpassword');
     await AuthPostTest.loginUserWithInvalidCredentials(app, 'wrongloginId', buyerUser.password);
   });

@@ -23,12 +23,14 @@ import type { AuthRequest } from '../common/types';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  //User register: sign up with loginId, name, password, email (phone optional)
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     const result = await this.authService.register(registerDto);
     return result;
   }
 
+  //User login: sign in with loginId and password, return accessToken and refreshToken in httpOnly cookies
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(loginDto);
@@ -50,6 +52,7 @@ export class AuthController {
     return plainToInstance(AuthTokenResponseDto, result);
   }
 
+  //Refresh access token: provide refreshToken in httpOnly cookie, return new accessToken in httpOnly cookie
   @Post('refresh')
   async refresh(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refreshToken'];
@@ -65,12 +68,14 @@ export class AuthController {
     return this.authService.refreshTokens(refreshToken);
   }
 
+  //Get profile: get user profile info by accessToken in httpOnly cookie
   @UseGuards(JwtAccessGuard)
   @Get('profile')
   getProfile(@Req() req: AuthRequest) {
     return req.user;
   }
 
+  //User logout: invalidate refreshToken, clear accessToken and refreshToken cookies
   @UseGuards(JwtRefreshGuard)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

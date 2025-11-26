@@ -42,8 +42,4 @@ export class UpdateUserDto {
     message: 'phoneNumber must be a valid phone number format',
   })
   phoneNumber?: string;
-
-  @IsEnum(UserRole)
-  @IsOptional()
-  role?: UserRole;
 }
