@@ -23,6 +23,10 @@ export interface FilterSidebarProps {
 
   // 重置
   onReset: () => void;
+
+  // 查看結果（可選，用於手機版抽屜）
+  onApply?: () => void;
+  total?: number;
 }
 
 const SORT_OPTIONS: SelectOption[] = [
@@ -42,6 +46,8 @@ function FilterSidebar({
   sortBy,
   onSortChange,
   onReset,
+  onApply,
+  total,
 }: FilterSidebarProps) {
   return (
     <div className={styles.filterSidebar}>
@@ -80,6 +86,18 @@ function FilterSidebar({
         <Icon icon="arrow-rotate-right" size='sm'/>
         重置篩選
       </Button>
+
+      {/* 查看結果按鈕（僅在手機版抽屜中顯示） */}
+      {onApply && (
+        <Button
+          variant="primary"
+          onClick={onApply}
+          fullWidth
+          className={styles.applyButton}
+        >
+          查看結果 {total !== undefined && `(${total})`}
+        </Button>
+      )}
     </div>
   );
 }
