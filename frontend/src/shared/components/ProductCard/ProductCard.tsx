@@ -1,15 +1,6 @@
+import type { ProductCardProps } from '@/types';
 import styles from './ProductCard.module.scss';
-
-interface ProductCardProps {
-  id: string | number;
-  name: string;
-  currentPrice: number;
-  originalPrice?: number;
-  image?: string;
-  rating?: number;
-  soldCount?: string;
-  onClick?: (id: string | number) => void;
-}
+import Icon from '@/shared/components/Icon';
 
 function ProductCard({
   id,
@@ -45,7 +36,21 @@ function ProductCard({
           )}
         </p>
         <div className={styles.productRating}>
-          <span>{'⭐'.repeat(rating)}</span>
+          <div className={styles.ratingStars}>
+            {Array(5)
+              .fill(null)
+              .map((_, index) => (
+                <Icon
+                  key={index}
+                  icon="star"
+                  size="sm"
+                  className={`${styles.starIcon} ${
+                    index < Math.floor(rating) ? styles.filled : styles.empty
+                  }`}
+                />
+              ))}
+            <span className={styles.ratingValue}>{rating.toFixed(1)}</span>
+          </div>
           {soldCount && (
             <span className={styles.soldCount}>已售 {soldCount}</span>
           )}

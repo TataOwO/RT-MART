@@ -1,13 +1,16 @@
-import { ProductType } from '../../../types/product';
-import Icon from '../Icon/Icon';
-import styles from './CategoryBreadcrumb.module.scss';
+import { ProductType } from "@/types/product";
+import Icon from "../Icon/Icon";
+import styles from "./CategoryBreadcrumb.module.scss";
 
 interface CategoryBreadcrumbProps {
   productType: ProductType;
   platform?: string;
 }
 
-function CategoryBreadcrumb({ productType, platform = '蝦皮購物' }: CategoryBreadcrumbProps) {
+function CategoryBreadcrumb({
+  productType,
+  platform = "蝦皮購物",
+}: CategoryBreadcrumbProps) {
   // Build the category path from root to current
   const buildCategoryPath = (type: ProductType): ProductType[] => {
     const path: ProductType[] = [];
@@ -26,6 +29,7 @@ function CategoryBreadcrumb({ productType, platform = '蝦皮購物' }: Category
   return (
     <div className={styles.breadcrumb}>
       {/* Platform name */}
+      {/* TODO: i18n & 跳轉到搜索頁面 */}
       <span className={styles.breadcrumbItem}>{platform}</span>
       <Icon icon="chevron-right" className={styles.separator} />
 

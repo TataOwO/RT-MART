@@ -1,0 +1,142 @@
+.tabContainer {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  // Hide scrollbar but keep functionality
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tabItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-xl;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: $font-sm;
+  color: $text-secondary;
+  white-space: nowrap;
+  transition: color $duration-fast ease;
+  position: relative;
+  flex-shrink: 0;
+  font-weight: 400;
+  border-radius: $border-radius-sm;
+
+  &:hover {
+    color: $text-primary;
+    background-color: $bg-tertiary;
+  }
+
+  @include mobile {
+    padding: $spacing-xs $spacing-md;
+    font-size: $font-xs;
+  }
+}
+
+.tabLabel {
+  font-weight: inherit;
+}
+
+.tabCount {
+  font-size: $font-xs;
+  color: $text-tertiary;
+  font-weight: 400;
+}
+
+// Default variant
+.default {
+  gap: $spacing-sm;
+
+  .tabItem.active {
+    color: $primary-color;
+    font-weight: 600;
+
+    .tabLabel {
+      font-weight: 600;
+    }
+  }
+}
+
+// Underline variant - 參考蝦皮風格
+.underline {
+  gap: $spacing-lg;
+
+  .tabItem {
+    padding-bottom: calc($spacing-md - 1px);
+    border-radius: 0;
+
+    &.active {
+      color: $primary-color;
+      font-weight: 500;
+
+      .tabLabel {
+        font-weight: 500;
+      }
+
+      .tabCount {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .indicator {
+    position: absolute;
+    bottom: -1px;
+    height: 2px;
+    background-color: $primary-color;
+    transition: all $duration-base cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+  }
+
+  @include mobile {
+    gap: $spacing-md;
+
+    .tabItem {
+      padding: $spacing-sm $spacing-xs;
+      padding-bottom: calc($spacing-sm - 1px);
+    }
+  }
+}
+
+// Pills variant
+.pills {
+  gap: $spacing-sm;
+
+  .tabItem {
+    border-radius: $border-radius-xl;
+    padding: $spacing-sm $spacing-lg;
+
+    &.active {
+      background-color: $primary-color;
+      color: $bg-secondary;
+
+      .tabLabel {
+        font-weight: 600;
+      }
+
+      .tabCount {
+        color: $bg-secondary;
+      }
+    }
+
+    &:hover:not(.active) {
+      background-color: $bg-tertiary;
+    }
+  }
+
+  @include mobile {
+    .tabItem {
+      padding: $spacing-xs $spacing-md;
+    }
+  }
+}

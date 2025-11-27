@@ -1,7 +1,10 @@
-import { useNavigate } from 'react-router-dom';
-import styles from './Home.module.scss';
-import ProductCard from '../../shared/components/ProductCard/ProductCard';
-import Hero from './components/Hero/Hero';
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import styles from "./Home.module.scss";
+import ProductCard from "@/shared/components/ProductCard/ProductCard";
+import Hero from "./components/Hero/Hero";
+import { getProducts } from "@/shared/services/productService";
+import type { Product } from "@/types";
 
 interface Banner {
   id: number;
@@ -32,18 +35,25 @@ const banners: Banner[] = [
   },
 ];
 
-// Mock product data (TODO: Replace with API data)
-const mockProducts = Array.from({ length: 20 }, (_, i) => ({
-  id: i + 1,
-  name: `熱門商品 ${i + 1}`,
-  currentPrice: 299 + i * 50,
-  originalPrice: i % 3 === 0 ? 399 + i * 50 : undefined,
-  rating: 4 + Math.random(),
-  soldCount: `${(Math.random() * 10).toFixed(1)}k`,
-}));
-
 function Home() {
   const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getProducts({ limit: 20 });
+        setProducts(response.products);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleProductClick = (productId: string | number) => {
     navigate(`/product/${productId}`);
@@ -58,20 +68,25 @@ function Home() {
       <section className={styles.productsSection}>
         <div className={styles.container}>
           <h2 className={styles.sectionTitle}>熱門商品</h2>
-          <div className={styles.productGrid}>
-            {mockProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                name={product.name}
-                currentPrice={product.currentPrice}
-                originalPrice={product.originalPrice}
-                rating={product.rating}
-                soldCount={product.soldCount}
-                onClick={handleProductClick}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className={styles.loading}>載入中...</div>
+          ) : (
+            <div className={styles.productGrid}>
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  currentPrice={product.currentPrice}
+                  originalPrice={product.originalPrice}
+                  image={product.images[0]}
+                  rating={product.rating}
+                  soldCount={product.soldCount}
+                  onClick={handleProductClick}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
