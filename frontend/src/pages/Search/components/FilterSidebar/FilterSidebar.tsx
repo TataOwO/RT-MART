@@ -1,11 +1,11 @@
-import React from 'react';
-import Select from '@/shared/components/Select';
-import Button from '@/shared/components/Button';
-import PriceRangeFilter from '../PriceRangeFilter';
-import RatingFilter from '../RatingFilter';
-import type { SelectOption } from '@/types';
-import styles from './FilterSidebar.module.scss';
-import Icon from '@/shared/components/Icon';
+import React from "react";
+import Select from "@/shared/components/Select";
+import Button from "@/shared/components/Button";
+import PriceRangeFilter from "../PriceRangeFilter";
+import RatingFilter from "../RatingFilter";
+import type { SelectOption } from "@/types";
+import styles from "./FilterSidebar.module.scss";
+import Icon from "@/shared/components/Icon";
 
 export interface FilterSidebarProps {
   // 價格篩選
@@ -30,11 +30,11 @@ export interface FilterSidebarProps {
 }
 
 const SORT_OPTIONS: SelectOption[] = [
-  { value: 'relevance', label: '相關度' },
-  { value: 'price-asc', label: '價格：低到高' },
-  { value: 'price-desc', label: '價格：高到低' },
-  { value: 'createdAt-desc', label: '最新上架' },
-  { value: 'soldCount-desc', label: '銷量最高' },
+  { value: "relevance", label: "相關度" },
+  { value: "price-asc", label: "價格：低到高" },
+  { value: "price-desc", label: "價格：高到低" },
+  { value: "createdAt-desc", label: "最新上架" },
+  { value: "soldCount-desc", label: "銷量最高" },
 ];
 
 function FilterSidebar({
@@ -60,6 +60,10 @@ function FilterSidebar({
           onChange={onSortChange}
           placeholder="選擇排序"
           ariaLabel="選擇排序方式"
+          classNames={{
+            trigger: styles.triggerSelect,
+            option: styles.selectOption,
+          }}
         />
       </div>
 
@@ -81,9 +85,10 @@ function FilterSidebar({
       <Button
         variant="outline"
         onClick={onReset}
+        fullWidth={true}
         className={styles.resetButton}
       >
-        <Icon icon="arrow-rotate-right" size='sm'/>
+        <Icon icon="arrow-rotate-right" size="2xs" />
         重置篩選
       </Button>
 

@@ -87,6 +87,7 @@ function PriceRangeFilter({ minPrice, maxPrice, onChange }: PriceRangeFilterProp
       <Button
         variant="primary"
         onClick={handleApply}
+        fullWidth={true}
         className={styles.applyButton}
       >
         套用
