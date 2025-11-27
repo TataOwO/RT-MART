@@ -11,9 +11,33 @@
   margin: 0 auto;
   padding: 0 $spacing-lg;
   display: grid;
+  grid-template-columns: 240px 1fr;
   gap: $spacing-lg;
+
+  @include tablet {
+    grid-template-columns: 1fr; // 平板以下單欄
+    padding: 0 $spacing-md;
+  }
+
+  @include mobile {
+    padding: 0 $spacing-sm;
+  }
 }
 
+.sidebar {
+  background: $card-bg;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+  height: fit-content;
+  position: sticky;
+  top: calc(80px + $spacing-lg); 
+  box-shadow: $shadow-sm;
+
+  @include tablet {
+    position: static; // 平板以下取消 sticky
+    margin-bottom: $spacing-lg;
+  }
+}
 
 .mainContent {
   display: flex;
@@ -51,18 +75,22 @@
 
 .productGrid {
   display: grid;
-  gap: $spacing-lg;
   grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-lg;
+
+  @include max-width($desktop) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
   }
 
   @include mobile {
     grid-template-columns: 1fr;
   }
 }
-
 
 .loading {
   grid-column: 1 / -1;

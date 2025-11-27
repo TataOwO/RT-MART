@@ -54,6 +54,9 @@ export interface GetProductsParams {
   storeId?: string;
   productTypeId?: string;
   keyword?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
   page?: number;
   limit?: number;
   sortBy?: 'price' | 'rating' | 'soldCount' | 'createdAt';
@@ -297,6 +300,20 @@ export const getProducts = async (
         p.name.toLowerCase().includes(keyword) ||
         p.description.toLowerCase().includes(keyword)
     );
+  }
+
+  // 價格範圍過濾
+  if (params.minPrice !== undefined && params.minPrice !== null) {
+    filteredProducts = filteredProducts.filter(p => p.currentPrice >= params.minPrice!);
+  }
+
+  if (params.maxPrice !== undefined && params.maxPrice !== null) {
+    filteredProducts = filteredProducts.filter(p => p.currentPrice <= params.maxPrice!);
+  }
+
+  // 評價過濾
+  if (params.minRating !== undefined && params.minRating !== null) {
+    filteredProducts = filteredProducts.filter(p => p.rating >= params.minRating!);
   }
 
   // 排序

@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import ProductCard from "@/shared/components/ProductCard";
 import Alert from "@/shared/components/Alert";
 import Button from "@/shared/components/Button";
+import FilterSidebar from "./components/FilterSidebar";
 import Pagination from "./components/Pagination";
 import EmptyState from "./components/EmptyState";
 import { getProducts } from "@/shared/services/productService";
-import type { Product } from "@/types";
+import type { Product, AlertProps } from "@/types";
 import styles from "./Search.module.scss";
 
 function Search() {
@@ -19,6 +20,12 @@ function Search() {
   const [total, setTotal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 篩選條件
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [rating, setRating] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<string>("relevance");
 
   // 分頁
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -40,11 +47,27 @@ function Search() {
     setError(null);
 
     try {
+      // 解析排序參數
+      const [sortField, sortOrder] = sortBy.split("-");
       const params: any = {
         keyword,
         page: currentPage,
         limit: pageSize,
       };
+
+      // 添加價格篩選
+      if (minPrice !== null) params.minPrice = minPrice;
+      if (maxPrice !== null) params.maxPrice = maxPrice;
+
+      // 添加評價篩選
+      if (rating !== null) params.minRating = rating;
+
+      // 添加排序 (relevance 不傳排序參數)
+      if (sortBy !== "relevance") {
+        params.sortBy = sortField;
+        params.order = sortOrder || "asc";
+      }
+
       const response = await getProducts(params);
       setProducts(response.products);
       setTotal(response.total);
@@ -60,14 +83,14 @@ function Search() {
   useEffect(() => {
     if (!keyword) return;
     setCurrentPage(1);
-  }, [keyword]);
+  }, [keyword, minPrice, maxPrice, rating, sortBy]);
 
   // 分頁變更或初次載入時，重新載入商品
   useEffect(() => {
     if (!keyword) return;
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, currentPage]);
+  }, [keyword, currentPage, minPrice, maxPrice, rating, sortBy]);
 
   // 計算總頁數
   const totalPages = useMemo(
@@ -75,12 +98,36 @@ function Search() {
     [total, pageSize]
   );
 
+  // 處理價格篩選
+  const handlePriceChange = (min: number | null, max: number | null) => {
+    setMinPrice(min);
+    setMaxPrice(max);
+  };
+
+  // 處理評價篩選
+  const handleRatingChange = (newRating: number | null) => {
+    setRating(newRating);
+  };
+
+  // 處理排序變更
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy);
+  };
+
   // 處理分頁變更
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // 重置篩選條件
+  const handleResetFilters = () => {
+    setMinPrice(null);
+    setMaxPrice(null);
+    setRating(null);
+    setSortBy("relevance");
+    setCurrentPage(1);
+  };
 
   // 處理商品點擊
   const handleProductClick = (productId: string | number) => {
@@ -104,7 +151,19 @@ function Search() {
   return (
     <div className={styles.searchPage}>
       <div className={styles.container}>
-        {/* TODO:左側篩選欄 */}
+        {/* 左側篩選欄 */}
+        <aside className={styles.sidebar}>
+          <FilterSidebar
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            onPriceChange={handlePriceChange}
+            rating={rating}
+            onRatingChange={handleRatingChange}
+            sortBy={sortBy}
+            onSortChange={handleSortChange}
+            onReset={handleResetFilters}
+          />
+        </aside>
 
         {/* 右側主內容區 */}
         <main className={styles.mainContent}>

@@ -1,0 +1,27 @@
+.filterSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.filterSection {
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid $border-color;
+
+  &:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.filterTitle {
+  font-size: $font-md;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.resetButton {
+  width: 100%;
+  margin-top: $spacing-md;
+}
