@@ -3,6 +3,16 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
 // Common component prop types
 
+// Alert types
+export type AlertType = 'success' | 'error' | 'warning' | 'info';
+
+export interface AlertProps {
+  type?: AlertType;
+  message: string;
+  onClose?: () => void;
+  className?: string;
+}
+
 // Button types
 export interface ButtonProps {
   variant?: 'primary' | 'outline' | 'login';
@@ -17,16 +27,6 @@ export interface ButtonProps {
   className?: string;
   style?: CSSProperties;
   ariaLabel?: string;
-}
-
-// Alert types
-export type AlertType = 'success' | 'error' | 'warning' | 'info';
-
-export interface AlertProps {
-  type?: AlertType;
-  message: string;
-  onClose?: () => void;
-  className?: string;
 }
 
 // Select types
