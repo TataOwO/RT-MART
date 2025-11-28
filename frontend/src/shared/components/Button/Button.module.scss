@@ -63,8 +63,9 @@
   @include button-base;
   background: transparent;
   border: none;
+  width: 40px;
+  height: 40px;
   padding: $spacing-sm;
-  font-size: $font-xl;
   color: $text-primary;
   position: relative;
   transition: $transition-base;
