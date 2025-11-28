@@ -3,6 +3,7 @@ import Select from "@/shared/components/Select";
 import Button from "@/shared/components/Button";
 import PriceRangeFilter from "../PriceRangeFilter";
 import RatingFilter from "../RatingFilter";
+import CategoryFilter from "../CategoryFilter";
 import type { SelectOption } from "@/types";
 import styles from "./FilterSidebar.module.scss";
 import Icon from "@/shared/components/Icon";
@@ -16,6 +17,17 @@ export interface FilterSidebarProps {
   // 評價篩選
   rating: number | null;
   onRatingChange: (rating: number | null) => void;
+
+  // 分類篩選
+  categoryId: string | null;
+  onCategoryChange: (categoryId: string | null) => void;
+  categories: Array<{
+    productTypeId: string;
+    typeName: string;
+    count: number;
+  }>;
+  totalProductCount?: number;  // 全部商品的數量
+  showAllCategoryOption?: boolean;  // 是否顯示「全部商品」選項
 
   // 排序
   sortBy: string;
@@ -43,6 +55,11 @@ function FilterSidebar({
   onPriceChange,
   rating,
   onRatingChange,
+  categoryId,
+  onCategoryChange,
+  categories,
+  totalProductCount,
+  showAllCategoryOption = true,
   sortBy,
   onSortChange,
   onReset,
@@ -66,6 +83,19 @@ function FilterSidebar({
           }}
         />
       </div>
+
+      {/* 分類篩選 */}
+      {categories.length > 0 && (
+        <div className={styles.filterSection}>
+          <CategoryFilter
+            value={categoryId}
+            onChange={onCategoryChange}
+            categories={categories}
+            totalCount={totalProductCount}
+            showAllOption={showAllCategoryOption}
+          />
+        </div>
+      )}
 
       {/* 價格範圍篩選 */}
       <div className={styles.filterSection}>

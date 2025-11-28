@@ -12,9 +12,10 @@ import type { Product, ProductType } from "@/types";
 import styles from "./Search.module.scss";
 
 function Search() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const keyword = searchParams.get("q") || "";
+  const categoryId = searchParams.get("category");  // 直接從 URL 讀取，不用狀態
 
   // 商品資料
   const [products, setProducts] = useState<Product[]>([]);
@@ -29,7 +30,6 @@ function Search() {
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [rating, setRating] = useState<number | null>(null);
-  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("relevance");
 
   // 分頁
@@ -39,13 +39,16 @@ function Search() {
   // 平板/手機版篩選抽屜
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
-  // 無關鍵字時重定向至首頁
+  // 不含分類篩選的商品（用於計算正確的分類數量）
+  const [categoriesWithoutFilter, setCategoriesWithoutFilter] = useState<Product[]>([]);
+
+  // 無關鍵字且無分類時重定向至首頁
   useEffect(() => {
-    if (!keyword || keyword.trim() === "") {
+    if ((!keyword || keyword.trim() === "") && !categoryId) {
       navigate("/");
       return;
     }
-  }, [keyword, navigate]);
+  }, [keyword, categoryId, navigate]);
 
   // 載入所有分類
   useEffect(() => {
@@ -76,7 +79,8 @@ function Search() {
 
   // 載入商品資料
   const fetchProducts = async () => {
-    if (!keyword) return;
+    // 必須有關鍵字或分類才能搜尋
+    if (!keyword && !categoryId) return;
 
     setIsLoading(true);
     setError(null);
@@ -85,10 +89,14 @@ function Search() {
       // 解析排序參數
       const [sortField, sortOrder] = sortBy.split("-");
       const params: any = {
-        keyword,
         page: currentPage,
         limit: pageSize,
       };
+
+      // 添加關鍵字（如果有）
+      if (keyword) {
+        params.keyword = keyword;
+      }
 
       // 添加分類篩選
       if (categoryId !== null) params.productTypeId = categoryId;
@@ -119,16 +127,49 @@ function Search() {
 
   // 篩選條件變更時，重置到第 1 頁並重新載入
   useEffect(() => {
-    if (!keyword) return;
+    // 必須有關鍵字或分類
+    if (!keyword && !categoryId) return;
     setCurrentPage(1);
   }, [keyword, minPrice, maxPrice, rating, sortBy, categoryId]);
 
   // 分頁變更或初次載入時，重新載入商品
   useEffect(() => {
-    if (!keyword) return;
+    // 必須有關鍵字或分類
+    if (!keyword && !categoryId) return;
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, currentPage, minPrice, maxPrice, rating, sortBy, categoryId]);
+
+  // 當選擇分類時，取得不含分類篩選的商品（用於計算正確的分類數量）
+  useEffect(() => {
+    // 只在有關鍵字且有選擇分類時才需要額外呼叫
+    if (!keyword || !categoryId) {
+      setCategoriesWithoutFilter([]);
+      return;
+    }
+
+    const fetchCategoriesCount = async () => {
+      try {
+        const params: any = {
+          keyword,
+          page: 1,
+          limit: 9999, // 需要所有商品來計算分類數量
+        };
+
+        // 添加其他篩選條件（但不包含 categoryId）
+        if (minPrice !== null) params.minPrice = minPrice;
+        if (maxPrice !== null) params.maxPrice = maxPrice;
+        if (rating !== null) params.minRating = rating;
+
+        const response = await getProducts(params);
+        setCategoriesWithoutFilter(response.products);
+      } catch (err) {
+        console.error("Failed to fetch categories count:", err);
+      }
+    };
+
+    fetchCategoriesCount();
+  }, [keyword, categoryId, minPrice, maxPrice, rating]);
 
   // 計算總頁數
   const totalPages = useMemo(
@@ -138,10 +179,13 @@ function Search() {
 
   // 計算所有分類選項及其商品數量
   const categories = useMemo(() => {
-    // 計算當前搜尋結果中每個分類的商品數量
     const countMap = new Map<string, number>();
 
-    products.forEach((product) => {
+    // 如果有選擇分類，使用不含分類篩選的商品來計算
+    // 這樣才能顯示正確的「在當前搜尋下，每個分類有多少商品」
+    const productsForCount = categoryId && keyword ? categoriesWithoutFilter : products;
+
+    productsForCount.forEach((product) => {
       if (product.productType) {
         const key = product.productType.productTypeId;
         countMap.set(key, (countMap.get(key) || 0) + 1);
@@ -154,7 +198,25 @@ function Search() {
       typeName: type.typeName,
       count: countMap.get(type.productTypeId) || 0,
     }));
-  }, [products, allProductTypes]);
+  }, [products, categoriesWithoutFilter, categoryId, keyword, allProductTypes]);
+
+  // 獲取當前選中分類的名稱
+  const selectedCategoryName = useMemo(() => {
+    if (!categoryId) return undefined;
+    const category = allProductTypes.find(
+      (type) => type.productTypeId === categoryId
+    );
+    return category?.typeName;
+  }, [categoryId, allProductTypes]);
+
+  // 計算「全部商品」的數量
+  const totalProductCount = useMemo(() => {
+    if (categoryId && keyword) {
+      // 有選擇分類時，使用不含分類篩選的總數
+      return categoriesWithoutFilter.length;
+    }
+    return total;
+  }, [categoryId, keyword, categoriesWithoutFilter, total]);
 
   // 處理價格篩選
   const handlePriceChange = (min: number | null, max: number | null) => {
@@ -169,7 +231,15 @@ function Search() {
 
   // 處理分類篩選
   const handleCategoryChange = (newCategoryId: string | null) => {
-    setCategoryId(newCategoryId);
+    // 更新 URL 參數
+    const newParams = new URLSearchParams(searchParams);
+    if (newCategoryId) {
+      newParams.set("category", newCategoryId);
+    } else {
+      newParams.delete("category");
+    }
+    setSearchParams(newParams);
+    // categoryId 會由 useEffect 同步更新
   };
 
   // 處理排序變更
@@ -188,9 +258,12 @@ function Search() {
     setMinPrice(null);
     setMaxPrice(null);
     setRating(null);
-    setCategoryId(null);
     setSortBy("relevance");
     setCurrentPage(1);
+    // 清除 URL 中的分類參數
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("category");
+    setSearchParams(newParams);
   };
 
   // 處理商品點擊
@@ -226,6 +299,8 @@ function Search() {
             categoryId={categoryId}
             onCategoryChange={handleCategoryChange}
             categories={categories}
+            totalProductCount={totalProductCount}
+            showAllCategoryOption={!!keyword}
             sortBy={sortBy}
             onSortChange={handleSortChange}
             onReset={handleResetFilters}
@@ -261,6 +336,8 @@ function Search() {
                   categoryId={categoryId}
                   onCategoryChange={handleCategoryChange}
                   categories={categories}
+                  totalProductCount={totalProductCount}
+                  showAllCategoryOption={!!keyword}
                   sortBy={sortBy}
                   onSortChange={handleSortChange}
                   onReset={() => {
@@ -281,7 +358,9 @@ function Search() {
           <div className={styles.resultHeader}>
             <div className={styles.resultHeaderTop}>
               <div>
-                <h1 className={styles.resultTitle}>搜尋結果："{keyword}"</h1>
+                <h1 className={styles.resultTitle}>
+                  {keyword ? `搜尋結果：\"${keyword}\"` : "瀏覽商品"}
+                </h1>
                 <p className={styles.resultCount}>共 {total} 件商品</p>
               </div>
               <Button
@@ -318,7 +397,7 @@ function Search() {
           {!error && (
             <>
               {products.length === 0 ? (
-                <EmptyState keyword={keyword} />
+                <EmptyState keyword={keyword} categoryName={selectedCategoryName} />
               ) : (
                 <>
                   <div className={styles.productGrid}>
