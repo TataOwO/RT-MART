@@ -7,8 +7,8 @@ import Icon from "@/shared/components/Icon";
 import FilterSidebar from "./components/FilterSidebar";
 import Pagination from "./components/Pagination";
 import EmptyState from "./components/EmptyState";
-import { getProducts } from "@/shared/services/productService";
-import type { Product, AlertProps } from "@/types";
+import { getProducts, getProductTypes } from "@/shared/services/productService";
+import type { Product, ProductType } from "@/types";
 import styles from "./Search.module.scss";
 
 function Search() {
@@ -22,10 +22,14 @@ function Search() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 所有分類
+  const [allProductTypes, setAllProductTypes] = useState<ProductType[]>([]);
+
   // 篩選條件
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [rating, setRating] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("relevance");
 
   // 分頁
@@ -42,6 +46,20 @@ function Search() {
       return;
     }
   }, [keyword, navigate]);
+
+  // 載入所有分類
+  useEffect(() => {
+    const fetchProductTypes = async () => {
+      try {
+        const types = await getProductTypes();
+        setAllProductTypes(types);
+      } catch (err) {
+        console.error("Failed to fetch product types:", err);
+      }
+    };
+
+    fetchProductTypes();
+  }, []);
 
   // 防止背景滾動（當抽屜打開時）
   useEffect(() => {
@@ -72,6 +90,9 @@ function Search() {
         limit: pageSize,
       };
 
+      // 添加分類篩選
+      if (categoryId !== null) params.productTypeId = categoryId;
+
       // 添加價格篩選
       if (minPrice !== null) params.minPrice = minPrice;
       if (maxPrice !== null) params.maxPrice = maxPrice;
@@ -100,20 +121,40 @@ function Search() {
   useEffect(() => {
     if (!keyword) return;
     setCurrentPage(1);
-  }, [keyword, minPrice, maxPrice, rating, sortBy]);
+  }, [keyword, minPrice, maxPrice, rating, sortBy, categoryId]);
 
   // 分頁變更或初次載入時，重新載入商品
   useEffect(() => {
     if (!keyword) return;
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, currentPage, minPrice, maxPrice, rating, sortBy]);
+  }, [keyword, currentPage, minPrice, maxPrice, rating, sortBy, categoryId]);
 
   // 計算總頁數
   const totalPages = useMemo(
     () => Math.ceil(total / pageSize),
     [total, pageSize]
   );
+
+  // 計算所有分類選項及其商品數量
+  const categories = useMemo(() => {
+    // 計算當前搜尋結果中每個分類的商品數量
+    const countMap = new Map<string, number>();
+
+    products.forEach((product) => {
+      if (product.productType) {
+        const key = product.productType.productTypeId;
+        countMap.set(key, (countMap.get(key) || 0) + 1);
+      }
+    });
+
+    // 將所有分類與商品數量結合
+    return allProductTypes.map((type) => ({
+      productTypeId: type.productTypeId,
+      typeName: type.typeName,
+      count: countMap.get(type.productTypeId) || 0,
+    }));
+  }, [products, allProductTypes]);
 
   // 處理價格篩選
   const handlePriceChange = (min: number | null, max: number | null) => {
@@ -124,6 +165,11 @@ function Search() {
   // 處理評價篩選
   const handleRatingChange = (newRating: number | null) => {
     setRating(newRating);
+  };
+
+  // 處理分類篩選
+  const handleCategoryChange = (newCategoryId: string | null) => {
+    setCategoryId(newCategoryId);
   };
 
   // 處理排序變更
@@ -142,6 +188,7 @@ function Search() {
     setMinPrice(null);
     setMaxPrice(null);
     setRating(null);
+    setCategoryId(null);
     setSortBy("relevance");
     setCurrentPage(1);
   };
@@ -176,6 +223,9 @@ function Search() {
             onPriceChange={handlePriceChange}
             rating={rating}
             onRatingChange={handleRatingChange}
+            categoryId={categoryId}
+            onCategoryChange={handleCategoryChange}
+            categories={categories}
             sortBy={sortBy}
             onSortChange={handleSortChange}
             onReset={handleResetFilters}
@@ -208,6 +258,9 @@ function Search() {
                   onPriceChange={handlePriceChange}
                   rating={rating}
                   onRatingChange={handleRatingChange}
+                  categoryId={categoryId}
+                  onCategoryChange={handleCategoryChange}
+                  categories={categories}
                   sortBy={sortBy}
                   onSortChange={handleSortChange}
                   onReset={() => {

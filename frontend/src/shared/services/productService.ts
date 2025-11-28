@@ -373,6 +373,23 @@ export const getProductsByType = async (
   return getProducts({ ...params, productTypeId });
 };
 
+/**
+ * 取得所有商品類型 (Mock 版本)
+ * @returns 商品類型列表
+ */
+export const getProductTypes = async (): Promise<ProductType[]> => {
+  // TODO: 待後端 API 完成後，替換為真實 API 呼叫
+  // return get<ProductType[]>('/product-types');
+
+  console.log('[Mock API] Get all product types');
+
+  // 模擬網路延遲
+  await mockDelay(300);
+
+  // 返回所有分類
+  return Object.values(mockProductTypes);
+};
+
 // ============================================
 // 預設匯出
 // ============================================
@@ -382,4 +399,5 @@ export default {
   getProducts,
   getProductsByStore,
   getProductsByType,
+  getProductTypes,
 };
