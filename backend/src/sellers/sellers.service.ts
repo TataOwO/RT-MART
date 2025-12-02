@@ -11,7 +11,7 @@ import { CreateSellerDto } from './dto/create-seller.dto';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { VerifySellerDto } from './dto/verify-seller.dto';
 import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { Store } from '../stores/entities/store.entity';
 import { QuerySellerDto } from './dto/query-seller.dto';
 
@@ -22,8 +22,10 @@ export class SellersService {
     private readonly sellerRepository: Repository<Seller>,
     @InjectRepository(Store)
     private readonly storeRepository: Repository<Store>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<Store>,
     private readonly usersService: UsersService,
-  ) {}
+  ) { }
 
   async create(createSellerDto: CreateSellerDto): Promise<Seller> {
     const user = await this.usersService.findOne(createSellerDto.userId);
@@ -96,13 +98,15 @@ export class SellersService {
     return await this.sellerRepository.save(seller);
   }
 
-  async verify(id: string, verifier: string) {
-    const seller = await this.findOne(id);
+  async verify(sellerId: string, verifier: string) {
+    const seller = await this.findOne(sellerId);
+    const user = await this.usersService.findOne(seller.userId);
 
     if (seller.verified) {
       throw new ConflictException('Seller is already verified');
     }
 
+    user.role = UserRole.SELLER;
     seller.verified = true;
     seller.verifiedAt = new Date();
     seller.verifiedBy = verifier;
@@ -119,11 +123,16 @@ export class SellersService {
     });
 
     await this.sellerRepository.save(seller);
+    await this.userRepository.save(user);
     return await this.storeRepository.save(defaultStore);
   }
 
   async remove(sellerId: string): Promise<void> {
     const seller = await this.findOne(sellerId);
+    if (seller.verified) {
+      throw new ConflictException('Seller is already verified'); //already have a store
+    }
+
     await this.sellerRepository.remove(seller);
   }
 }
