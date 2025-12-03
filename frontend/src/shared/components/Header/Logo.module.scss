@@ -1,0 +1,56 @@
+.logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  text-decoration: none;
+  overflow: hidden;
+  @include transition-transform();
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  img {
+    height: 2.5rem;
+    width: auto;
+    display: block;
+  }
+
+  .text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $primary-color;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+}
+
+// Responsive
+@media (max-width: $tablet) {
+  .logo {
+    order: 0;
+
+    img {
+      height: 2rem;
+    }
+
+    .text {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+@media (max-width: $mobile) {
+  .logo {
+    gap: $spacing-xs;
+
+    img {
+      height: 1.75rem;
+    }
+
+    .text {
+      display: none;
+    }
+  }
+}
