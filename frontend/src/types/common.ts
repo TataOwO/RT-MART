@@ -164,3 +164,18 @@ export interface CheckoutSummaryProps {
   onCheckout: () => void;
   disabled: boolean;
 }
+
+// QuantitySelector types
+export interface QuantitySelectorProps {
+  value: number | string;
+  onChange: (value: number | string) => void;
+  min?: number;
+  max: number;
+  disabled?: boolean;
+  readOnly?: boolean;
+  onValidationError?: (message: string) => void;
+  onBlur?: () => void;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+  ariaLabel?: string;
+}

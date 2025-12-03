@@ -1,7 +1,7 @@
 import type { ItemListCardProps } from '@/types';
 import styles from './ItemListCard.module.scss';
-import Icon from '@/shared/components/Icon';
 import Button from '../Button';
+import QuantitySelector from '../QuantitySelector';
 
 function ItemListCard(props: ItemListCardProps) {
   const { variant, item, onClick } = props;
@@ -24,15 +24,10 @@ function ItemListCard(props: ItemListCardProps) {
       onDelete?: () => void;
     };
 
-    const handleQuantityDecrease = () => {
-      if (editable && onQuantityChange && item.quantity > 1) {
-        onQuantityChange(item.quantity - 1);
-      }
-    };
-
-    const handleQuantityIncrease = () => {
-      if (editable && onQuantityChange && item.quantity < item.stock) {
-        onQuantityChange(item.quantity + 1);
+    const handleQuantityChange = (newQuantity: number | string) => {
+      const numQuantity = typeof newQuantity === 'string' ? parseInt(newQuantity, 10) : newQuantity;
+      if (editable && onQuantityChange) {
+        onQuantityChange(numQuantity);
       }
     };
 
@@ -68,30 +63,14 @@ function ItemListCard(props: ItemListCardProps) {
 
           {/* 數量調整器 */}
           {editable && (
-            <div className={styles.quantityControl}>
-              <button
-                type="button"
-                onClick={handleQuantityDecrease}
-                disabled={item.quantity <= 1}
-                aria-label="減少數量"
-              >
-                <Icon icon="minus" size="sm" />
-              </button>
-              <input
-                type="number"
-                value={item.quantity}
-                readOnly
-                aria-label="商品數量"
-              />
-              <button
-                type="button"
-                onClick={handleQuantityIncrease}
-                disabled={item.quantity >= item.stock}
-                aria-label="增加數量"
-              >
-                <Icon icon="plus" size="sm" />
-              </button>
-            </div>
+            <QuantitySelector
+              value={item.quantity}
+              onChange={handleQuantityChange}
+              max={item.stock}
+              min={1}
+              readOnly={!editable}
+              size="md"
+            />
           )}
 
           {/* 小計 */}

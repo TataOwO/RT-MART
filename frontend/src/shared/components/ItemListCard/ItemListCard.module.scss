@@ -87,57 +87,6 @@
   color: $text-primary;
 }
 
-// 數量調整器
-.quantityControl {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-top: $spacing-xs;
-
-  button {
-    @include flex-center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid #ddd;
-    border-radius: $border-radius-sm;
-    background: $card-bg;
-    cursor: pointer;
-    transition: $transition-base;
-    color: $text-secondary;
-
-    &:hover:not(:disabled) {
-      background: $bg-secondary;
-      border-color: $primary-color;
-      color: $primary-color;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.4;
-    }
-  }
-
-  input[type='number'] {
-    width: 3.75rem;
-    height: 2rem;
-    text-align: center;
-    border: 1px solid #ddd;
-    border-radius: $border-radius-sm;
-    padding: 0 $spacing-sm;
-    font-size: $font-md;
-    color: $text-primary;
-    background: $card-bg;
-
-    // 移除數字輸入框的上下箭頭
-    &::-webkit-inner-spin-button,
-    &::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    -moz-appearance: textfield;
-  }
-}
-
 .subtotal {
   font-size: $font-md;
   color: $text-secondary;
