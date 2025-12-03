@@ -152,3 +152,15 @@ export interface EmptyStateProps {
   categoryName?: string;
 }
 
+// CheckoutSummary types
+export interface CheckoutSummaryProps {
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  itemCount: number;
+  selectedCount: number;
+  freeShippingThreshold?: number;
+  onCheckout: () => void;
+  disabled: boolean;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Cart.module.scss';
 import ItemListCard from '@/shared/components/ItemListCard';
 import Button from '@/shared/components/Button';
+import CheckoutSummary from './components/CheckoutSummary';
 import type { CartItem } from '@/types';
 import {
   getCartItems,
@@ -184,8 +185,18 @@ function Cart() {
           </div>
         </div>
 
-        {/* TODO：右側結帳摘要 */}
-        
+        {/* 右側：結帳摘要 */}
+        <CheckoutSummary
+          subtotal={subtotal}
+          shipping={shipping}
+          discount={0}
+          total={total}
+          itemCount={cartItems.length}
+          selectedCount={selectedItems.length}
+          freeShippingThreshold={500}
+          onCheckout={handleCheckout}
+          disabled={selectedItems.length === 0}
+        />
       </div>
     </div>
   );

@@ -148,14 +148,14 @@ function PurchasePanel({ stock, productId, productData }: PurchasePanelProps) {
       <div className={styles.quantitySection}>
         <label className={styles.quantityLabel}>數量</label>
         <div className={styles.quantitySelector}>
-          <button
+          <Button
             className={styles.quantityButton}
             onClick={handleDecrease}
             disabled={numQuantity <= 1}
             aria-label="減少數量" // TODO: i18n
           >
             <Icon icon="minus" />
-          </button>
+          </Button>
 
           <input
             type="text"
@@ -166,14 +166,14 @@ function PurchasePanel({ stock, productId, productData }: PurchasePanelProps) {
             aria-label="商品數量"
           />
 
-          <button
+          <Button
             className={styles.quantityButton}
             onClick={handleIncrease}
             disabled={numQuantity >= stock}
             aria-label="增加數量"
           >
             <Icon icon="plus" />
-          </button>
+          </Button>
         </div>
         <span className={styles.stockHint}>可購買 {stock} 件</span>
       </div>

@@ -1,6 +1,7 @@
 import type { ItemListCardProps } from '@/types';
 import styles from './ItemListCard.module.scss';
 import Icon from '@/shared/components/Icon';
+import Button from '../Button';
 
 function ItemListCard(props: ItemListCardProps) {
   const { variant, item, onClick } = props;
@@ -106,14 +107,15 @@ function ItemListCard(props: ItemListCardProps) {
 
         {/* 刪除按鈕 */}
         {deletable && (
-          <button
+          <Button
             type="button"
             className={styles.deleteBtn}
             onClick={onDelete}
             aria-label="刪除商品"
+            iconOnly
+            icon="trash"
           >
-            <Icon icon="trash" />
-          </button>
+          </Button>
         )}
       </div>
     );
