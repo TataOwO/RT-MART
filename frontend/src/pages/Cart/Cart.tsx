@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Cart.module.scss';
 import ItemListCard from '@/shared/components/ItemListCard';
-import Button from '@/shared/components/Button';
 import CheckoutSummary from './components/CheckoutSummary';
+import EmptyState from '@/shared/components/EmptyState';
 import type { CartItem } from '@/types';
 import {
   getCartItems,
@@ -132,15 +132,7 @@ function Cart() {
 
   // 空購物車狀態
   if (cartItems.length === 0) {
-    return (
-      <div className={styles.emptyCart}>
-        <h2>您的購物車是空的</h2>
-        <p>快去逛逛吧！</p>
-        <Button variant="primary" onClick={() => navigate('/')}>
-          去逛逛
-        </Button>
-      </div>
-    );
+    return <EmptyState type="cart" />;
   }
 
   return (
