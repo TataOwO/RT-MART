@@ -95,6 +95,18 @@ export interface CartItem {
   quantity: number;
   stock: number;
   selected: boolean;
+  // Store information
+  storeId: string;
+  storeName: string;
+}
+
+// StoreGroupHeader types (Shared component)
+export interface StoreGroupHeaderProps {
+  storeId: string;
+  storeName: string;
+  allSelected: boolean;
+  onSelectAll: (selected: boolean) => void;
+  onStoreClick?: () => void;
 }
 
 export interface GetCartResponse {
@@ -109,6 +121,7 @@ export interface ItemListCardBaseProps {
   variant: 'cart' | 'order-list' | 'order-detail';
   item: CartItem | any; // TODO: Add OrderItem type when implementing orders
   onClick?: () => void;
+  className?: string;
 }
 
 export interface CartVariantProps {
