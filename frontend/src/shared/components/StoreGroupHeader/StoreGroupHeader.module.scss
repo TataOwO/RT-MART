@@ -1,6 +1,6 @@
 .storeGroupHeader {
   @include flex-between;
-  padding: $spacing-xs $spacing-md;
+  padding: $spacing-sm $spacing-md;
   background: $bg-secondary;
   border: 1px solid $border-color;
   border-radius: $border-radius-lg $border-radius-lg 0 0;

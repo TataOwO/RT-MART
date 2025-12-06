@@ -142,3 +142,23 @@
     color: $text-secondary;
   }
 }
+
+// 響應式設計
+@include mobile {
+  .selectAllSection {
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+
+    .imagePlaceholder {
+      width: 5rem;
+
+      span {
+        font-size: $font-sm;
+      }
+    }
+
+    .deletePlaceholder {
+      width: 2rem;
+    }
+  }
+}

@@ -6,13 +6,13 @@
   border: 1px solid $border-color;
   border-radius: 0;
   transition: $transition-base;
+  align-items: center;
 
   &:hover {
     box-shadow: $shadow-sm;
   }
 }
 
-// 選擇框區域
 .selectBox {
   display: flex;
   align-items: center;
@@ -26,7 +26,6 @@
   }
 }
 
-// 商品圖片
 .productImage {
   width: 7.5rem;
   height: 7.5rem;
@@ -66,7 +65,6 @@
   padding: $spacing-sm 0;
 }
 
-// Product Name Cell
 .productName {
   grid-column: 1;
   grid-row: 1;
@@ -87,15 +85,10 @@
   }
 }
 
-// Unit Price Cell
 .unitPrice {
   grid-column: 2;
   grid-row: 1;
   text-align: center;
-
-  .priceLabel {
-    display: none; // Hidden on desktop
-  }
 }
 
 .price {
@@ -105,7 +98,6 @@
   margin: 0;
 }
 
-// Quantity Cell
 .quantityWrapper {
   grid-column: 3;
   grid-row: 1;
@@ -113,10 +105,6 @@
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
-
-  .quantityLabel {
-    display: none; // Hidden on desktop
-  }
 }
 
 .quantityDisplay {
@@ -124,30 +112,18 @@
   color: $text-primary;
 }
 
-// Subtotal Cell
 .subtotalWrapper {
   grid-column: 4;
   grid-row: 1;
   text-align: right;
-
-  .subtotalLabel {
-    display: none; // Hidden on desktop
-  }
 }
 
 .subtotal {
   font-size: $font-md;
   color: $text-secondary;
   margin: 0;
-
-  span {
-    font-weight: 600;
-    color: $primary-color;
-    font-size: $font-lg;
-  }
 }
 
-// Stock Warning - Spans all columns
 .stockWarning {
   grid-column: 1 / -1;
   grid-row: 2;
@@ -173,72 +149,59 @@
 
   &:hover {
     background: #fee;
-    color: #dc2626;
+    color: $primary-color;
   }
 }
 
 // 響應式設計
 @include mobile {
   .itemListCard {
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+  }
+
+  .productImage {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .productInfo {
+    display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: $spacing-xs;
+    padding: 0;
+    align-items: flex-start;
 
-    .productImage {
-      width: 100%;
-      height: 12.5rem;
-    }
-
-    .selectBox {
-      position: absolute;
-      top: $spacing-md;
-      left: $spacing-md;
-      padding: $spacing-sm;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: $border-radius-sm;
-    }
-
-    .deleteBtn {
-      position: absolute;
-      top: $spacing-md;
-      right: $spacing-md;
-      background: rgba(255, 255, 255, 0.9);
+    .productName h4 {
+      font-size: $font-sm;
     }
   }
 
-  .itemListCard[data-variant='cart'] {
-    position: relative;
+  .unitPrice {
+    display: flex;
+    align-items: center;
+    text-align: left;
+  }
 
-    // Switch productInfo to vertical layout on mobile
-    .productInfo {
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-sm;
-      align-items: stretch;
+  .quantityWrapper {
+    flex-direction: row;
+  }
 
-      .productName h4 {
-        font-size: $font-sm;
-      }
+  .price {
+    font-size: $font-sm;
+  }
 
-      // Show labels and use horizontal layout for each row
-      .unitPrice,
-      .quantityWrapper,
-      .subtotalWrapper {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+  .quantityDisplay {
+    font-size: $font-sm;
+  }
 
-        .priceLabel,
-        .quantityLabel,
-        .subtotalLabel {
-          display: block;
-          font-size: $font-sm;
-          color: $text-secondary;
-        }
-      }
+  // Hide subtotal on mobile
+  .subtotalWrapper {
+    display: none;
+  }
 
-      .stockWarning {
-        text-align: center;
-      }
-    }
+  .deleteBtn {
+    width: 2rem;
+    height: 2rem;
   }
 }

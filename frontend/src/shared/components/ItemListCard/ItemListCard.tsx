@@ -1,13 +1,13 @@
-import type { ItemListCardProps } from '@/types';
-import styles from './ItemListCard.module.scss';
-import Button from '../Button';
-import QuantitySelector from '../QuantitySelector';
+import type { ItemListCardProps } from "@/types";
+import styles from "./ItemListCard.module.scss";
+import Button from "../Button";
+import QuantitySelector from "../QuantitySelector";
 
 function ItemListCard(props: ItemListCardProps) {
   const { variant, item, onClick, className } = props;
 
   // 購物車變體
-  if (variant === 'cart') {
+  if (variant === "cart") {
     const {
       selectable,
       onSelect,
@@ -25,7 +25,10 @@ function ItemListCard(props: ItemListCardProps) {
     };
 
     const handleQuantityChange = (newQuantity: number | string) => {
-      const numQuantity = typeof newQuantity === 'string' ? parseInt(newQuantity, 10) : newQuantity;
+      const numQuantity =
+        typeof newQuantity === "string"
+          ? parseInt(newQuantity, 10)
+          : newQuantity;
       if (editable && onQuantityChange) {
         onQuantityChange(numQuantity);
       }
@@ -35,7 +38,7 @@ function ItemListCard(props: ItemListCardProps) {
 
     return (
       <div
-        className={`${styles.itemListCard} ${className || ''}`}
+        className={`${styles.itemListCard} ${className || ""}`}
         data-variant="cart"
       >
         {/* Checkbox */}
@@ -68,20 +71,18 @@ function ItemListCard(props: ItemListCardProps) {
 
           {/* Unit Price */}
           <div className={styles.unitPrice}>
-            <span className={styles.priceLabel}>單價</span>
-            <p className={styles.price}>NT$ {item.price}</p>
+            <p className={styles.price}>$ {item.price}</p>
           </div>
 
           {/* Quantity */}
           <div className={styles.quantityWrapper}>
-            <span className={styles.quantityLabel}>數量</span>
             {editable ? (
               <QuantitySelector
                 value={item.quantity}
                 onChange={handleQuantityChange}
                 max={item.stock}
                 min={1}
-                size="md"
+                size="sm"
               />
             ) : (
               <span className={styles.quantityDisplay}>{item.quantity}</span>
@@ -90,9 +91,8 @@ function ItemListCard(props: ItemListCardProps) {
 
           {/* Subtotal */}
           <div className={styles.subtotalWrapper}>
-            <span className={styles.subtotalLabel}>小計</span>
             <p className={styles.subtotal}>
-              <span>NT$ {subtotal}</span>
+              $ {subtotal}
             </p>
           </div>
 
@@ -120,12 +120,12 @@ function ItemListCard(props: ItemListCardProps) {
   }
 
   // TODO: 訂單列表變體
-  if (variant === 'order-list') {
+  if (variant === "order-list") {
     return <div>Order List Variant - Coming Soon</div>;
   }
 
   // TODO: 訂單詳情變體
-  if (variant === 'order-detail') {
+  if (variant === "order-detail") {
     return <div>Order Detail Variant - Coming Soon</div>;
   }
 
