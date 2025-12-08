@@ -192,3 +192,25 @@ export interface QuantitySelectorProps {
   size?: 'sm' | 'md' | 'lg';
   ariaLabel?: string;
 }
+
+// Dialog types
+export interface DialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  message?: string | ReactNode;
+  type?: 'confirm' | 'alert' | 'custom';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void | Promise<void>;
+  onCancel?: () => void;
+  variant?: 'danger' | 'warning' | 'info';
+  icon?: string;
+  mediaUrl?: string; // 圖片或影片的路徑（優先於 icon）
+  mediaType?: 'image' | 'video'; // 媒體類型（預設自動偵測）
+  children?: ReactNode;
+  showCloseButton?: boolean;
+  closeOnOverlayClick?: boolean;
+  closeOnEsc?: boolean;
+  className?: string;
+}

@@ -5,6 +5,7 @@ import ItemListCard from '@/shared/components/ItemListCard';
 import CheckoutSummary from './components/CheckoutSummary';
 import EmptyState from '@/shared/components/EmptyState';
 import StoreGroupHeader from '@/shared/components/StoreGroupHeader';
+import Dialog from '@/shared/components/Dialog';
 import type { CartItem } from '@/types';
 import type { StoreGroup } from '@/types/cart';
 import {
@@ -51,6 +52,8 @@ function Cart() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
   // Group items by store
   const storeGroups = useMemo(() => groupItemsByStore(cartItems), [cartItems]);
@@ -148,15 +151,23 @@ function Cart() {
   };
 
   // 刪除項目
-  const handleDelete = async (id: string) => {
-    // TODO: 替換為 Dialog 組件
-    if (!confirm('確定要刪除此商品嗎？')) return;
+  const handleDelete = (id: string) => {
+    setDeleteItemId(id);
+    setShowDeleteDialog(true);
+  };
+
+  // 確認刪除
+  const confirmDelete = async () => {
+    if (!deleteItemId) return;
 
     try {
-      await removeFromCart(id);
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
+      await removeFromCart(deleteItemId);
+      setCartItems((prev) => prev.filter((item) => item.id !== deleteItemId));
     } catch (error) {
       console.error('Failed to remove item:', error);
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteItemId(null);
     }
   };
 
@@ -284,6 +295,20 @@ function Cart() {
           disabled={selectedItems.length === 0}
         />
       </div>
+
+      {/* 刪除確認對話框 */}
+      <Dialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        type="confirm"
+        variant="danger"
+        title="刪除商品"
+        message="確定要將此商品從購物車移除嗎？"
+        confirmText="刪除"
+        cancelText="取消"
+        onConfirm={confirmDelete}
+        mediaUrl="/CryingEmoji.gif"
+      />
     </div>
   );
 }
