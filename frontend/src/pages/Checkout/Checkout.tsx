@@ -221,7 +221,7 @@ function Checkout() {
             total={total}
             itemCount={checkoutItems.length}
             selectedCount={checkoutItems.length}
-            freeShippingThreshold={500}
+            freeShippingThreshold={500} // TODO: 改為從後端取得
             onCheckout={handleConfirmOrder}
             disabled={isSubmitting || !selectedAddress || !paymentMethod}
             buttonText={isSubmitting ? '處理中...' : '確認訂單'}

@@ -1,11 +1,11 @@
 .checkoutPage {
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - $header-height);
   background: $bg-primary;
   padding: $spacing-lg 0;
 }
 
 .container {
-  max-width: 1200px;
+max-width: $desktop;
   margin: 0 auto;
   padding: 0 $spacing-lg;
   display: flex;
@@ -92,7 +92,7 @@
   border-radius: $border-radius-lg;
 
   p {
-    font-size: calc($font-sm + 1px);
+    font-size: $font-md;
     color: $text-secondary;
     margin-bottom: $spacing-md;
   }
@@ -127,8 +127,8 @@
   }
 
   input[type='radio'] {
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     cursor: pointer;
     accent-color: $primary-color;
   }
@@ -182,7 +182,7 @@
 .checkoutSummary {
   width: 350px;
 
-  @include mobile {
+  @include belowTablet {
     width: 100%;
   }
 }
