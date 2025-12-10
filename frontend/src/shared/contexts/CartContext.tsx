@@ -11,7 +11,7 @@ import { useAuth } from './AuthContext';
 
 interface CartContextValue {
   items: CartItem[];
-  itemCount: number; // Badge 顯示的數量（總件數）
+  itemCount: number; // Badge 顯示的數量（商品種類數）
   totalAmount: number; // 購物車總金額
   isLoading: boolean;
   addToCart: (productId: string, quantity: number) => Promise<void>;
@@ -63,8 +63,8 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       const response = await cartService.getCartItems();
       if (response.success) {
         setItems(response.items);
-        // Calculate total items (sum of all quantities)
-        const count = response.items.reduce((sum, item) => sum + item.quantity, 0);
+        // Calculate item count (number of unique items)
+        const count = response.items.length;
         const amount = response.items.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0
