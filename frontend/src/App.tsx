@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./shared/contexts/AuthContext";
 import Header from "./shared/components/Header";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Search from "./pages/Search";
@@ -37,8 +38,22 @@ function AppContent() {
           <Route path="/search" element={<Search />} />
           <Route path="/product/:product_id" element={<ProductDetail />} />
           <Route path="/store/:store_id" element={<Store />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/order/success" element={<h2>訂單成功頁面開發中...</h2>} />
           <Route path="/faq" element={<h2>常見問題頁面開發中...</h2>} />
 
