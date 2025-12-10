@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductTypesService } from './product-types.service';
 import { CreateProductTypeDto } from './dto/create-product-type.dto';
@@ -18,8 +19,8 @@ import { UserRole } from '../users/entities/user.entity';
 
 @Controller('product-types')
 export class ProductTypesController {
-  constructor(private readonly productTypesService: ProductTypesService) {}
-  
+  constructor(private readonly productTypesService: ProductTypesService) { }
+
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Post()
@@ -28,25 +29,27 @@ export class ProductTypesController {
   }
 
   @Get()
-  async findAll() {
-    return await this.productTypesService.findAll();
+  async findAll(@Query() queryDto: any) {
+    return await this.productTypesService.findAll(queryDto);
   }
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('admin')
   async adminFindAll() {
     return await this.productTypesService.adminFindAll();
   }
 
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAccessGuard, RolesGuard)  
-  @Get('admin/:id')
-  async adminFindOne(@Param('id') id: string) {
-    return await this.productTypesService.adminFindOne(id);
-  }
-  
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.productTypesService.findOne(id);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('admin/:id')
+  async adminFindOne(@Param('id') id: string) {
+    return await this.productTypesService.adminFindOne(id);
   }
 
   // @Get('tree')
