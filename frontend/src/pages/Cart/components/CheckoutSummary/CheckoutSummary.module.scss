@@ -12,16 +12,14 @@
     color: $text-primary;
   }
 
-  // Desktop: Sticky sidebar on the right
   @include desktop {
     position: sticky;
     top: 5rem;
-    width: 21.875rem;
+    min-width: 350px;
     max-height: calc(100vh - 6.25rem);
     overflow-y: auto;
   }
 
-  // Tablet & Mobile: Fixed bottom panel with simplified content
   @include belowTablet {
     position: fixed;
     bottom: 0;
