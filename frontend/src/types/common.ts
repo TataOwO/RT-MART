@@ -227,3 +227,24 @@ export interface DialogProps {
   closeOnEsc?: boolean;
   className?: string;
 }
+
+// Logo types
+export interface LogoProps {
+  variant?: 'default' | 'with-text';
+  to?: string;
+  className?: string;
+}
+
+// LanguageMenu types
+export interface LanguageMenuProps {
+  variant?: 'default' | 'topbar';
+  className?: string;
+  classNames?: {
+    icon?: string;
+    trigger?: string;
+    chevron?: string;
+    dropdown?: string;
+    option?: string;
+    optionActive?: string;
+  };
+}
