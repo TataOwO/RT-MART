@@ -1,5 +1,6 @@
 import { ReactNode, CSSProperties, MouseEvent } from 'react';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import type { StoreOrderGroup } from './order';
 
 // Common component prop types
 
@@ -178,6 +179,9 @@ export interface Address {
 }
 
 // CheckoutSummary types
+/**
+ * @deprecated 使用 CheckoutSummaryCartModeProps 或 CheckoutSummaryCheckoutModeProps
+ */
 export interface CheckoutSummaryProps {
   subtotal: number;
   shipping: number;
@@ -188,7 +192,37 @@ export interface CheckoutSummaryProps {
   freeShippingThreshold?: number;
   onCheckout: () => void;
   disabled: boolean;
-  buttonText?: string; // 自訂按鈕文字，預設 "前往結帳"
+  buttonText?: string;
+}
+
+/**
+ * CheckoutSummary 購物車模式 Props
+ * 用於購物車頁面的結帳摘要
+ */
+export interface CheckoutSummaryCartModeProps {
+  mode?: 'cart';
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  itemCount: number;
+  selectedCount: number;
+  freeShippingThreshold?: number;
+  onCheckout: () => void;
+  disabled?: boolean;
+  buttonText?: string;
+}
+
+/**
+ * CheckoutSummary 結帳模式 Props
+ * 用於結帳頁面的訂單摘要
+ */
+export interface CheckoutSummaryCheckoutModeProps {
+  mode: 'checkout';
+  storeGroups: StoreOrderGroup[];
+  onCheckout: () => void;
+  disabled?: boolean;
+  buttonText?: string;
 }
 
 // QuantitySelector types
