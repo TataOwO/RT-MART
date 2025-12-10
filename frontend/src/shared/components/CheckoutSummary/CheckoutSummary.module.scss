@@ -118,6 +118,22 @@
   margin: $spacing-md 0;
 }
 
+.orderCount {
+  background: $bg-tertiary;
+  padding: $spacing-sm;
+  border-radius: $border-radius-md;
+  text-align: center;
+  font-size: $font-sm;
+  margin-bottom: $spacing-md;
+  color: $primary-color;
+  font-weight: 500;
+}
+
+.discount {
+  color: $success-color;
+  font-weight: 500;
+}
+
 .checkoutBtn {
   margin-top: $spacing-sm;
 

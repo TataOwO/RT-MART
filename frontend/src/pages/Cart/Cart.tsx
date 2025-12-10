@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Cart.module.scss';
 import ItemListCard from '@/shared/components/ItemListCard';
-import CheckoutSummary from './components/CheckoutSummary';
+import CheckoutSummary from '@/shared/components/CheckoutSummary';
 import EmptyState from '@/shared/components/EmptyState';
 import StoreGroupHeader from '@/shared/components/StoreGroupHeader';
 import Dialog from '@/shared/components/Dialog';
