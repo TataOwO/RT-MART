@@ -52,38 +52,6 @@ max-width: $desktop;
   gap: 0.75rem;
 }
 
-// 地址顯示
-.addressDisplay {
-  padding: $spacing-md;
-  background: $bg-tertiary;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-md;
-}
-
-.recipientInfo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: $spacing-sm;
-  font-size: $font-md;
-
-  strong {
-    color: $text-primary;
-  }
-
-  span {
-    color: $text-secondary;
-    font-size: $font-sm;
-  }
-}
-
-.addressText {
-  font-size: $font-sm;
-  color: $text-secondary;
-  line-height: 1.6;
-  margin: 0;
-}
-
 .noAddress {
   text-align: center;
   padding: $spacing-xl;
@@ -95,59 +63,6 @@ max-width: $desktop;
     font-size: $font-md;
     color: $text-secondary;
     margin-bottom: $spacing-md;
-  }
-}
-
-// 付款方式
-.paymentMethods {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.methodCard {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  background: $bg-secondary;
-  border: 2px solid $border-color;
-  border-radius: $border-radius-lg;
-  cursor: pointer;
-  transition: $transition-fast;
-
-  &:hover {
-    border-color: $primary-color;
-    background: #fff7f5;
-  }
-
-  &.selected {
-    border-color: $primary-color;
-    background: #fff7f5;
-  }
-
-  input[type='radio'] {
-    width: 1.25rem;
-    height: 1.25rem;
-    cursor: pointer;
-    accent-color: $primary-color;
-  }
-}
-
-.methodContent {
-  flex: 1;
-
-  h4 {
-    font-size: $font-md;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0 0 $spacing-xs 0;
-  }
-
-  p {
-    font-size: $font-sm;
-    color: $text-secondary;
-    margin: 0;
   }
 }
 

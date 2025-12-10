@@ -4,9 +4,15 @@ import styles from './Checkout.module.scss';
 import ItemListCard from '@/shared/components/ItemListCard';
 import CheckoutSummary from '@/pages/Cart/components/CheckoutSummary';
 import Button from '@/shared/components/Button';
+import Dialog from '@/shared/components/Dialog';
+import AddressCard from './components/AddressCard';
+import AddressSelectionDialog from './components/AddressSelectionDialog';
+import AddressFormDialog, { type AddressFormData } from './components/AddressFormDialog';
+import PaymentMethodSelector from './components/PaymentMethodSelector';
 import type { CartItem, Address } from '@/types';
-import type { PaymentMethod } from '@/types/order';
-import { getAddresses, getDefaultAddress } from '@/shared/services/addressService';
+import type { PaymentMethod, CreateOrderRequest } from '@/types/order';
+import { getAddresses, getDefaultAddress, addAddress } from '@/shared/services/addressService';
+import { createOrder } from '@/shared/services/orderService';
 
 function Checkout() {
   const navigate = useNavigate();
@@ -28,6 +34,12 @@ function Checkout() {
   // 載入狀態
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Dialog 狀態
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [showAddressFormDialog, setShowAddressFormDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [orderId, setOrderId] = useState('');
 
   // 計算金額
   const subtotal = useMemo(
@@ -74,7 +86,33 @@ function Checkout() {
 
   // 變更地址
   const handleChangeAddress = () => {
-    alert('地址選擇功能開發中...');
+    setShowAddressDialog(true);
+  };
+
+  // 選擇地址
+  const handleSelectAddress = (addressId: string) => {
+    const address = addresses.find((addr) => addr.id === addressId);
+    if (address) {
+      setSelectedAddress(address);
+    }
+  };
+
+  // 新增地址
+  const handleAddNewAddress = () => {
+    setShowAddressDialog(false);
+    setShowAddressFormDialog(true);
+  };
+
+  // 提交新地址
+  const handleSubmitNewAddress = async (addressData: AddressFormData) => {
+    try {
+      const newAddress = await addAddress(addressData);
+      setAddresses((prev) => [...prev, newAddress]);
+      setSelectedAddress(newAddress);
+    } catch (error) {
+      console.error('Failed to add address:', error);
+      alert('新增地址失敗');
+    }
   };
 
   // 確認訂單
@@ -89,7 +127,41 @@ function Checkout() {
       return;
     }
 
-    alert('訂單提交功能開發中...');
+    try {
+      setIsSubmitting(true);
+
+      const orderData: CreateOrderRequest = {
+        items: checkoutItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        addressId: selectedAddress.id,
+        paymentMethod: paymentMethod,
+        note: orderNote,
+        subtotal,
+        shipping,
+        discount,
+        totalAmount: total,
+      };
+
+      const response = await createOrder(orderData);
+
+      // 顯示成功 Dialog
+      setOrderId(response.orderId);
+      setShowSuccessDialog(true);
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      alert(error instanceof Error ? error.message : '訂單建立失敗');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 成功 Dialog 確認
+  const handleSuccessConfirm = () => {
+    setShowSuccessDialog(false);
+    navigate('/', { replace: true });
   };
 
   // Loading 狀態
@@ -134,17 +206,7 @@ function Checkout() {
             </div>
 
             {selectedAddress ? (
-              <div className={styles.addressDisplay}>
-                <p className={styles.recipientInfo}>
-                  <strong>{selectedAddress.recipientName}</strong>
-                  <span>{selectedAddress.phone}</span>
-                </p>
-                <p className={styles.addressText}>
-                  {selectedAddress.city} {selectedAddress.district} {selectedAddress.postalCode}
-                  <br />
-                  {selectedAddress.detail}
-                </p>
-              </div>
+              <AddressCard address={selectedAddress} isDefault={selectedAddress.isDefault} />
             ) : (
               <div className={styles.noAddress}>
                 <p>尚未設定收件地址</p>
@@ -158,43 +220,7 @@ function Checkout() {
           {/* 3. 付款方式 */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>付款方式</h2>
-            <div className={styles.paymentMethods}>
-              <div
-                className={`${styles.methodCard} ${
-                  paymentMethod === 'credit_card' ? styles.selected : ''
-                }`}
-                onClick={() => setPaymentMethod('credit_card')}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'credit_card'}
-                  onChange={() => setPaymentMethod('credit_card')}
-                />
-                <div className={styles.methodContent}>
-                  <h4>信用卡</h4>
-                  <p>支援 Visa、Mastercard、JCB</p>
-                </div>
-              </div>
-
-              <div
-                className={`${styles.methodCard} ${
-                  paymentMethod === 'cash_on_delivery' ? styles.selected : ''
-                }`}
-                onClick={() => setPaymentMethod('cash_on_delivery')}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'cash_on_delivery'}
-                  onChange={() => setPaymentMethod('cash_on_delivery')}
-                />
-                <div className={styles.methodContent}>
-                  <h4>貨到付款</h4>
-                  <p>收到商品時以現金付款</p>
-                </div>
-              </div>
-            </div>
+            <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
           </section>
 
           {/* 4. 訂單備註 */}
@@ -228,6 +254,37 @@ function Checkout() {
           />
         </div>
       </div>
+
+      {/* 地址選擇 Dialog */}
+      <AddressSelectionDialog
+        isOpen={showAddressDialog}
+        onClose={() => setShowAddressDialog(false)}
+        addresses={addresses}
+        currentAddressId={selectedAddress?.id || null}
+        onSelectAddress={handleSelectAddress}
+        onAddNewAddress={handleAddNewAddress}
+      />
+
+      {/* 地址表單 Dialog */}
+      <AddressFormDialog
+        isOpen={showAddressFormDialog}
+        onClose={() => setShowAddressFormDialog(false)}
+        onSubmit={handleSubmitNewAddress}
+        mode="add"
+      />
+
+      {/* 訂單成功 Dialog */}
+      <Dialog
+        isOpen={showSuccessDialog}
+        onClose={handleSuccessConfirm}
+        type="alert"
+        variant="info"
+        icon="check-circle"
+        title="訂單建立成功！"
+        message={`您的訂單編號：${orderId}\n我們將盡快為您處理訂單`}
+        confirmText="返回首頁"
+        onConfirm={handleSuccessConfirm}
+      />
     </div>
   );
 }
