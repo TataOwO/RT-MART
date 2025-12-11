@@ -18,9 +18,10 @@ export interface StoreOrderGroup {
   storeId: string;
   storeName: string;
   items: CartItem[];
-  subtotal: number;  // 此商店商品總額
-  shipping: number;  // 此商店運費
-  total: number;     // 此商店小計
+  subtotal: number;        // 此商店商品總額
+  shipping: number;        // 此商店實際運費
+  shippingDiscount: number; // 此商店運費折抵
+  total: number;           // 此商店小計
 }
 
 /**
@@ -31,17 +32,6 @@ export interface CreateOrderRequest {
   addressId: string;
   paymentMethod: PaymentMethod;
   note?: string;  // 合併後的備註
-}
-
-/**
- * 單一訂單響應（已棄用，使用 CreateMultipleOrdersResponse）
- * @deprecated
- */
-export interface CreateOrderResponse {
-  success: boolean;
-  message: string;
-  orderId: string;
-  totalAmount: number;
 }
 
 /**

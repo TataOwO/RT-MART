@@ -203,6 +203,7 @@ export interface CheckoutSummaryCartModeProps {
   mode?: 'cart';
   subtotal: number;
   shipping: number;
+  shippingDiscount?: number; // 運費折抵
   discount: number;
   total: number;
   itemCount: number;
