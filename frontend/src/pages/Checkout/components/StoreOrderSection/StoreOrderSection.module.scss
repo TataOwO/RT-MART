@@ -52,7 +52,7 @@
     border-radius: $border-radius-md;
     font-size: $font-sm;
     font-family: inherit;
-    resize: vertical;
+    resize: none; // 鎖定大小，不允許調整
     transition: border-color 0.2s;
 
     &:focus {

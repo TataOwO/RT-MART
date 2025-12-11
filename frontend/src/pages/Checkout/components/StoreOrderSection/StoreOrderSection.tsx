@@ -33,11 +33,11 @@ function StoreOrderSection({ storeGroup, note, onNoteChange }: StoreOrderSection
           className={styles.noteTextarea}
           value={note}
           onChange={(e) => onNoteChange(storeGroup.storeId, e.target.value)}
-          placeholder="選填，最多 200 字"
-          maxLength={200}
-          rows={3}
+          placeholder="選填，最多 50 字"
+          maxLength={50}
+          rows={2}
         />
-        <div className={styles.charCount}>{note.length} / 200</div>
+        <div className={styles.charCount}>{note.length} / 50</div>
       </div>
 
       {/* 商店小計 */}
