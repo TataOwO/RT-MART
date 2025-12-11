@@ -202,7 +202,6 @@ function Cart() {
     <div className={styles.cartPage}>
       <div className={styles.pageHeader}>
         <h1>購物車</h1>
-        <span className={styles.itemCount}>共 {cartItems.length} 件商品</span>
       </div>
 
       <div className={styles.cartContainer}>
