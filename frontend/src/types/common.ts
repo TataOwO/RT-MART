@@ -262,6 +262,7 @@ export interface DialogProps {
   closeOnOverlayClick?: boolean;
   closeOnEsc?: boolean;
   className?: string;
+  textAlign?: 'left' | 'center' | 'right';
 }
 
 // Logo types
