@@ -23,6 +23,21 @@
   }
 }
 
+.btnSmall {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-sm;
+}
+
+.btnMedium {
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-lg;
+}
+
+.btnLarge {
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-xl;
+}
+
 .btnPrimary {
   background: $primary-color;
   color: $text-white;
