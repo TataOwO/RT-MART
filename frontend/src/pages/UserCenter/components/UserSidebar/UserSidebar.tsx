@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/shared/components/Button';
 import Icon from '@/shared/components/Icon';
@@ -54,6 +54,17 @@ function UserSidebar({ activeRoute }: UserSidebarProps) {
     });
     return initialExpanded;
   });
+
+  // 當 activeRoute 變化時，自動展開對應的 section
+  useEffect(() => {
+    const activeSectionIndex = navSections.findIndex(section =>
+      isSectionActive(section)
+    );
+
+    if (activeSectionIndex !== -1) {
+      setExpandedSections(new Set([activeSectionIndex]));
+    }
+  }, [activeRoute]);
 
   // 切換 section 的展開/收合狀態
   const toggleSection = (index: number) => {
