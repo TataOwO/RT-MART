@@ -11,6 +11,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { StoresService } from '../stores/stores.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { SellersService } from '../sellers/sellers.service';
 
 @Injectable()
 export class ProductsService {
@@ -20,31 +22,43 @@ export class ProductsService {
     @InjectRepository(ProductImage)
     private readonly imageRepository: Repository<ProductImage>,
     private readonly storesService: StoresService,
-  ) {}
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly sellerService: SellersService
+  ) { }
 
-  async create(storeId: string, createDto: CreateProductDto): Promise<Product> {
+  async create(userId: string, createDto: CreateProductDto, files: Express.Multer.File[]): Promise<Product> {
     // Verify store exists and belongs to seller
-    await this.storesService.findOne(storeId);
+    const seller = await this.sellerService.findByUserId(userId);
+    if(!seller){
+      throw new ForbiddenException('Not a seller role account');
+    }
+    
+    const store = await this.storesService.findBySeller(seller.sellerId);
+    if(!store){
+      throw new NotFoundException('Can\'t find the store of this seller acount')
+    }
 
     const product = this.productRepository.create({
       ...createDto,
-      storeId,
+      storeId: store.storeId,
     });
 
     const savedProduct = await this.productRepository.save(product);
 
     // Create images if provided
-    if (createDto.images && createDto.images.length > 0) {
-      const images = createDto.images.map((img, index) =>
-        this.imageRepository.create({
-          productId: savedProduct.productId,
-          imageUrl: img.imageUrl,
-          displayOrder: img.displayOrder || index + 1,
-        }),
-      );
+    if (files && files.length > 0) {
+      const images = await Promise.all(
+        files.map(async (file, index) => {
+          const result = await this.cloudinaryService.uploadImage(file);
+
+          return this.imageRepository.create({
+            productId: savedProduct.productId,
+            imageUrl: result,               // URL
+            displayOrder: index + 1
+          });
+        }));
       await this.imageRepository.save(images);
     }
-
     return await this.findOne(savedProduct.productId);
   }
 
@@ -106,37 +120,37 @@ export class ProductsService {
     return product;
   }
 
-  async update(
-    id: string,
-    storeId: string,
-    updateDto: UpdateProductDto,
-  ): Promise<Product> {
-    const product = await this.findOne(id);
+  // async update(
+  //   id: string,
+  //   storeId: string,
+  //   updateDto: UpdateProductDto,
+  // ): Promise<Product> {
+  //   const product = await this.findOne(id);
 
-    // Verify ownership
-    if (product.storeId !== storeId) {
-      throw new ForbiddenException('You can only update your own products');
-    }
+  //   // Verify ownership
+  //   if (product.storeId !== storeId) {
+  //     throw new ForbiddenException('You can only update your own products');
+  //   }
 
-    // Handle images update
-    if (updateDto.images) {
-      // Remove old images
-      await this.imageRepository.delete({ productId: id });
+  //   // Handle images update
+  //   if (updateDto.images) {
+  //     // Remove old images
+  //     await this.imageRepository.delete({ productId: id });
 
-      // Add new images
-      const images = updateDto.images.map((img, index) =>
-        this.imageRepository.create({
-          productId: id,
-          imageUrl: img.imageUrl,
-          displayOrder: img.displayOrder || index + 1,
-        }),
-      );
-      await this.imageRepository.save(images);
-    }
+  //     // Add new images
+  //     const images = updateDto.images.map((img, index) =>
+  //       this.imageRepository.create({
+  //         productId: id,
+  //         imageUrl: img.imageUrl,
+  //         displayOrder: img.displayOrder || index + 1,
+  //       }),
+  //     );
+  //     await this.imageRepository.save(images);
+  //   }
 
-    Object.assign(product, updateDto);
-    return await this.productRepository.save(product);
-  }
+  //   Object.assign(product, updateDto);
+  //   return await this.productRepository.save(product);
+  // }
 
   async remove(id: string, storeId: string): Promise<void> {
     const product = await this.findOne(id);

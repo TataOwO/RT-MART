@@ -9,6 +9,10 @@ import {
   Query,
   UseGuards,
   Request,
+  UploadedFile,
+  Req,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -18,19 +22,24 @@ import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { AuthTokenResponseDto } from '@/auth/dto/auth-response.dto';
+import type { AuthRequest } from '../common/types';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Post('store/:storeId')
-  @UseGuards(JwtAccessGuard, RolesGuard)
   @Roles(UserRole.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @UseInterceptors(FilesInterceptor('images'))
+  @Post()
   async create(
-    @Param('storeId') storeId: string,
+    @Req() req: AuthRequest,
     @Body() createDto: CreateProductDto,
+    @UploadedFiles() files: Express.Multer.File[]
   ) {
-    return await this.productsService.create(storeId, createDto);
+    return await this.productsService.create(req.user.userId, createDto, files);
   }
 
   @Get()
@@ -49,16 +58,16 @@ export class ProductsController {
     return await this.productsService.findOne(id);
   }
 
-  @Patch(':id/store/:storeId')
-  @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(UserRole.SELLER)
-  async update(
-    @Param('id') id: string,
-    @Param('storeId') storeId: string,
-    @Body() updateDto: UpdateProductDto,
-  ) {
-    return await this.productsService.update(id, storeId, updateDto);
-  }
+  // @Patch(':id/store/:storeId')
+  // @UseGuards(JwtAccessGuard, RolesGuard)
+  // @Roles(UserRole.SELLER)
+  // async update(
+  //   @Param('id') id: string,
+  //   @Param('storeId') storeId: string,
+  //   @Body() updateDto: UpdateProductDto,
+  // ) {
+  //   return await this.productsService.update(id, storeId, updateDto);
+  // }
 
   @Delete(':id/store/:storeId')
   @UseGuards(JwtAccessGuard, RolesGuard)
