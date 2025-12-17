@@ -19,6 +19,7 @@ interface MockUser extends User {
 const mockUsers: MockUser[] = [
   {
     id: "1",
+    userId: "1",
     loginId: "hahahai0816",
     name: "測試用戶",
     email: "test@rtmart.com",
@@ -28,6 +29,7 @@ const mockUsers: MockUser[] = [
   },
   {
     id: "2",
+    userId: "2",
     loginId: "admin",
     name: "管理員",
     email: "admin@rtmart.com",
@@ -96,6 +98,7 @@ export const mockRegister = async (
       // 創建新用戶
       const newUser: MockUser = {
         id: String(mockUsers.length + 1),
+        userId: String(mockUsers.length + 1),
         loginId,
         name,
         email,
