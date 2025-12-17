@@ -1,8 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppModules } from './../module.index';
 import { createTestApp } from './../functions/e2e';
 import * as AuthPostTest from './../functions/auth/auth_post';
 import * as UserPostTest from './../functions/users/users_post';
@@ -11,14 +7,7 @@ import * as ProductTypesDeleteTest from './../functions/product-types/product-ty
 import * as ProductTypesPostTest from './../functions/product-types/product-types_post';
 import * as ProductTypesPatchTest from './../functions/product-types/product-types_patch';
 import * as ProductTypesGetTest from './../functions/product-types/product-types_get';
-import * as SellerGetTest from './../functions/sellers/sellers_get';
-import {
-  buyerUser,
-  sellerUser,
-  adminUser,
-  adminTester,
-  buyerUser_sellerCase,
-} from './../variables';
+import { buyerUser, sellerUser, adminUser, adminTester } from './../variables';
 
 describe('ProductTypesController (e2e)', () => {
   let app: INestApplication;

@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
@@ -12,7 +11,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { StoresService } from './stores.service';
-import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { QueryStoreDto } from './dto/query-store.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
