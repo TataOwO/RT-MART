@@ -44,7 +44,7 @@ export class Product {
   price: number;
 
   @Column({ name: 'sold_count', type: 'bigint', default: 0 })
-  viewCount: number;
+  soldCount: number;
 
   @Column({
     name: 'average_rating',
