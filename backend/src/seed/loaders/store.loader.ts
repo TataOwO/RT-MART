@@ -58,6 +58,7 @@ export class StoreLoader extends BaseLoader<Store> {
         typeof data.total_ratings === 'number'
           ? data.total_ratings
           : Number(data.total_ratings) || 0;
+      store.productCount = 0;
       store.deletedAt = null;
 
       return Promise.resolve(store);
@@ -105,8 +106,10 @@ export class StoreLoader extends BaseLoader<Store> {
               : Number(data.seller_id),
           );
           if (sellerId && typeof data.store_name === 'string') {
-            const store = stores.find((s) => s.sellerId === sellerId);
-            if (store && store.storeName === data.store_name) {
+            const store = stores.find(
+              (s) => s.sellerId === sellerId && s.storeName === data.store_name,
+            );
+            if (store) {
               this.idMapping.setMapping(
                 'Store',
                 typeof data.script_store_id === 'number'

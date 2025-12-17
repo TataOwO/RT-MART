@@ -91,4 +91,7 @@ export class Store {
 
   @OneToMany(() => Order, (order) => order.store)
   orders?: Order[];
+
+  @Column({ name: 'product_count', type: 'int', default: 0 })
+  productCount: number;
 }

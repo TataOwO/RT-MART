@@ -49,11 +49,29 @@ export class ProductsService {
         'discountInfo.isActive = true AND discountInfo.startDatetime <= NOW() AND discountInfo.endDatetime >= NOW()',
       );
 
-    // Select ID and Max Discount Rate
+    // --- Sorting ---
+    const sortBy = queryDto.sortBy || 'createdAt';
+    const sortOrder =
+      (queryDto.sortOrder?.toUpperCase() as 'ASC' | 'DESC') || 'DESC';
+
+    // Select ID and Max Discount Rate and Sort Column
     subQueryBuilder
       .select('product.productId', 'id')
       .addSelect('MAX(discount.discountRate)', 'maxDiscountRate')
       .groupBy('product.productId');
+
+    if (sortBy === 'price') {
+      const priceCalc =
+        'product.price * (1 - COALESCE(MAX(discount.discountRate), 0))';
+      subQueryBuilder.addSelect(priceCalc, 'sortPrice');
+      subQueryBuilder.addOrderBy('sortPrice', sortOrder);
+    } else {
+      // For strict mode, we should use an aggregate or include in GROUP BY
+      // Since productId is the primary key, product.any_column is functionally dependent on it
+      // but some DB modes still complain. Using MAX() is a safe workaround for non-aggregate columns.
+      subQueryBuilder.addSelect(`MAX(product.${sortBy})`, 'sortVal');
+      subQueryBuilder.addOrderBy('sortVal', sortOrder);
+    }
 
     // --- Filters ---
     if (queryDto.storeId) {
@@ -103,20 +121,6 @@ export class ProductsService {
       }
     }
 
-    // --- Sorting ---
-    const sortBy = queryDto.sortBy || 'createdAt';
-    const sortOrder =
-      (queryDto.sortOrder?.toUpperCase() as 'ASC' | 'DESC') || 'DESC';
-
-    if (sortBy === 'price') {
-      subQueryBuilder.addOrderBy(
-        `product.price * (1 - COALESCE(MAX(discount.discountRate), 0))`,
-        sortOrder,
-      );
-    } else {
-      subQueryBuilder.addOrderBy(`product.${sortBy}`, sortOrder);
-    }
-
     // --- Total Count (Before Pagination) ---
     // We need to count the raw results because of GROUP BY
     const countResult = await subQueryBuilder.getRawMany();
@@ -131,7 +135,7 @@ export class ProductsService {
     }
 
     // Step 2: Fetch Full Data for selected IDs
-    const productIds = paginatedResults.map((r) => r.id as string);
+    const productIds = paginatedResults.map((r) => String(r.id));
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.store', 'store')
@@ -147,7 +151,7 @@ export class ProductsService {
     const enrichedProducts = paginatedResults
       .map((rawItem) => {
         const product = products.find(
-          (p) => p.productId === (rawItem.id as string),
+          (p) => String(p.productId) === String(rawItem.id),
         );
         if (!product) return null; // Should not happen
 
@@ -199,11 +203,6 @@ export class ProductsService {
       .where('product.productId = :id', { id })
       .getRawOne<{ maxDiscountRate: string }>();
 
-    // Get store product count
-    const productCount = await this.productRepository.count({
-      where: { storeId: product.storeId },
-    });
-
     // Calculate prices
     const maxDiscountRate = discountResult?.maxDiscountRate
       ? parseFloat(discountResult.maxDiscountRate)
@@ -213,10 +212,6 @@ export class ProductsService {
     // Construct response
     return {
       ...product,
-      store: {
-        ...product.store,
-        productCount,
-      },
       originalPrice: product.price,
       currentPrice: currentPrice,
       discountRate: maxDiscountRate,
@@ -233,6 +228,9 @@ export class ProductsService {
     });
 
     const savedProduct = await this.productRepository.save(product);
+
+    // Increment store product count
+    await this.storesService.incrementProductCount(storeId);
 
     // Create images if provided
     if (createDto.images && createDto.images.length > 0) {
@@ -345,6 +343,8 @@ export class ProductsService {
     }
 
     await this.productRepository.softRemove(product);
+    // Decrement store product count
+    await this.storesService.decrementProductCount(storeId);
   }
 
   async updateRating(productId: string, newRating: number): Promise<void> {

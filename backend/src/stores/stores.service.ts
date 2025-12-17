@@ -1,20 +1,20 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Store } from './entities/store.entity';
-import { CreateStoreDto } from './dto/create-store.dto';
+import { Product } from '../products/entities/product.entity';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { QueryStoreDto } from './dto/query-store.dto';
 import { SellersService } from '../sellers/sellers.service';
 import { Seller } from '../sellers/entities/seller.entity';
 
 @Injectable()
-export class StoresService {
+export class StoresService implements OnModuleInit {
   constructor(
     @InjectRepository(Store)
     private readonly storeRepository: Repository<Store>,
@@ -23,19 +23,23 @@ export class StoresService {
     private readonly sellersService: SellersService,
   ) {}
 
+  async onModuleInit() {
+    // Synchronize product counts on startup to ensure consistency
+    console.log('[StoresService] Synchronizing product counts...');
+    await this.syncAllProductCounts();
+    console.log('[StoresService] Product counts synchronized.');
+  }
+
   // async create(sellerId: string, createDto: CreateStoreDto): Promise<Store> {
   //   // Verify seller exists and is verified
   //   const seller = await this.sellersService.findOne(sellerId);
-
-  //   if (!seller.verified) {
+  //   //   if (!seller.verified) {
   //     throw new ForbiddenException('Seller must be verified to create a store');
   //   }
-
   //   const store = this.storeRepository.create({
   //     ...createDto,
   //     sellerId,
   //   });
-
   //   return await this.storeRepository.save(store);
   // }
 
@@ -46,30 +50,33 @@ export class StoresService {
     const limit = parseInt(queryDto.limit || '10', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string | ReturnType<typeof Like>> = {};
+    const queryBuilder = this.storeRepository
+      .createQueryBuilder('store')
+      .leftJoinAndSelect('store.seller', 'seller')
+      .leftJoinAndSelect('seller.user', 'user')
+      .skip(skip)
+      .take(limit)
+      .orderBy('store.createdAt', 'DESC');
 
     if (queryDto.search) {
-      where.storeName = Like(`%${queryDto.search}%`);
+      queryBuilder.andWhere('store.storeName LIKE :search', {
+        search: `%${queryDto.search}%`,
+      });
     }
 
-    const [data, total] = await this.storeRepository.findAndCount({
-      where,
-      skip,
-      take: limit,
-      order: { createdAt: 'DESC' },
-      relations: ['seller', 'seller.user'],
-      withDeleted: false, // 過濾軟刪除的商店
-    });
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     return { data, total };
   }
 
   async findOne(storeId: string): Promise<Store> {
-    const store = await this.storeRepository.findOne({
-      where: { storeId: storeId },
-      relations: ['seller', 'seller.user'],
-      withDeleted: false, // 過濾軟刪除的商店
-    });
+    const queryBuilder = this.storeRepository
+      .createQueryBuilder('store')
+      .leftJoinAndSelect('store.seller', 'seller')
+      .leftJoinAndSelect('seller.user', 'user')
+      .where('store.storeId = :storeId', { storeId });
+
+    const store = await queryBuilder.getOne();
 
     if (!store) {
       throw new NotFoundException(`Store with ID ${storeId} not found`);
@@ -79,11 +86,11 @@ export class StoresService {
   }
 
   async findBySeller(sellerId: string): Promise<Store | null> {
-    return await this.storeRepository.findOne({
-      where: { sellerId },
-      order: { createdAt: 'DESC' },
-      withDeleted: false, // 過濾軟刪除的商店
-    });
+    const queryBuilder = this.storeRepository
+      .createQueryBuilder('store')
+      .where('store.sellerId = :sellerId', { sellerId })
+      .orderBy('store.createdAt', 'DESC');
+    return await queryBuilder.getOne();
   }
 
   async update(storeId: string, updateDto: UpdateStoreDto): Promise<Store> {
@@ -148,5 +155,33 @@ export class StoresService {
     store.totalRatings = totalRatings;
 
     await this.storeRepository.save(store);
+  }
+
+  /**
+   * Increment product count for a store
+   */
+  async incrementProductCount(storeId: string): Promise<void> {
+    await this.storeRepository.increment({ storeId }, 'productCount', 1);
+  }
+
+  /**
+   * Decrement product count for a store
+   */
+  async decrementProductCount(storeId: string): Promise<void> {
+    await this.storeRepository.decrement({ storeId }, 'productCount', 1);
+  }
+
+  /**
+   * One-time synchronization of product count for all stores
+   * This can be called during application startup or via an admin endpoint
+   */
+  async syncAllProductCounts(): Promise<void> {
+    const stores = await this.storeRepository.find();
+    for (const store of stores) {
+      const count = await this.storeRepository.manager
+        .getRepository(Product)
+        .count({ where: { storeId: store.storeId } });
+      await this.storeRepository.update(store.storeId, { productCount: count });
+    }
   }
 }
