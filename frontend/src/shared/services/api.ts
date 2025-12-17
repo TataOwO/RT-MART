@@ -10,13 +10,6 @@ interface RequestOptions extends RequestInit {
 }
 
 /**
- * 取得儲存的 token（優先從 localStorage，其次 sessionStorage）
- */
-const getToken = (): string | null => {
-  return localStorage.getItem('token') || sessionStorage.getItem('token');
-};
-
-/**
  * 統一的 Fetch 請求封裝
  * @param endpoint - API 端點（例如：'/auth/login'）
  * @param options - Fetch 選項
@@ -26,6 +19,7 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestOptions = {
 
   const config: RequestOptions = {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -33,7 +27,6 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestOptions = {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  // const data = await response.json();
   let data: any = null;
   const text = await response.text();
 
@@ -85,6 +78,17 @@ export const put = <T = any>(endpoint: string, data?: any, options: RequestOptio
 };
 
 /**
+ * PATCH 請求
+ */
+export const patch = <T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> => {
+  return apiRequest<T>(endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+    ...options,
+  });
+};
+
+/**
  * DELETE 請求
  */
 export const del = <T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
@@ -98,5 +102,6 @@ export default {
   get,
   post,
   put,
+  patch,
   delete: del,
 };

@@ -13,22 +13,7 @@ import {
 } from '@/types';
 import { get } from './api';
 
-interface MockUser extends User {
-  password: string;
-}
-
 // Mock 用戶資料庫（僅供開發測試-->接入api后要刪除）
-const mockUsers: MockUser[] = [
-  {
-    id: "1",
-    loginId: "hahahai",
-    name: "測試用戶",
-    email: "test@rtmart.com",
-    phone: "0912-345-678",
-    password: "Test1234",
-    avatar: "https://media.tenor.com/fGLpFBW-QBoAAAAe/memecat.png",
-  },
-];
 
 // TODO: 頭像avatar要從後端取得
 const mapUserResponseToUser = (data: {
