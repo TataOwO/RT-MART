@@ -11,6 +11,7 @@ export class CreateStoreTable20251116030005 implements MigrationInterface {
         store_address TEXT,
         store_email VARCHAR(100),
         store_phone VARCHAR(20),
+        store_avatar VARCHAR(255),
         average_rating DECIMAL(2,1) DEFAULT 0.0,
         total_ratings INT DEFAULT 0,
         deleted_at TIMESTAMP NULL,

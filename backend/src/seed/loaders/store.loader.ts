@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import { IsNull } from 'typeorm';
 import { BaseLoader } from './base.loader';
 import { Store } from '../../stores/entities/store.entity';
@@ -43,6 +45,11 @@ export class StoreLoader extends BaseLoader<Store> {
         typeof data.store_email === 'string' ? data.store_email : null;
       store.storePhone =
         typeof data.store_phone === 'string' ? data.store_phone : null;
+
+      // Generate avatar URL based on script_store_id (which is used as temporary ID in seed data)
+      const tempId = data.script_store_id || Math.floor(Math.random() * 100);
+      store.avatar = `https://i.pravatar.cc/150?img=${tempId}`;
+
       store.averageRating =
         typeof data.average_rating === 'number'
           ? data.average_rating

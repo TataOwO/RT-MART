@@ -41,6 +41,14 @@ export class Store {
   storePhone: string | null;
 
   @Column({
+    name: 'store_avatar',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  avatar: string | null;
+
+  @Column({
     name: 'average_rating',
     type: 'decimal',
     precision: 2,
