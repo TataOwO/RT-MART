@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Get,
@@ -31,6 +32,29 @@ export class ProductsController {
     @Body() createDto: CreateProductDto,
   ) {
     return await this.productsService.create(storeId, createDto);
+  }
+
+  @Get('storefront')
+  async findStorefront(@Query() queryDto: QueryProductDto) {
+    const { data, total } = await this.productsService.findStorefront(queryDto);
+    return {
+      success: true,
+      message: 'Storefront products retrieved successfully',
+      products: data,
+      total,
+      page: parseInt(queryDto.page || '1', 10),
+      limit: parseInt(queryDto.limit || '20', 10),
+    };
+  }
+
+  @Get('storefront/:id')
+  async findStorefrontDetail(@Param('id') id: string) {
+    const product = await this.productsService.findStorefrontDetail(id);
+    return {
+      success: true,
+      message: 'Product detail retrieved successfully',
+      product,
+    };
   }
 
   @Get()
