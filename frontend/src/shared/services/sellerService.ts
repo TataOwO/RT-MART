@@ -5,10 +5,10 @@ import {
   StoreInfo,
   SellerProduct,
   ProductFormData,
-  ProductStatus,
   RecentOrder,
   Discount,
-  DiscountFormData
+  DiscountFormData,
+  ProductImage
 } from '@/types/seller';
 
 /**
@@ -32,6 +32,7 @@ export const getDashboardData = async (period: SalesPeriod): Promise<DashboardDa
         revenue: period === 'day' ? 15000 : period === 'week' ? 50000 : 180000,
         orderCount: period === 'day' ? 20 : period === 'week' ? 120 : 450,
         chartData: generateMockChartData(period),
+        categoryData: generateMockCategoryData(),
         popularProducts: MOCK_POPULAR_PRODUCTS,
         recentOrders: MOCK_RECENT_ORDERS
       });
@@ -79,7 +80,7 @@ export const getProduct = async (id: string): Promise<SellerProduct> => {
   // TODO: return api.get(`/seller/products/${id}`);
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      const product = MOCK_PRODUCTS.find(p => p.id === id);
+      const product = MOCK_PRODUCTS.find(p => p.productId === id);
       if (!product) {
         reject(new Error('Product not found'));
       } else {
@@ -118,10 +119,12 @@ export const deleteProduct = async (id: string): Promise<void> => {
 
 /**
  * 更新商品狀態（上架/下架）
+ * @param id - 商品ID
+ * @param deletedAt - null 為上架，設定時間為下架
  */
-export const updateProductStatus = async (id: string, status: ProductStatus): Promise<void> => {
-  // TODO: return api.patch(`/seller/products/${id}/status`, { status });
-  console.log('Updating product status:', id, status);
+export const updateProductStatus = async (id: string, deletedAt: string | null): Promise<void> => {
+  // TODO: return api.patch(`/seller/products/${id}/status`, { deletedAt });
+  console.log('Updating product status:', id, deletedAt ? 'inactive' : 'active');
   return new Promise((resolve) => setTimeout(resolve, 500));
 };
 
@@ -226,66 +229,111 @@ export const updateDiscountStatus = async (id: string, active: boolean): Promise
 // ========== Mock Data ==========
 
 const MOCK_STORE_INFO: StoreInfo = {
+  storeId: '1',
+  sellerId: '1',
   storeName: '優質商店',
   storeDescription: '提供高品質商品，誠信經營',
-  contactPhone: '0912345678',
-  email: 'store@example.com',
-  address: '台北市大安區忠孝東路三段100號',
-  bankAccount: '1234567890123456'
+  storeAddress: '台北市大安區忠孝東路三段100號',
+  storeEmail: 'store@example.com',
+  storePhone: '0912345678',
+  totalStars: 450,
+  averageRating: 4.5,
+  totalReviews: 100,
+  bankAccountReference: '1234567890123456',
+  verified: true,
+  verifiedAt: '2025-01-01T00:00:00Z',
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-15T00:00:00Z'
 };
 
 const MOCK_PRODUCTS: SellerProduct[] = [
   {
-    id: '1',
-    name: '無線藍牙耳機',
+    productId: '1',
+    storeId: '1',
+    productTypeId: '1',
+    productName: '無線藍牙耳機',
     description: '高音質無線藍牙耳機，支援主動降噪功能',
     price: 1299,
     stock: 50,
-    categoryId: '1',
-    status: 'active',
-    images: ['https://picsum.photos/400/400?random=1'],
-    createdAt: '2025-01-01'
+    reserved: 5,
+    soldCount: 150,
+    totalStars: 225,
+    averageRating: 4.5,
+    totalReviews: 50,
+    deletedAt: null,
+    images: [
+      { imageUrl: 'https://picsum.photos/400/400?random=1', displayOrder: 1 }
+    ],
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-15T00:00:00Z'
   },
   {
-    id: '2',
-    name: '運動水壺',
+    productId: '2',
+    storeId: '1',
+    productTypeId: '5',
+    productName: '運動水壺',
     description: '大容量運動水壺，保溫保冷',
     price: 299,
     stock: 0,
-    categoryId: '5',
-    status: 'inactive',
-    images: ['https://picsum.photos/400/400?random=2'],
-    createdAt: '2025-01-02'
+    reserved: 0,
+    soldCount: 80,
+    totalStars: 120,
+    averageRating: 4.0,
+    totalReviews: 30,
+    deletedAt: '2025-01-10T00:00:00Z',
+    images: [
+      { imageUrl: 'https://picsum.photos/400/400?random=2', displayOrder: 1 }
+    ],
+    createdAt: '2025-01-02T00:00:00Z',
+    updatedAt: '2025-01-10T00:00:00Z'
   },
   {
-    id: '3',
-    name: '智能手環',
+    productId: '3',
+    storeId: '1',
+    productTypeId: '1',
+    productName: '智能手環',
     description: '多功能智能手環，心率監測、睡眠追蹤',
     price: 899,
     stock: 120,
-    categoryId: '1',
-    status: 'active',
-    images: ['https://picsum.photos/400/400?random=3'],
-    createdAt: '2025-01-05'
+    reserved: 10,
+    soldCount: 200,
+    totalStars: 420,
+    averageRating: 4.7,
+    totalReviews: 90,
+    deletedAt: null,
+    images: [
+      { imageUrl: 'https://picsum.photos/400/400?random=3', displayOrder: 1 }
+    ],
+    createdAt: '2025-01-05T00:00:00Z',
+    updatedAt: '2025-01-15T00:00:00Z'
   },
   {
-    id: '4',
-    name: '瑜珈墊',
+    productId: '4',
+    storeId: '1',
+    productTypeId: '5',
+    productName: '瑜珈墊',
     description: '加厚防滑瑜珈墊，環保材質',
     price: 599,
     stock: 35,
-    categoryId: '5',
-    status: 'active',
-    images: ['https://picsum.photos/400/400?random=4'],
-    createdAt: '2025-01-08'
+    reserved: 3,
+    soldCount: 65,
+    totalStars: 132,
+    averageRating: 4.4,
+    totalReviews: 30,
+    deletedAt: null,
+    images: [
+      { imageUrl: 'https://picsum.photos/400/400?random=4', displayOrder: 1 }
+    ],
+    createdAt: '2025-01-08T00:00:00Z',
+    updatedAt: '2025-01-15T00:00:00Z'
   }
 ];
 
 const MOCK_POPULAR_PRODUCTS = [
-  { id: '1', name: '無線藍牙耳機', image: 'https://picsum.photos/100/100?random=1', salesCount: 50, revenue: 64950 },
-  { id: '3', name: '智能手環', image: 'https://picsum.photos/100/100?random=3', salesCount: 42, revenue: 37758 },
-  { id: '4', name: '瑜珈墊', image: 'https://picsum.photos/100/100?random=4', salesCount: 35, revenue: 20965 },
-  { id: '2', name: '運動水壺', image: 'https://picsum.photos/100/100?random=2', salesCount: 28, revenue: 8372 }
+  { id: '3', name: '智能手環', image: 'https://picsum.photos/100/100?random=3', salesCount: 200, revenue: 179800 },
+  { id: '1', name: '無線藍牙耳機', image: 'https://picsum.photos/100/100?random=1', salesCount: 150, revenue: 194850 },
+  { id: '2', name: '運動水壺', image: 'https://picsum.photos/100/100?random=2', salesCount: 80, revenue: 23920 },
+  { id: '4', name: '瑜珈墊', image: 'https://picsum.photos/100/100?random=4', salesCount: 65, revenue: 38935 }
 ];
 
 const MOCK_RECENT_ORDERS: RecentOrder[] = [
@@ -338,54 +386,63 @@ const MOCK_RECENT_ORDERS: RecentOrder[] = [
 
 const MOCK_DISCOUNTS: Discount[] = [
   {
-    id: '1',
+    discountId: '1',
+    discountCode: 'NEWYEAR2025',
+    discountType: 'special',
     name: '新年特惠',
-    type: 'special',
     description: '新年限時優惠，全館商品享折扣',
-    categoryId: 'all',
-    discountRate: 15,
-    maxDiscount: 500,
-    minPurchase: 1000,
-    startDate: '2025-01-01',
-    endDate: '2025-01-31',
+    minPurchaseAmount: 1000,
+    startDatetime: '2025-01-01T00:00:00Z',
+    endDatetime: '2025-01-31T23:59:59Z',
+    isActive: true,
     usageLimit: 100,
-    usedCount: 50,
-    isActive: true
+    usageCount: 50,
+    storeId: '1',
+    productTypeId: null,
+    discountRate: 0.15,
+    maxDiscountAmount: 500,
+    createdAt: '2025-01-01T00:00:00Z'
   },
   {
-    id: '2',
+    discountId: '2',
+    discountCode: 'ELECTRONICS10',
+    discountType: 'special',
     name: '電子產品折扣',
-    type: 'special',
     description: '電子產品類別專屬折扣',
-    categoryId: '1',
-    discountRate: 10,
-    maxDiscount: 300,
-    minPurchase: 500,
-    startDate: '2025-01-10',
-    endDate: '2025-01-25',
+    minPurchaseAmount: 500,
+    startDatetime: '2025-01-10T00:00:00Z',
+    endDatetime: '2025-01-25T23:59:59Z',
+    isActive: true,
     usageLimit: 50,
-    usedCount: 12,
-    isActive: true
+    usageCount: 12,
+    storeId: '1',
+    productTypeId: '1',
+    discountRate: 0.10,
+    maxDiscountAmount: 300,
+    createdAt: '2025-01-10T00:00:00Z'
   },
   {
-    id: '3',
+    discountId: '3',
+    discountCode: 'SPORTS20',
+    discountType: 'special',
     name: '運動用品優惠',
-    type: 'special',
     description: '運動休閒類商品限時優惠',
-    categoryId: '5',
-    discountRate: 20,
-    maxDiscount: 200,
-    minPurchase: 300,
-    startDate: '2024-12-20',
-    endDate: '2025-01-10',
+    minPurchaseAmount: 300,
+    startDatetime: '2024-12-20T00:00:00Z',
+    endDatetime: '2025-01-10T23:59:59Z',
+    isActive: false,
     usageLimit: 30,
-    usedCount: 30,
-    isActive: false
+    usageCount: 30,
+    storeId: '1',
+    productTypeId: '5',
+    discountRate: 0.20,
+    maxDiscountAmount: 200,
+    createdAt: '2024-12-20T00:00:00Z'
   }
 ];
 
 /**
- * 生成圖表數據的輔助函數
+ * 生成折線圖數據的輔助函數（營業額趨勢）
  */
 function generateMockChartData(period: SalesPeriod) {
   const labels = period === 'day' ?
@@ -398,6 +455,19 @@ function generateMockChartData(period: SalesPeriod) {
     label,
     value: Math.floor(Math.random() * 10000) + 5000
   }));
+}
+
+/**
+ * 生成圓餅圖數據的輔助函數（類別銷售佔比）
+ */
+function generateMockCategoryData() {
+  return [
+    { label: '電子產品', value: 45000 },
+    { label: '服飾配件', value: 28000 },
+    { label: '食品飲料', value: 15000 },
+    { label: '居家生活', value: 22000 },
+    { label: '運動休閒', value: 18000 }
+  ];
 }
 
 export default {
