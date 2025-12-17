@@ -19,7 +19,7 @@ import { UserRole } from '../users/entities/user.entity';
 
 @Controller('product-types')
 export class ProductTypesController {
-  constructor(private readonly productTypesService: ProductTypesService) { }
+  constructor(private readonly productTypesService: ProductTypesService) {}
 
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)

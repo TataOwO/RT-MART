@@ -6,7 +6,6 @@ import {
   Matches,
 } from 'class-validator';
 
-
 export class UpdateStoreDto {
   @IsString()
   @IsOptional()

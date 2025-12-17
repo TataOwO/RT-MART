@@ -14,7 +14,7 @@ export class ProductTypesService {
   constructor(
     @InjectRepository(ProductType)
     private readonly productTypeRepository: TreeRepository<ProductType>,
-  ) { }
+  ) {}
 
   async create(createDto: CreateProductTypeDto): Promise<ProductType> {
     // Check if typeCode already exists
@@ -45,11 +45,15 @@ export class ProductTypesService {
     });
 
     if (queryDto.typeName) {
-      return productTypes.filter(pt => pt.typeName.includes(queryDto.typeName));
+      return productTypes.filter((pt) =>
+        pt.typeName.includes(queryDto.typeName),
+      );
     }
 
     if (queryDto.typeCode) {
-      return productTypes.filter(pt => pt.typeCode.includes(queryDto.typeCode));
+      return productTypes.filter((pt) =>
+        pt.typeCode.includes(queryDto.typeCode),
+      );
     }
 
     return productTypes;

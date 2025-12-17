@@ -21,7 +21,7 @@ export class StoresService {
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
     private readonly sellersService: SellersService,
-  ) { }
+  ) {}
 
   // async create(sellerId: string, createDto: CreateStoreDto): Promise<Store> {
   //   // Verify seller exists and is verified
@@ -86,16 +86,13 @@ export class StoresService {
     });
   }
 
-  async update(
-    storeId: string,
-    updateDto: UpdateStoreDto,
-  ): Promise<Store> {
+  async update(storeId: string, updateDto: UpdateStoreDto): Promise<Store> {
     const store = await this.findOne(storeId);
     Object.assign(store, updateDto);
     return await this.storeRepository.save(store);
   }
 
-  async restore(storeId: string): Promise<Store> {  
+  async restore(storeId: string): Promise<Store> {
     const store = await this.storeRepository.findOne({
       where: { storeId },
       withDeleted: true, // 包含已刪除的商店
@@ -104,7 +101,7 @@ export class StoresService {
     if (!store) {
       throw new NotFoundException(`Store with ID ${storeId} not found`);
     }
-    
+
     if (!store.deletedAt) {
       throw new BadRequestException('Store is not deleted');
     }
@@ -128,7 +125,7 @@ export class StoresService {
     }
     const seller = await this.sellersService.findOne(store.sellerId);
     if (!seller) {
-      throw new NotFoundException('Can\'t find the seller');
+      throw new NotFoundException("Can't find the seller");
     }
 
     await this.storeRepository.remove(store);

@@ -27,7 +27,7 @@ export class StoresController {
   constructor(
     private readonly storesService: StoresService,
     private readonly sellersService: SellersService,
-  ) { }
+  ) {}
 
   //Administrators can only create a store by establishing and verifying a seller's application.
   // @Post()
@@ -68,13 +68,8 @@ export class StoresController {
   @Roles(UserRole.SELLER)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Patch()
-  async update(
-    @Req() req: AuthRequest,
-    @Body() updateDto: UpdateStoreDto,
-  ) {
-    const seller = await this.sellersService.findByUserId(
-      req.user.userId,
-    );
+  async update(@Req() req: AuthRequest, @Body() updateDto: UpdateStoreDto) {
+    const seller = await this.sellersService.findByUserId(req.user.userId);
     if (!seller) {
       throw new NotFoundException('Seller profile not found');
     }
@@ -96,9 +91,7 @@ export class StoresController {
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Delete()
   async remove(@Req() req: AuthRequest) {
-    const seller = await this.sellersService.findByUserId(
-      req.user.userId,
-    );
+    const seller = await this.sellersService.findByUserId(req.user.userId);
     if (!seller) {
       throw new NotFoundException('Seller profile not found');
     }

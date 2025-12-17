@@ -12,8 +12,13 @@ import * as ProductTypesPostTest from './../functions/product-types/product-type
 import * as ProductTypesPatchTest from './../functions/product-types/product-types_patch';
 import * as ProductTypesGetTest from './../functions/product-types/product-types_get';
 import * as SellerGetTest from './../functions/sellers/sellers_get';
-import { buyerUser, sellerUser, adminUser, adminTester, buyerUser_sellerCase } from './../variables';
-
+import {
+  buyerUser,
+  sellerUser,
+  adminUser,
+  adminTester,
+  buyerUser_sellerCase,
+} from './../variables';
 
 describe('ProductTypesController (e2e)', () => {
   let app: INestApplication;
@@ -38,8 +43,12 @@ describe('ProductTypesController (e2e)', () => {
 
   it(`/product-types (POST) → Create product type`, async () => {
     await ProductTypesPostTest.createProductTypeWithAdminRole(app);
-    await ProductTypesPostTest.createProductTypeWithParentTypeIdAndAdminRole(app);
-    await ProductTypesPostTest.createProductTypeWithNonExistentParentTypeIdAndAdminRole(app);
+    await ProductTypesPostTest.createProductTypeWithParentTypeIdAndAdminRole(
+      app,
+    );
+    await ProductTypesPostTest.createProductTypeWithNonExistentParentTypeIdAndAdminRole(
+      app,
+    );
     await ProductTypesPostTest.createProductTypeWithNonPermissionRole(app);
   });
 
@@ -56,7 +65,9 @@ describe('ProductTypesController (e2e)', () => {
 
   it(`/product-types/:productTypeId (PATCH) → Update product type data (admin's)`, async () => {
     await ProductTypesPatchTest.updateProductTypeByIdWithAdminRole(app);
-    await ProductTypesPatchTest.updateProductTypeWithNonExistentIdWithAdminRole(app);
+    await ProductTypesPatchTest.updateProductTypeWithNonExistentIdWithAdminRole(
+      app,
+    );
     await ProductTypesPatchTest.updateProductTypeWithNonPermissionRole(app);
   });
 
@@ -68,13 +79,17 @@ describe('ProductTypesController (e2e)', () => {
 
   it(`/product-types/:productTypeId (GET) → Get a single product type (admin's)`, async () => {
     await ProductTypesGetTest.getSingleProductTypeByIdWithAdminRole(app);
-    await ProductTypesGetTest.getSingleProductTypeByNonExistentIdWithAdminRole(app);
+    await ProductTypesGetTest.getSingleProductTypeByNonExistentIdWithAdminRole(
+      app,
+    );
     await ProductTypesGetTest.getSingleProductTypeWithNonPermissionRole(app);
   });
-  
+
   it(`/product-types/:productTypeId (DELETE) → Delete product type (admin's)`, async () => {
     await ProductTypesDeleteTest.deleteProductTypeByIdWithAdminRole(app);
-    await ProductTypesDeleteTest.deleteProductTypeWithNonExistentIdWithAdminRole(app);
+    await ProductTypesDeleteTest.deleteProductTypeWithNonExistentIdWithAdminRole(
+      app,
+    );
     await ProductTypesDeleteTest.deleteProductTypeWithNonPermissionRole(app);
   });
 
@@ -87,5 +102,4 @@ describe('ProductTypesController (e2e)', () => {
     await UserDeleteTest.permanentlyDeleteUserById(app, sellerUser.userId);
     await UserDeleteTest.permanentlyDeleteUserById(app, adminUser.userId);
   });
-
 });
