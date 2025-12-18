@@ -33,6 +33,15 @@
     background-color: rgba($primary-color, 0.1);
     border-color: $primary-color;
   }
+
+  &.subCategory {
+    padding-left: $spacing-xl; // 縮進子類別
+    
+    .text {
+      font-size: $font-sm;
+      color: $text-secondary;
+    }
+  }
 }
 
 .radioInput {
