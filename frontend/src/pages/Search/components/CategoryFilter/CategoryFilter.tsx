@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./CategoryFilter.module.scss";
 
 export interface CategoryFilterProps {

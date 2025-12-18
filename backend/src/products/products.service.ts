@@ -17,6 +17,12 @@ import { SpecialDiscount } from '../discounts/entities/special-discount.entity';
 import { ProductType } from '../product-types/entities/product-type.entity';
 import { ProductTypesService } from '../product-types/product-types.service';
 
+export interface EnrichedProduct extends Product {
+  originalPrice: number;
+  currentPrice: number;
+  discountRate: number;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -32,7 +38,7 @@ export class ProductsService {
 
   async findStorefront(
     queryDto: QueryProductDto,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: EnrichedProduct[]; total: number }> {
     // console.log(queryDto, '=>', queryDto.productTypeId);
     const page = parseInt(queryDto.page || '1', 10);
     const limit = parseInt(queryDto.limit || '20', 10);
@@ -188,7 +194,7 @@ export class ProductsService {
     return { data: enrichedProducts, total };
   }
 
-  async findStorefrontDetail(id: string): Promise<any> {
+  async findStorefrontDetail(id: string): Promise<EnrichedProduct> {
     const product = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.store', 'store')

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Get,
@@ -11,7 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ProductsService } from './products.service';
+import { ProductsService, EnrichedProduct } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
@@ -49,7 +48,8 @@ export class ProductsController {
 
   @Get('storefront/:id')
   async findStorefrontDetail(@Param('id') id: string) {
-    const product = await this.productsService.findStorefrontDetail(id);
+    const product: EnrichedProduct =
+      await this.productsService.findStorefrontDetail(id);
     return {
       success: true,
       message: 'Product detail retrieved successfully',
