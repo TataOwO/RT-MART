@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between } from 'typeorm';
+import { Repository, Like, Between, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -14,6 +14,9 @@ import { StoresService } from '../stores/stores.service';
 
 import { SpecialDiscount } from '../discounts/entities/special-discount.entity';
 
+import { ProductType } from '../product-types/entities/product-type.entity';
+import { ProductTypesService } from '../product-types/product-types.service';
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -21,12 +24,16 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductImage)
     private readonly imageRepository: Repository<ProductImage>,
+    @InjectRepository(ProductType)
+    private readonly productTypeRepository: Repository<ProductType>,
     private readonly storesService: StoresService,
+    private readonly productTypesService: ProductTypesService,
   ) {}
 
   async findStorefront(
     queryDto: QueryProductDto,
   ): Promise<{ data: any[]; total: number }> {
+    // console.log(queryDto, '=>', queryDto.productTypeId);
     const page = parseInt(queryDto.page || '1', 10);
     const limit = parseInt(queryDto.limit || '20', 10);
     const skip = (page - 1) * limit;
@@ -62,7 +69,7 @@ export class ProductsService {
 
     if (sortBy === 'price') {
       const priceCalc =
-        'product.price * (1 - COALESCE(MAX(discount.discountRate), 0))';
+        'MAX(product.price) * (1 - COALESCE(MAX(discount.discountRate), 0))';
       subQueryBuilder.addSelect(priceCalc, 'sortPrice');
       subQueryBuilder.addOrderBy('sortPrice', sortOrder);
     } else {
@@ -81,16 +88,25 @@ export class ProductsService {
     }
 
     if (queryDto.productTypeId) {
-      subQueryBuilder.andWhere('product.productTypeId = :productTypeId', {
-        productTypeId: queryDto.productTypeId,
+      const typeIds = await this.productTypesService.getDescendantIds(
+        queryDto.productTypeId,
+      );
+
+      subQueryBuilder.andWhere('product.productTypeId IN (:...typeIds)', {
+        typeIds,
       });
     }
 
     const keyword = queryDto.keyword || queryDto.search;
     if (keyword) {
-      subQueryBuilder.andWhere('product.productName LIKE :keyword', {
-        keyword: `%${keyword}%`,
-      });
+      subQueryBuilder
+        .leftJoin('product.productType', 'pt_search')
+        .andWhere(
+          '(product.productName LIKE :keyword OR pt_search.typeName LIKE :keyword)',
+          {
+            keyword: `%${keyword}%`,
+          },
+        );
     }
 
     if (queryDto.minRating) {
@@ -100,25 +116,25 @@ export class ProductsService {
     }
 
     // --- Price Filtering (HAVING) ---
-    const priceCalc =
-      'product.price * (1 - COALESCE(MAX(discount.discountRate), 0))';
+    const effectivePrice =
+      'MAX(product.price) * (1 - COALESCE(MAX(discount.discountRate), 0))';
 
-    if (queryDto.minPrice) {
-      subQueryBuilder.having(`${priceCalc} >= :minPrice`, {
+    if (queryDto.minPrice && queryDto.maxPrice) {
+      subQueryBuilder.having(
+        `${effectivePrice} >= :minPrice AND ${effectivePrice} <= :maxPrice`,
+        {
+          minPrice: parseFloat(queryDto.minPrice),
+          maxPrice: parseFloat(queryDto.maxPrice),
+        },
+      );
+    } else if (queryDto.minPrice) {
+      subQueryBuilder.having(`${effectivePrice} >= :minPrice`, {
         minPrice: parseFloat(queryDto.minPrice),
       });
-    }
-
-    if (queryDto.maxPrice) {
-      if (queryDto.minPrice) {
-        subQueryBuilder.andHaving(`${priceCalc} <= :maxPrice`, {
-          maxPrice: parseFloat(queryDto.maxPrice),
-        });
-      } else {
-        subQueryBuilder.having(`${priceCalc} <= :maxPrice`, {
-          maxPrice: parseFloat(queryDto.maxPrice),
-        });
-      }
+    } else if (queryDto.maxPrice) {
+      subQueryBuilder.having(`${effectivePrice} <= :maxPrice`, {
+        maxPrice: parseFloat(queryDto.maxPrice),
+      });
     }
 
     // --- Total Count (Before Pagination) ---
@@ -261,7 +277,10 @@ export class ProductsService {
     }
 
     if (queryDto.productTypeId) {
-      where.productTypeId = queryDto.productTypeId;
+      const typeIds = await this.productTypesService.getDescendantIds(
+        queryDto.productTypeId,
+      );
+      (where as any).productTypeId = In(typeIds);
     }
 
     if (queryDto.search) {
