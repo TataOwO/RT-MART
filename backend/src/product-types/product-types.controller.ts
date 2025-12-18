@@ -45,6 +45,11 @@ export class ProductTypesController {
     return await this.productTypesService.findOne(id);
   }
 
+  @Get(':id/descendant-ids')
+  async getDescendantIds(@Param('id') id: string) {
+    return await this.productTypesService.getDescendantIds(id);
+  }
+
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('admin/:id')

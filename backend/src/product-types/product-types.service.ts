@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TreeRepository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProductType } from './entities/product-type.entity';
 import { CreateProductTypeDto } from './dto/create-product-type.dto';
 import { UpdateProductTypeDto } from './dto/update-product-type.dto';
@@ -13,7 +13,7 @@ import { UpdateProductTypeDto } from './dto/update-product-type.dto';
 export class ProductTypesService {
   constructor(
     @InjectRepository(ProductType)
-    private readonly productTypeRepository: TreeRepository<ProductType>,
+    private readonly productTypeRepository: Repository<ProductType>,
   ) {}
 
   async create(createDto: CreateProductTypeDto): Promise<ProductType> {
@@ -79,21 +79,43 @@ export class ProductTypesService {
     return productType;
   }
 
-  // async findTree(): Promise<ProductType[]> {
-  //   return await this.productTypeRepository.findTrees();
-  // }
-
+  /**
+   * 取得單一分類，並遞迴取得所有父級分類
+   */
   async findOne(id: string): Promise<ProductType> {
     const productType = await this.productTypeRepository.findOne({
       where: { productTypeId: id, isActive: true },
-      relations: ['parent', 'children'],
+      relations: ['parent'],
     });
 
     if (!productType) {
       throw new NotFoundException(`Product type with ID ${id} not found`);
     }
 
+    // 遞迴取得父級 (手動實現 findAncestorsTree)
+    if (productType.parent) {
+      productType.parent = await this.findOne(productType.parent.productTypeId);
+    }
+
     return productType;
+  }
+
+  /**
+   * 遞迴獲取所有子分類的 ID (包含自己)
+   */
+  async getDescendantIds(id: string): Promise<string[]> {
+    const ids: string[] = [id];
+    const children = await this.productTypeRepository.find({
+      where: { parentTypeId: id, isActive: true },
+      select: ['productTypeId'],
+    });
+
+    for (const child of children) {
+      const childIds = await this.getDescendantIds(child.productTypeId);
+      ids.push(...childIds);
+    }
+
+    return ids;
   }
 
   async findByCode(code: string): Promise<ProductType | null> {
@@ -103,8 +125,10 @@ export class ProductTypesService {
   }
 
   async findChildren(id: string): Promise<ProductType[]> {
-    const productType = await this.findOne(id);
-    return await this.productTypeRepository.findDescendants(productType);
+    const productType = await this.adminFindOne(id);
+    return await this.productTypeRepository.find({
+      where: { parentTypeId: productType.productTypeId, isActive: true },
+    });
   }
 
   async update(
