@@ -29,7 +29,12 @@ function NavigationSidebar({ activeRoute, sections }: NavigationSidebarProps) {
 
   // 檢查某個 section 是否有 active 的項目
   const isSectionActive = (section: NavSection): boolean => {
-    return section.items.some(item => activeRoute.startsWith(item.path));
+    return section.items.some(item => {
+      // 處理動態路由：移除末尾的 's' 來匹配單數形式
+      // 例如：/seller/products 應該匹配 /seller/product/edit/123
+      const basePath = item.path.replace(/s$/, '');
+      return activeRoute.startsWith(item.path) || activeRoute.startsWith(basePath);
+    });
   };
 
   // 手動控制展開/收合的狀態
