@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SalesPeriodSelector from './SalesPeriodSelector';
+import ChartTypeSelector from './ChartTypeSelector';
 import SalesChart from './SalesChart';
+import SalesBarChart from './SalesBarChart';
 import CategoryPieChart from './CategoryPieChart';
 import PopularProductsList from './PopularProductsList';
 import RecentOrdersList from './RecentOrdersList';
 import sellerService from '@/shared/services/sellerService';
-import { DashboardData, SalesPeriod } from '@/types/seller';
+import { DashboardData, SalesPeriod, ChartType } from '@/types/seller';
 import styles from './Dashboard.module.scss';
 
 function Dashboard() {
   const navigate = useNavigate();
   const [period, setPeriod] = useState<SalesPeriod>('week');
+  const [chartType, setChartType] = useState<ChartType>('line');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,10 +50,16 @@ function Dashboard() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2>營業概況</h2>
-          <SalesPeriodSelector
-            value={period}
-            onChange={setPeriod}
-          />
+          <div className={styles.selectors}>
+            <SalesPeriodSelector
+              value={period}
+              onChange={setPeriod}
+            />
+            <ChartTypeSelector
+              value={chartType}
+              onChange={setChartType}
+            />
+          </div>
         </div>
 
         <div className={styles.statsGrid}>
@@ -70,12 +79,9 @@ function Dashboard() {
 
         {/* 圖表區 */}
         <div className={styles.chartContainer}>
-          <SalesChart data={dashboardData.chartData} period={period} />
-        </div>
-
-        {/* 圓餅圖區 */}
-        <div className={styles.chartContainer}>
-          <CategoryPieChart data={dashboardData.categoryData} />
+          {chartType === 'line' && <SalesChart data={dashboardData.chartData} period={period} />}
+          {chartType === 'bar' && <SalesBarChart data={dashboardData.chartData} period={period} />}
+          {chartType === 'pie' && <CategoryPieChart data={dashboardData.categoryData} />}
         </div>
       </section>
 

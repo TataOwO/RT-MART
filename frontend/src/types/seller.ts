@@ -3,6 +3,9 @@ import { OrderStatus } from './order';
 // ========== Sales Period ==========
 export type SalesPeriod = 'day' | 'week' | 'month';
 
+// ========== Chart Type ==========
+export type ChartType = 'line' | 'bar' | 'pie';
+
 // ========== Dashboard Types ==========
 export interface DashboardData {
   revenue: number;

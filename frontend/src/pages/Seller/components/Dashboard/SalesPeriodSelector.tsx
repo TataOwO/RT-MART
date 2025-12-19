@@ -1,4 +1,4 @@
-import Button from '@/shared/components/Button';
+import Select from '@/shared/components/Select';
 import { SalesPeriod } from '@/types/seller';
 import styles from './SalesPeriodSelector.module.scss';
 
@@ -14,18 +14,19 @@ const PERIODS: Array<{ value: SalesPeriod; label: string }> = [
 ];
 
 function SalesPeriodSelector({ value, onChange }: SalesPeriodSelectorProps) {
+  const handleChange = (newValue: string) => {
+    onChange(newValue as SalesPeriod);
+  };
+
   return (
-    <div className={styles.selector}>
-      {PERIODS.map(period => (
-        <Button
-          key={period.value}
-          variant={value === period.value ? 'primary' : 'outline'}
-          onClick={() => onChange(period.value)}
-          className={styles.periodButton}
-        >
-          {period.label}
-        </Button>
-      ))}
+    <div className={styles.selectorWrapper}>
+      <label className={styles.label}>時間區間：</label>
+      <Select
+        options={PERIODS}
+        value={value}
+        onChange={handleChange}
+        className={styles.select}
+      />
     </div>
   );
 }

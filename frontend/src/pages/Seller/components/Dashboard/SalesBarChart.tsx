@@ -3,26 +3,24 @@ import * as echarts from 'echarts';
 import { SalesPeriod, ChartDataPoint } from '@/types/seller';
 import styles from './SalesChart.module.scss';
 
-interface SalesChartProps {
+interface SalesBarChartProps {
   data: ChartDataPoint[];
   period: SalesPeriod;
 }
 
-function SalesChart({ data, period }: SalesChartProps) {
+function SalesBarChart({ data, period }: SalesBarChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
 
-    // 初始化圖表
     if (!chartInstanceRef.current) {
       chartInstanceRef.current = echarts.init(chartRef.current);
     }
 
     const chart = chartInstanceRef.current;
 
-    // 配置選項
     const option: echarts.EChartsOption = {
       title: {
         text: '營業額趨勢',
@@ -61,22 +59,15 @@ function SalesChart({ data, period }: SalesChartProps) {
       series: [
         {
           name: '營業額',
-          type: 'line',
+          type: 'bar',
           data: data.map(d => d.value),
-          smooth: true,
-          lineStyle: {
-            width: 3,
-            color: '#ff6b35'
-          },
           itemStyle: {
-            color: '#ff6b35'
-          },
-          areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(255, 107, 53, 0.3)' },
-              { offset: 1, color: 'rgba(255, 107, 53, 0.05)' }
+              { offset: 0, color: '#ff6b35' },
+              { offset: 1, color: '#ff9068' }
             ])
-          }
+          },
+          barWidth: '60%'
         }
       ],
       grid: {
@@ -89,7 +80,6 @@ function SalesChart({ data, period }: SalesChartProps) {
 
     chart.setOption(option);
 
-    // 響應式調整
     const handleResize = () => {
       chart.resize();
     };
@@ -100,7 +90,6 @@ function SalesChart({ data, period }: SalesChartProps) {
     };
   }, [data, period]);
 
-  // 清理圖表實例
   useEffect(() => {
     return () => {
       if (chartInstanceRef.current) {
@@ -113,4 +102,4 @@ function SalesChart({ data, period }: SalesChartProps) {
   return <div ref={chartRef} className={styles.chart} />;
 }
 
-export default SalesChart;
+export default SalesBarChart;

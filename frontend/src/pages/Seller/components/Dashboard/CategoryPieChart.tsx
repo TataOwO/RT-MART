@@ -27,7 +27,7 @@ function CategoryPieChart({ data }: CategoryPieChartProps) {
         text: '商品類別銷售佔比',
         left: 'center',
         textStyle: {
-          fontSize: 22,
+          fontSize: 18,
           fontWeight: 600
         }
       },
@@ -40,7 +40,10 @@ function CategoryPieChart({ data }: CategoryPieChartProps) {
       legend: {
         orient: 'vertical',
         left: 'left',
-        top: 'middle'
+        top: 'middle',
+        textStyle: {
+          fontSize: 12
+        }
       },
       series: [
         {
@@ -53,12 +56,13 @@ function CategoryPieChart({ data }: CategoryPieChartProps) {
           },
           label: {
             show: true,
-            formatter: '{b}: {d}%'
+            formatter: '{b}: {d}%',
+            fontSize: 12
           },
           emphasis: {
             label: {
               show: true,
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: 'bold'
             }
           },

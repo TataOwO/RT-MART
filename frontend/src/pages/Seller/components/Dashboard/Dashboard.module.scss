@@ -36,6 +36,17 @@
     align-items: flex-start;
     gap: $spacing-md;
   }
+
+  .selectors {
+    display: flex;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+
+    @include mobile {
+      flex-direction: column;
+      width: 100%;
+    }
+  }
 }
 
 .statsGrid {
