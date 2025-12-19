@@ -61,12 +61,12 @@ export class OrdersService {
         let subtotal = 0;
 
         // Reserve inventory for all items
-        for (const item of items) {
-          await this.inventoryService.reserveStock(item.productId, {
-            quantity: item.quantity,
-          });
-          subtotal += Number(item.product.price) * item.quantity;
-        }
+        // for (const item of items) {
+        //   await this.inventoryService.reserveStock(item.productId, {
+        //     quantity: item.quantity,
+        //   });
+        //   subtotal += Number(item.product.price) * item.quantity;
+        // }
 
         const shippingFee = 60; // Default shipping fee
         const totalAmount = subtotal + shippingFee;
@@ -186,10 +186,10 @@ export class OrdersService {
           // Commit reserved inventory
           for (const item of order.items || []) {
             if (item.productId) {
-              await this.inventoryService.commitReserved(
-                item.productId,
-                item.quantity,
-              );
+              // await this.inventoryService.commitReserved(
+              //   item.productId,
+              //   item.quantity,
+              // );
             }
           }
           break;
@@ -207,9 +207,9 @@ export class OrdersService {
           // Release reserved inventory
           for (const item of order.items || []) {
             if (item.productId) {
-              await this.inventoryService.releaseReserved(item.productId, {
-                quantity: item.quantity,
-              });
+              // await this.inventoryService.releaseReserved(item.productId, {
+              //   quantity: item.quantity,
+              // });
             }
           }
           break;

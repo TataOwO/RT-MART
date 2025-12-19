@@ -90,7 +90,7 @@ export class Product {
   images?: ProductImage[];
 
   @OneToOne(() => Inventory, (inventory) => inventory.product, {
-    cascade: true,
+    cascade: false,
   })
   inventory?: Inventory;
 

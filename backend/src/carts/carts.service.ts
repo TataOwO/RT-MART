@@ -49,16 +49,16 @@ export class CartsService {
     });
 
     // Check stock availability
-    const isAvailable = await this.inventoryService.checkStockAvailability(
-      addToCartDto.productId,
-      existingItem
-        ? existingItem.quantity + addToCartDto.quantity
-        : addToCartDto.quantity,
-    );
+    // const isAvailable = await this.inventoryService.checkStockAvailability(
+    //   addToCartDto.productId,
+    //   existingItem
+    //     ? existingItem.quantity + addToCartDto.quantity
+    //     : addToCartDto.quantity,
+    // );
 
-    if (!isAvailable) {
-      throw new BadRequestException('Insufficient stock for this product');
-    }
+    // if (!isAvailable) {
+    //   throw new BadRequestException('Insufficient stock for this product');
+    // }
 
     if (existingItem) {
       // Update quantity
@@ -93,14 +93,14 @@ export class CartsService {
     }
 
     // Check stock availability
-    const isAvailable = await this.inventoryService.checkStockAvailability(
-      cartItem.productId,
-      updateDto.quantity,
-    );
+    // const isAvailable = await this.inventoryService.checkStockAvailability(
+    //   cartItem.productId,
+    //   updateDto.quantity,
+    // );
 
-    if (!isAvailable) {
-      throw new BadRequestException('Insufficient stock for this product');
-    }
+    // if (!isAvailable) {
+    //   throw new BadRequestException('Insufficient stock for this product');
+    // }
 
     cartItem.quantity = updateDto.quantity;
     await this.cartItemRepository.save(cartItem);

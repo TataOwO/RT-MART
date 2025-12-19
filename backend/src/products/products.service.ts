@@ -15,6 +15,7 @@ import { StoresService } from '../stores/stores.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SellersService } from '../sellers/sellers.service';
 import { SortImagesDto, UpdateSortedImagesDto } from './dto/upate-sortedImages.dto';
+import { Inventory } from '../inventory/entities/inventory.entity';
 
 @Injectable()
 export class ProductsService {
@@ -23,6 +24,8 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductImage)
     private readonly imageRepository: Repository<ProductImage>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
     private readonly storesService: StoresService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly sellerService: SellersService
@@ -47,18 +50,30 @@ export class ProductsService {
 
     const savedProduct = await this.productRepository.save(product);
 
+    const inventory = this.inventoryRepository.create({
+        quantity: createDto.initialStock,
+        productId: savedProduct.productId
+    });
+    await this.inventoryRepository.save(inventory);
+
     // Create images if provided
     if (files && files.length > 0) {
       const images = await Promise.all(
         files.map(async (file, index) => {
           const result = await this.cloudinaryService.uploadImage(file);
+          console.log('Cloudinary result:', result);
 
-          return this.imageRepository.create({
+          if(!result.url || !result.publicId){
+            throw new BadRequestException('Cloudinary error: missing url or publicId');
+          }
+
+          const imageData = {
             productId: savedProduct.productId,
-            imageUrl: result.url,               // URL
+            imageUrl: result.url,
             publicId: result.publicId,
             displayOrder: index + 1
-          });
+          };
+          return this.imageRepository.create(imageData);
         }));
       await this.imageRepository.save(images);
     }
@@ -191,7 +206,6 @@ export class ProductsService {
       (product.images ?? []).map(img => img.imageId)
     );
 
-    console.log(productImageIds);
     for (const item of sortImages.images) {
       if (!productImageIds.has(item.imageId)) {
         throw new BadRequestException(
