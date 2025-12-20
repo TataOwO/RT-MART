@@ -126,11 +126,7 @@ function ProductDetail() {
               soldCount={product.soldCount}
             />
 
-            <PurchasePanel
-              stock={product.stock}
-              productId={product.id}
-              productData={product}
-            />
+            <PurchasePanel stock={product.stock} productId={product.id} />
           </div>
         </div>
 
