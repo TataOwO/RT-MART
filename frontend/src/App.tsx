@@ -25,6 +25,7 @@ import { OrderList as SellerOrderList, OrderDetail as SellerOrderDetail } from "
 import { DiscountList, DiscountEdit } from "./pages/Seller/components/DiscountManagement";
 import AdminCenter from "./pages/Admin";
 import AdminDashboard from "./pages/Admin/Dashboard";
+import AdminUsers from "./pages/Admin/Users";
 
 // Header Wrapper Component to handle conditional rendering
 function AppHeader() {
@@ -135,8 +136,8 @@ function AppContent() {
             {/* Index redirect */}
             <Route index element={<Navigate to="dashboard" replace />} />
 
-            {/* Dashboard */}
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
           </Route>
         </Routes>
       </main>
