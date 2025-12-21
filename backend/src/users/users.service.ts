@@ -11,6 +11,7 @@ import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { formatPhoneNumber } from '../common/utils/string.utils';
 
 @Injectable()
 export class UsersService {
@@ -45,7 +46,7 @@ export class UsersService {
 
     const user = this.userRepository.create({
       ...createUserDto,
-      phoneNumber: this.formatPhoneNumber(createUserDto.phoneNumber),
+      phoneNumber: formatPhoneNumber(createUserDto.phoneNumber),
       passwordHash,
     });
 
@@ -148,7 +149,7 @@ export class UsersService {
     const { password, currentPassword, ...rest } = updateUserDto;
     // Normalize phone number if present
     if (rest.phoneNumber) {
-      rest.phoneNumber = this.formatPhoneNumber(rest.phoneNumber);
+      rest.phoneNumber = formatPhoneNumber(rest.phoneNumber);
     }
     Object.assign(user, rest);
 
@@ -260,27 +261,5 @@ export class UsersService {
     }
 
     await this.userRepository.remove(user);
-  }
-
-  /**
-   * Normalize phone number to XXXX-XXX-XXX format
-   */
-  private formatPhoneNumber(phoneNumber?: string): string | undefined {
-    if (!phoneNumber) return phoneNumber;
-
-    // If already in correct format, return as is
-    if (/^\d{4}-\d{3}-\d{3}$/.test(phoneNumber)) {
-      return phoneNumber;
-    }
-
-    // Extract only digits
-    const digits = phoneNumber.replace(/\D/g, '');
-
-    // If we have exactly 10 digits, format them
-    if (digits.length === 10) {
-      return digits.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
-    }
-
-    return phoneNumber;
   }
 }
