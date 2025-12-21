@@ -1,7 +1,7 @@
 // import api from './api'; // TODO: 當實作真實 API 時取消註解
 import type {
   DashboardStats,
-  User,
+  AdminUser,
   SellerApplication,
   Dispute,
   SystemDiscount,
@@ -37,7 +37,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 export const getUsers = async (params?: {
   search?: string;
   role?: 'buyer' | 'seller' | 'all';
-}): Promise<{ users: User[]; total: number }> => {
+}): Promise<{ users: AdminUser[]; total: number }> => {
   await delay(400);
 
   let filteredUsers = [...mockUsers];
@@ -413,7 +413,7 @@ const mockDashboardStats: DashboardStats = {
 };
 
 // 使用者數據
-let mockUsers: User[] = [
+let mockUsers: AdminUser[] = [
   {
     user_id: '1',
     login_id: 'user001',

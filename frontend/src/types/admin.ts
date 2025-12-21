@@ -1,3 +1,5 @@
+import { ChartDataPoint } from './seller';
+
 // Dashboard Types
 export interface DashboardStats {
   totalRevenue: number;
@@ -19,13 +21,8 @@ export interface RecentActivity {
   timestamp: string;
 }
 
-export interface ChartDataPoint {
-  label: string;
-  value: number;
-}
-
-// User Type (with admin-specific fields)
-export interface User {
+// Admin User Type (with admin-specific fields)
+export interface AdminUser {
   user_id: string;
   login_id: string;
   name: string;
