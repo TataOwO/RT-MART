@@ -12,6 +12,7 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 import { QueryStoreDto } from './dto/query-store.dto';
 import { SellersService } from '../sellers/sellers.service';
 import { Seller } from '../sellers/entities/seller.entity';
+import { formatPhoneNumber } from '../common/utils/string.utils';
 
 @Injectable()
 export class StoresService implements OnModuleInit {
@@ -85,6 +86,26 @@ export class StoresService implements OnModuleInit {
     return store;
   }
 
+  async findMyStore(userId: string): Promise<Store> {
+    const seller = await this.sellersService.findByUserId(userId);
+    if (!seller) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const store = await this.storeRepository
+      .createQueryBuilder('store')
+      .leftJoinAndSelect('store.seller', 'seller')
+      .leftJoinAndSelect('seller.user', 'user')
+      .where('store.sellerId = :sellerId', { sellerId: seller.sellerId })
+      .getOne();
+
+    if (!store) {
+      throw new NotFoundException('Store not found for this seller');
+    }
+
+    return store;
+  }
+
   async findBySeller(sellerId: string): Promise<Store | null> {
     const queryBuilder = this.storeRepository
       .createQueryBuilder('store')
@@ -95,7 +116,19 @@ export class StoresService implements OnModuleInit {
 
   async update(storeId: string, updateDto: UpdateStoreDto): Promise<Store> {
     const store = await this.findOne(storeId);
-    Object.assign(store, updateDto);
+    const { bankAccountReference, ...storeData } = updateDto;
+
+    if (bankAccountReference !== undefined) {
+      await this.sellerRepository.update(store.sellerId, {
+        bankAccountReference,
+      });
+    }
+
+    if (storeData.storePhone) {
+      storeData.storePhone = formatPhoneNumber(storeData.storePhone);
+    }
+
+    Object.assign(store, storeData);
     return await this.storeRepository.save(store);
   }
 

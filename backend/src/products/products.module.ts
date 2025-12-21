@@ -10,6 +10,7 @@ import { StoresModule } from '../stores/stores.module';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SellersModule } from '../sellers/sellers.module';
 import { CloudinaryModule } from '@/cloudinary/cloudinary.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CloudinaryModule } from '@/cloudinary/cloudinary.module';
     ProductTypesModule,
     SellersModule,
     CloudinaryModule,
+    InventoryModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, CloudinaryService],

@@ -30,4 +30,8 @@ export class UpdateStoreDto {
     message: 'storePhone must be a valid phone number format',
   })
   storePhone?: string;
+
+  @IsString()
+  @IsOptional()
+  bankAccountReference?: string;
 }

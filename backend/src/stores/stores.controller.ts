@@ -53,6 +53,13 @@ export class StoresController {
     };
   }
 
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(UserRole.SELLER)
+  @Get('me')
+  async findMine(@Req() req: AuthRequest) {
+    return await this.storesService.findMyStore(req.user.userId);
+  }
+
   @Get(':storeId')
   async findOne(@Param('storeId') storeId: string) {
     return await this.storesService.findOne(storeId);
