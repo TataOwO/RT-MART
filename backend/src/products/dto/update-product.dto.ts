@@ -1,12 +1,9 @@
-import { Type } from 'class-transformer';
 import {
-  IsArray,
   IsNumber,
   IsOptional,
   IsPositive,
   IsString,
   Length,
-  ValidateNested,
 } from 'class-validator';
 
 /**
@@ -31,4 +28,7 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   productTypeId?: string;
+
+  @IsOptional()
+  isActive?: boolean;
 }

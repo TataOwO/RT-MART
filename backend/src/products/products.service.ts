@@ -14,10 +14,8 @@ import { QueryProductDto } from './dto/query-product.dto';
 import { StoresService } from '../stores/stores.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SellersService } from '../sellers/sellers.service';
-import {
-  SortImagesDto,
-  UpdateSortedImagesDto,
-} from './dto/upate-sortedImages.dto';
+import { SortImagesDto } from './dto/upate-sortedImages.dto';
+import { InventoryService } from '../inventory/inventory.service';
 
 import { SpecialDiscount } from '../discounts/entities/special-discount.entity';
 
@@ -43,6 +41,7 @@ export class ProductsService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly sellerService: SellersService,
     private readonly productTypesService: ProductTypesService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   async findStorefront(
@@ -96,6 +95,10 @@ export class ProductsService {
     }
 
     // --- Filters ---
+    subQueryBuilder.andWhere('product.isActive = :isActive', {
+      isActive: true,
+    });
+
     if (queryDto.storeId) {
       subQueryBuilder.andWhere('product.storeId = :storeId', {
         storeId: queryDto.storeId,
@@ -211,6 +214,7 @@ export class ProductsService {
       .leftJoinAndSelect('product.images', 'images')
       .leftJoinAndSelect('product.inventory', 'inventory')
       .where('product.productId = :id', { id })
+      .andWhere('product.isActive = :isActive', { isActive: true })
       .getOne();
 
     if (!product) {
@@ -265,12 +269,20 @@ export class ProductsService {
       throw new NotFoundException("Can't find the store of this seller acount");
     }
 
+    const { initialStock, ...productData } = createDto;
+
     const product = this.productRepository.create({
-      ...createDto,
+      ...productData,
       storeId: store.storeId,
     });
 
     const savedProduct = await this.productRepository.save(product);
+
+    // Initialize inventory if initialStock is provided
+    await this.inventoryService.createForProduct(
+      savedProduct.productId,
+      initialStock || 0,
+    );
 
     // Increment store product count
     await this.storesService.incrementProductCount(product.storeId);
@@ -429,7 +441,6 @@ export class ProductsService {
       (product.images ?? []).map((img) => img.imageId),
     );
 
-    console.log(productImageIds);
     for (const item of sortImages.images) {
       if (!productImageIds.has(item.imageId)) {
         throw new BadRequestException(
@@ -495,7 +506,12 @@ export class ProductsService {
 
   async remove(userId: string, id: string): Promise<void> {
     const product = await this.getProductAfterVerification(userId, id);
-    await this.productRepository.softRemove(product);
+    try {
+      await this.productRepository.softRemove(product);
+    } catch (error) {
+      console.error(`Failed to soft remove product ${id}:`, error);
+      throw error;
+    }
     // Decrement store product count
     await this.storesService.decrementProductCount(product.storeId);
   }

@@ -29,6 +29,7 @@ interface BackendStorefrontProduct {
   price: string;        // 後端 decimal 類型通常轉為 string 回傳
   currentPrice: number; // 計算後的現價
   discountRate: number; // 折扣率
+  isActive: boolean;
   averageRating: string; // decimal string
   soldCount: string;    // bigint string
   totalReviews: number;
