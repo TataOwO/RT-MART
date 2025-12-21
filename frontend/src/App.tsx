@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./shared/contexts/AuthContext";
 import { CartProvider } from "./shared/contexts/CartContext";
 import Header from "./shared/components/Header";
@@ -79,6 +79,9 @@ function AppContent() {
               </ProtectedRoute>
             }
           >
+            {/* Index redirect */}
+            <Route index element={<Navigate to="account/profile" replace />} />
+
             {/* User Account Routes */}
             <Route path="account/profile" element={<ProfilePage />} />
             <Route path="account/address" element={<AddressPage />} />
@@ -96,6 +99,9 @@ function AppContent() {
               </ProtectedRoute>
             }
           >
+            {/* Index redirect */}
+            <Route index element={<Navigate to="center" replace />} />
+
             {/* Dashboard */}
             <Route path="center" element={<Dashboard />} />
 
@@ -126,6 +132,9 @@ function AppContent() {
               </ProtectedRoute>
             }
           >
+            {/* Index redirect */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+
             {/* Dashboard */}
             <Route path="dashboard" element={<AdminDashboard />} />
           </Route>
