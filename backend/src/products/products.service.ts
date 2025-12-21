@@ -51,8 +51,8 @@ export class ProductsService {
     const savedProduct = await this.productRepository.save(product);
 
     const inventory = this.inventoryRepository.create({
-        quantity: createDto.initialStock,
-        productId: savedProduct.productId
+      quantity: createDto.initialStock,
+      productId: savedProduct.productId
     });
     await this.inventoryRepository.save(inventory);
 
@@ -63,7 +63,7 @@ export class ProductsService {
           const result = await this.cloudinaryService.uploadImage(file);
           console.log('Cloudinary result:', result);
 
-          if(!result.url || !result.publicId){
+          if (!result.url || !result.publicId) {
             throw new BadRequestException('Cloudinary error: missing url or publicId');
           }
 
@@ -82,12 +82,18 @@ export class ProductsService {
 
   async findAll(
     queryDto: QueryProductDto,
+    withActive: boolean = false,
+    withDeleted: boolean = false
   ): Promise<{ data: Product[]; total: number }> {
     const page = parseInt(queryDto.page || '1', 10);
     const limit = parseInt(queryDto.limit || '20', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string | ReturnType<typeof Like>> = {};
+    const where: Record<string, any | ReturnType<typeof Like>> = {};
+
+    if (!withActive) {
+      where.isActive = true;
+    }
 
     if (queryDto.storeId) {
       where.storeId = queryDto.storeId;
@@ -117,15 +123,27 @@ export class ProductsService {
       take: limit,
       order: { [sortBy]: sortOrder },
       relations: ['store', 'productType', 'images', 'inventory'],
+      withDeleted: withDeleted
     });
 
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOne(
+    id: string,
+    withActive: boolean = false,
+    withDeleted: boolean = false,
+  ): Promise<Product> {
+    const whereCondition: any = { productId: id };
+
+    if (!withActive) {
+      whereCondition.isActive = true;
+    }
+
     const product = await this.productRepository.findOne({
-      where: { productId: id },
+      where: whereCondition,
       relations: ['store', 'productType', 'images', 'inventory'],
+      withDeleted: withDeleted,
     });
 
     if (!product) {
@@ -138,6 +156,7 @@ export class ProductsService {
     return product;
   }
 
+
   async getProductAfterVerification(userId: string, productId: string) {
     const seller = await this.sellerService.findByUserId(userId);
     if (!seller) {
@@ -149,7 +168,7 @@ export class ProductsService {
       throw new NotFoundException('Can\'t find the store of this seller account');
     }
 
-    const product = await this.findOne(productId);
+    const product = await this.findOne(productId, true);
     if (!product) {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
@@ -241,6 +260,25 @@ export class ProductsService {
     return await this.findOne(productId);
   }
 
+  async discontinued(userId: string, productId: string) {
+    const product = await this.getProductAfterVerification(userId, productId);
+    if (!product.isActive) {
+      throw new BadRequestException('product is already discontinued');
+    }
+    product.isActive = false;
+    return await this.productRepository.save(product);
+  }
+
+  async continued(userId: string, productId: string) {
+    const product = await this.getProductAfterVerification(userId, productId);
+    if (product.isActive) {
+      throw new BadRequestException('product is already continued');
+    }
+    product.isActive = true;
+    return await this.productRepository.save(product);
+  }
+
+
   async deleteImage(userId: string, productId: string, imageId: string) {
     const product = await this.getProductAfterVerification(userId, productId);
     const image = (product.images ?? []).find(
@@ -271,8 +309,8 @@ export class ProductsService {
     return await this.findOne(productId);
   }
 
-  async remove(userId: string, id: string): Promise<void> {
-    const product = await this.getProductAfterVerification(userId, id);
+  async remove(userId: string, id: string, isAdmin: boolean = false): Promise<void> {
+    const product = (isAdmin) ? await this.findOne(id) : await this.getProductAfterVerification(userId, id);
     await this.productRepository.softRemove(product);
   }
 
