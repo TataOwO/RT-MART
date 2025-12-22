@@ -7,16 +7,16 @@ export class UpdateInventoryDto {
   quantity: number;
 }
 
-export class ReserveInventoryDto {
-  @IsInt()
-  @IsNotEmpty()
-  @Min(1)
-  quantity: number;
-}
+// export class ReserveInventoryDto {
+//   @IsInt()
+//   @IsNotEmpty()
+//   @Min(1)
+//   quantity: number;
+// }
 
-export class ReleaseInventoryDto {
-  @IsInt()
-  @IsNotEmpty()
-  @Min(1)
-  quantity: number;
-}
+// export class ReleaseInventoryDto {
+//   @IsInt()
+//   @IsNotEmpty()
+//   @Min(1)
+//   quantity: number;
+// }

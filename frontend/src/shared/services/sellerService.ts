@@ -84,7 +84,7 @@ export const getProducts = async (): Promise<SellerProduct[]> => {
   const queryParams = { storeId: store.storeId, limit: '100' };
   const queryString = new URLSearchParams(queryParams).toString();
 
-  const response = await api.get<{ data: any[]; total: number }>(`/products?${queryString}`);
+  const response = await api.get<{ data: any[]; total: number }>(`/products/seller?${queryString}`);
 
   return response.data.map(p => transformSellerProduct(p));
 };
@@ -93,7 +93,7 @@ export const getProducts = async (): Promise<SellerProduct[]> => {
  * 獲取單個商品
  */
 export const getProduct = async (id: string): Promise<SellerProduct> => {
-  const response = await api.get<any>(`/products/${id}`);
+  const response = await api.get<any>(`/products/seller/${id}`);
   return transformSellerProduct(response);
 };
 
@@ -391,11 +391,13 @@ const transformSellerProduct = (p: any): SellerProduct => ({
   totalReviews: p.totalReviews,
   isActive: p.isActive,
   deletedAt: p.deletedAt,
-  images: p.images?.map((img: any) => ({
-    imageId: img.imageId,
-    imageUrl: img.imageUrl,
-    displayOrder: img.displayOrder
-  })) || [],
+  images: (p.images || [])
+    .map((img: any) => ({
+      imageId: img.imageId,
+      imageUrl: img.imageUrl,
+      displayOrder: img.displayOrder
+    }))
+    .sort((a: any, b: any) => a.displayOrder - b.displayOrder),
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
 });

@@ -51,15 +51,11 @@ export class CartsService {
     });
 
     // Check stock availability
-    const isAvailable = await this.inventoryService.checkStockAvailability(
+    const stock = await this.inventoryService.getAvailableStock(
       addToCartDto.productId,
-      existingItem
-        ? existingItem.quantity + addToCartDto.quantity
-        : addToCartDto.quantity,
     );
-
-    if (!isAvailable) {
-      throw new BadRequestException('Insufficient stock for this product');
+    if (stock < addToCartDto.quantity) {
+      throw new BadRequestException('Product quantity is not enough');
     }
 
     if (existingItem) {

@@ -1,4 +1,6 @@
 import {
+  IsArray,
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -29,6 +31,7 @@ export class UpdateProductDto {
   @IsOptional()
   productTypeId?: string;
 
+  @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 }

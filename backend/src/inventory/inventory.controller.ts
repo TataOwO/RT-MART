@@ -6,17 +6,15 @@ import {
   Patch,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
-import {
-  UpdateInventoryDto,
-  ReserveInventoryDto,
-  ReleaseInventoryDto,
-} from './dto/update-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import type { AuthRequest } from '../common/types';
 
 @Controller('inventory')
 export class InventoryController {
@@ -27,39 +25,44 @@ export class InventoryController {
     return await this.inventoryService.findByProduct(productId);
   }
 
-  @Get('product/:productId/available')
+  @Get('product/:productId/quantity')
   async getAvailableStock(@Param('productId') productId: string) {
-    const available = await this.inventoryService.getAvailableStock(productId);
-    return { productId, availableStock: available };
+    const quantity = await this.inventoryService.getAvailableStock(productId);
+    return { productId, availableStock: quantity };
   }
 
-  @Patch('product/:productId')
+  @Roles(UserRole.SELLER)
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @Patch('product/:productId')
   async updateQuantity(
+    @Req() req: AuthRequest,
     @Param('productId') productId: string,
     @Body() updateDto: UpdateInventoryDto,
   ) {
-    return await this.inventoryService.updateQuantity(productId, updateDto);
+    return await this.inventoryService.updateQuantity(
+      req.user.userId,
+      productId,
+      updateDto,
+    );
   }
 
-  @Post('product/:productId/reserve')
-  @UseGuards(JwtAccessGuard)
-  async reserveStock(
-    @Param('productId') productId: string,
-    @Body() reserveDto: ReserveInventoryDto,
-  ) {
-    return await this.inventoryService.reserveStock(productId, reserveDto);
-  }
+  // @UseGuards(JwtAccessGuard)
+  // @Post('product/:productId/reserve')
+  // async reserveStock(
+  //   @Param('productId') productId: string,
+  //   @Body() reserveDto: ReserveInventoryDto,
+  // ) {
+  //   return await this.inventoryService.reserveStock(productId, reserveDto);
+  // }
 
-  @Post('product/:productId/release')
-  @UseGuards(JwtAccessGuard)
-  async releaseReserved(
-    @Param('productId') productId: string,
-    @Body() releaseDto: ReleaseInventoryDto,
-  ) {
-    return await this.inventoryService.releaseReserved(productId, releaseDto);
-  }
+  // @UseGuards(JwtAccessGuard)
+  // @Post('product/:productId/release')
+  // async releaseReserved(
+  //   @Param('productId') productId: string,
+  //   @Body() releaseDto: ReleaseInventoryDto,
+  // ) {
+  //   return await this.inventoryService.releaseReserved(productId, releaseDto);
+  // }
 
   @Get('test/health')
   getHealth(): object {

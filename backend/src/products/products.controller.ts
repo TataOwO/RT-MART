@@ -81,9 +81,53 @@ export class ProductsController {
     };
   }
 
+  @Roles(UserRole.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('seller')
+  async findAllBySeller(@Query() queryDto: QueryProductDto) {
+    const { data, total } = await this.productsService.findAll(queryDto, true);
+    return {
+      data,
+      total,
+      page: parseInt(queryDto.page || '1', 10),
+      limit: parseInt(queryDto.limit || '20', 10),
+    };
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('admin')
+  async findAllByAdmin(@Query() queryDto: QueryProductDto) {
+    const { data, total } = await this.productsService.findAll(
+      queryDto,
+      true,
+      true,
+    );
+    return {
+      data,
+      total,
+      page: parseInt(queryDto.page || '1', 10),
+      limit: parseInt(queryDto.limit || '20', 10),
+    };
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.productsService.findOne(id);
+  }
+
+  @Roles(UserRole.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('seller/:id')
+  async findOneBySeller(@Param('id') id: string) {
+    return await this.productsService.findOne(id, true);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('admin/:id')
+  async findOneByAdmin(@Param('id') id: string) {
+    return await this.productsService.findOne(id, true, true);
   }
 
   @Roles(UserRole.SELLER)
@@ -138,8 +182,16 @@ export class ProductsController {
   @Roles(UserRole.SELLER)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Delete(':id')
-  async remove(@Req() req: AuthRequest, @Param('id') id: string) {
+  async removeBySeller(@Req() req: AuthRequest, @Param('id') id: string) {
     await this.productsService.remove(req.user.userId, id);
+    return { message: 'Product deleted successfully' };
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Delete(':id')
+  async removeByAdmin(@Req() req: AuthRequest, @Param('id') id: string) {
+    await this.productsService.remove(req.user.userId, id, true);
     return { message: 'Product deleted successfully' };
   }
 

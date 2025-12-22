@@ -15,11 +15,9 @@ import { StoresService } from '../stores/stores.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SellersService } from '../sellers/sellers.service';
 import { SortImagesDto } from './dto/upate-sortedImages.dto';
-import { InventoryService } from '../inventory/inventory.service';
 
 import { SpecialDiscount } from '../discounts/entities/special-discount.entity';
 
-import { ProductType } from '../product-types/entities/product-type.entity';
 import { ProductTypesService } from '../product-types/product-types.service';
 
 export interface EnrichedProduct extends Product {
@@ -27,6 +25,7 @@ export interface EnrichedProduct extends Product {
   currentPrice: number;
   discountRate: number;
 }
+import { Inventory } from '../inventory/entities/inventory.entity';
 
 @Injectable()
 export class ProductsService {
@@ -35,13 +34,12 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductImage)
     private readonly imageRepository: Repository<ProductImage>,
-    @InjectRepository(ProductType)
-    private readonly productTypeRepository: Repository<ProductType>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
     private readonly storesService: StoresService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly sellerService: SellersService,
     private readonly productTypesService: ProductTypesService,
-    private readonly inventoryService: InventoryService,
   ) {}
 
   async findStorefront(
@@ -278,42 +276,53 @@ export class ProductsService {
 
     const savedProduct = await this.productRepository.save(product);
 
-    // Initialize inventory if initialStock is provided
-    await this.inventoryService.createForProduct(
-      savedProduct.productId,
-      initialStock || 0,
-    );
-
-    // Increment store product count
-    await this.storesService.incrementProductCount(product.storeId);
+    const inventory = this.inventoryRepository.create({
+      quantity: initialStock,
+      productId: savedProduct.productId,
+    });
+    await this.inventoryRepository.save(inventory);
 
     // Create images if provided
     if (files && files.length > 0) {
       const images = await Promise.all(
         files.map(async (file, index) => {
           const result = await this.cloudinaryService.uploadImage(file);
+          console.log('Cloudinary result:', result);
 
-          return this.imageRepository.create({
+          if (!result.url || !result.publicId) {
+            throw new BadRequestException(
+              'Cloudinary error: missing url or publicId',
+            );
+          }
+
+          const imageData = {
             productId: savedProduct.productId,
-            imageUrl: result.url, // URL
+            imageUrl: result.url,
             publicId: result.publicId,
             displayOrder: index + 1,
-          });
+          };
+          return this.imageRepository.create(imageData);
         }),
       );
       await this.imageRepository.save(images);
     }
-    return await this.findOne(savedProduct.productId);
+    return await this.findOne(savedProduct.productId, true);
   }
 
   async findAll(
     queryDto: QueryProductDto,
+    withActive: boolean = false,
+    withDeleted: boolean = false,
   ): Promise<{ data: Product[]; total: number }> {
     const page = parseInt(queryDto.page || '1', 10);
     const limit = parseInt(queryDto.limit || '20', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string | ReturnType<typeof Like>> = {};
+    const where: Record<string, any> = {};
+
+    if (!withActive) {
+      where.isActive = true;
+    }
 
     if (queryDto.storeId) {
       where.storeId = queryDto.storeId;
@@ -346,15 +355,27 @@ export class ProductsService {
       take: limit,
       order: { [sortBy]: sortOrder },
       relations: ['store', 'productType', 'images', 'inventory'],
+      withDeleted: withDeleted,
     });
 
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOne(
+    id: string,
+    withActive: boolean = false,
+    withDeleted: boolean = false,
+  ): Promise<Product> {
+    const whereCondition: Record<string, any> = { productId: id };
+
+    if (!withActive) {
+      whereCondition.isActive = true;
+    }
+
     const product = await this.productRepository.findOne({
-      where: { productId: id },
+      where: whereCondition,
       relations: ['store', 'productType', 'images', 'inventory'],
+      withDeleted: withDeleted,
     });
 
     if (!product) {
@@ -377,7 +398,7 @@ export class ProductsService {
       );
     }
 
-    const product = await this.findOne(productId);
+    const product = await this.findOne(productId, true);
     if (!product) {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
@@ -428,7 +449,7 @@ export class ProductsService {
       await this.imageRepository.save(newImages);
     }
 
-    return await this.findOne(product.productId);
+    return await this.findOne(product.productId, true);
   }
 
   async sortImages(
@@ -473,7 +494,25 @@ export class ProductsService {
     });
 
     await this.imageRepository.save(updatedImages);
-    return await this.findOne(productId);
+    return await this.findOne(productId, true);
+  }
+
+  async discontinued(userId: string, productId: string) {
+    const product = await this.getProductAfterVerification(userId, productId);
+    if (!product.isActive) {
+      throw new BadRequestException('product is already discontinued');
+    }
+    product.isActive = false;
+    return await this.productRepository.save(product);
+  }
+
+  async continued(userId: string, productId: string) {
+    const product = await this.getProductAfterVerification(userId, productId);
+    if (product.isActive) {
+      throw new BadRequestException('product is already continued');
+    }
+    product.isActive = true;
+    return await this.productRepository.save(product);
   }
 
   async deleteImage(userId: string, productId: string, imageId: string) {
@@ -501,19 +540,18 @@ export class ProductsService {
     });
 
     await this.imageRepository.save(remainingImages);
-    return await this.findOne(productId);
+    return await this.findOne(productId, true);
   }
 
-  async remove(userId: string, id: string): Promise<void> {
-    const product = await this.getProductAfterVerification(userId, id);
-    try {
-      await this.productRepository.softRemove(product);
-    } catch (error) {
-      console.error(`Failed to soft remove product ${id}:`, error);
-      throw error;
-    }
-    // Decrement store product count
-    await this.storesService.decrementProductCount(product.storeId);
+  async remove(
+    userId: string,
+    id: string,
+    isAdmin: boolean = false,
+  ): Promise<void> {
+    const product = isAdmin
+      ? await this.findOne(id, true, true)
+      : await this.getProductAfterVerification(userId, id);
+    await this.productRepository.softRemove(product);
   }
 
   async updateRating(productId: string, newRating: number): Promise<void> {

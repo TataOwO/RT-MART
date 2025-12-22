@@ -2,21 +2,24 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inventory } from './entities/inventory.entity';
-import {
-  UpdateInventoryDto,
-  ReserveInventoryDto,
-  ReleaseInventoryDto,
-} from './dto/update-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
+import { SellersService } from '../sellers/sellers.service';
+import { StoresService } from '../stores/stores.service';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class InventoryService {
   constructor(
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
+    private readonly storesService: StoresService,
+    private readonly productsService: ProductsService,
+    private readonly sellerService: SellersService,
   ) {}
 
   async createForProduct(
@@ -48,73 +51,110 @@ export class InventoryService {
   }
 
   async updateQuantity(
+    userId: string,
     productId: string,
     updateDto: UpdateInventoryDto,
   ): Promise<Inventory> {
+    const seller = await this.sellerService.findByUserId(userId);
+    if (!seller) {
+      throw new ForbiddenException('Not a seller role account');
+    }
+
+    const store = await this.storesService.findBySeller(seller.sellerId);
+    if (!store) {
+      throw new NotFoundException("Can't find the store of this seller acount");
+    }
+
+    const product = await this.productsService.findOne(productId, true);
+    if (product.storeId != store.storeId) {
+      throw new ForbiddenException('Not own this product');
+    }
+
     const inventory = await this.findByProduct(productId);
     inventory.quantity = updateDto.quantity;
     return await this.inventoryRepository.save(inventory);
   }
 
-  async reserveStock(
+  // async reserveStock(
+  //   productId: string,
+  //   reserveDto: ReserveInventoryDto,
+  // ): Promise<Inventory> {
+  //   const inventory = await this.findByProduct(productId);
+
+  //   // Check if enough stock is available
+  //   const availableStock = inventory.quantity - inventory.reserved;
+  //   if (availableStock < reserveDto.quantity) {
+  //     throw new BadRequestException(
+  //       `Insufficient stock. Available: ${availableStock}, Requested: ${reserveDto.quantity}`,
+  //     );
+  //   }
+
+  //   inventory.reserved += reserveDto.quantity;
+  //   return await this.inventoryRepository.save(inventory);
+  // }
+
+  // async releaseReserved(
+  //   productId: string,
+  //   releaseDto: ReleaseInventoryDto,
+  // ): Promise<Inventory> {
+  //   const inventory = await this.findByProduct(productId);
+
+  //   if (inventory.reserved < releaseDto.quantity) {
+  //     throw new BadRequestException(
+  //       'Cannot release more than reserved quantity',
+  //     );
+  //   }
+
+  //   inventory.reserved -= releaseDto.quantity;
+  //   return await this.inventoryRepository.save(inventory);
+  // }
+
+  async orderCreated(
     productId: string,
-    reserveDto: ReserveInventoryDto,
+    numOfOrderItems: number,
   ): Promise<Inventory> {
     const inventory = await this.findByProduct(productId);
 
-    // Check if enough stock is available
-    const availableStock = inventory.quantity - inventory.reserved;
-    if (availableStock < reserveDto.quantity) {
-      throw new BadRequestException(
-        `Insufficient stock. Available: ${availableStock}, Requested: ${reserveDto.quantity}`,
-      );
+    if (inventory.quantity < numOfOrderItems) {
+      throw new BadRequestException('Quentity is not enough');
     }
 
-    inventory.reserved += reserveDto.quantity;
+    inventory.quantity -= numOfOrderItems;
+    inventory.reserved += numOfOrderItems;
     return await this.inventoryRepository.save(inventory);
   }
 
-  async releaseReserved(
+  async orderShipped(
     productId: string,
-    releaseDto: ReleaseInventoryDto,
+    numOfOrderItems: number,
   ): Promise<Inventory> {
     const inventory = await this.findByProduct(productId);
 
-    if (inventory.reserved < releaseDto.quantity) {
-      throw new BadRequestException(
-        'Cannot release more than reserved quantity',
-      );
+    if (inventory.reserved < numOfOrderItems) {
+      throw new BadRequestException('Reserved quantity is not enougth');
     }
-
-    inventory.reserved -= releaseDto.quantity;
+    inventory.reserved -= numOfOrderItems;
     return await this.inventoryRepository.save(inventory);
   }
 
-  async commitReserved(
+  async orderCancel(
     productId: string,
-    quantity: number,
+    numOfOrderItems: number,
   ): Promise<Inventory> {
     const inventory = await this.findByProduct(productId);
 
-    if (inventory.reserved < quantity) {
-      throw new BadRequestException(
-        'Cannot commit more than reserved quantity',
-      );
+    if (inventory.quantity < numOfOrderItems) {
+      throw new BadRequestException('Quentity is not enough');
     }
 
-    inventory.quantity -= quantity;
-    inventory.reserved -= quantity;
-
-    if (inventory.quantity < 0) {
-      throw new BadRequestException('Inventory quantity cannot be negative');
-    }
-
+    inventory.reserved -= numOfOrderItems;
+    inventory.quantity += numOfOrderItems;
     return await this.inventoryRepository.save(inventory);
   }
 
   async getAvailableStock(productId: string): Promise<number> {
     const inventory = await this.findByProduct(productId);
-    return inventory.quantity - inventory.reserved;
+    return inventory.quantity;
   }
 
   async checkStockAvailability(

@@ -106,12 +106,6 @@ function ProductList() {
 
   const isActive = (product: SellerProduct) => product.isActive;
 
-  products.forEach(product => {
-    product.images = [...product.images].sort(
-      (a, b) => a.displayOrder - b.displayOrder
-    );
-  });
-
   return (
     <div className={styles.productList}>
       <div className={styles.header}>

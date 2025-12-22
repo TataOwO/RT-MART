@@ -14,8 +14,6 @@ export const CloudinaryProvider = {
     const apiKey = config.get('CLOUDINARY_API_KEY');
     const apiSecret = config.get('CLOUDINARY_API_SECRET');
 
-    console.log('Cloudinary config:', { cloudName, apiKey, apiSecret });
-
     cloudinary.config({
       cloud_name: cloudName,
       api_key: apiKey,
