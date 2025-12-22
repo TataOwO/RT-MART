@@ -5,6 +5,8 @@ import type {
   SellerApplication,
   Dispute,
   SystemDiscount,
+  AdminOrder,
+  AdminOrderFilters,
 } from '@/types/admin';
 
 /**
@@ -240,15 +242,137 @@ export const resolveDispute = async (
   };
 };
 
+// ========== Order Management ==========
+
+/**
+ * 獲取訂單列表（管理員）
+ * TODO: 替換為 GET /api/v1/admin/orders
+ */
+export const getAdminOrders = async (
+  filters?: AdminOrderFilters
+): Promise<{ orders: AdminOrder[]; total: number }> => {
+  await delay(400);
+
+  let filtered = [...mockAdminOrders];
+
+  // 搜尋篩選（訂單編號、買家、賣家）
+  if (filters?.search) {
+    const search = filters.search.toLowerCase();
+    filtered = filtered.filter(
+      (order) =>
+        order.order_number.toLowerCase().includes(search) ||
+        order.buyer_name.toLowerCase().includes(search) ||
+        order.seller_name.toLowerCase().includes(search) ||
+        order.store_name.toLowerCase().includes(search)
+    );
+  }
+
+  // 狀態篩選
+  if (filters?.status && filters.status !== 'all') {
+    filtered = filtered.filter((order) => order.status === filters.status);
+  }
+
+  // 日期範圍篩選
+  if (filters?.startDate) {
+    filtered = filtered.filter(
+      (order) => new Date(order.created_at) >= new Date(filters.startDate!)
+    );
+  }
+  if (filters?.endDate) {
+    filtered = filtered.filter(
+      (order) => new Date(order.created_at) <= new Date(filters.endDate!)
+    );
+  }
+
+  // 分頁
+  const page = filters?.page || 1;
+  const limit = filters?.limit || 20;
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const paginatedOrders = filtered.slice(start, end);
+
+  return {
+    orders: paginatedOrders,
+    total: filtered.length,
+  };
+};
+
+/**
+ * 獲取單個訂單詳情（管理員）
+ * TODO: 替換為 GET /api/v1/admin/orders/:orderId
+ */
+export const getAdminOrderById = async (
+  orderId: string
+): Promise<AdminOrder> => {
+  await delay(300);
+
+  const order = mockAdminOrders.find((o) => o.order_id === orderId);
+  if (!order) throw new Error('訂單不存在');
+
+  return { ...order };
+};
+
+/**
+ * 標記訂單異常
+ * TODO: 替換為 PATCH /api/v1/admin/orders/:orderId/flag
+ */
+export const flagOrder = async (
+  orderId: string,
+  adminNotes: string
+): Promise<{ success: boolean; message: string }> => {
+  await delay(300);
+
+  const order = mockAdminOrders.find((o) => o.order_id === orderId);
+  if (!order) throw new Error('訂單不存在');
+
+  order.is_flagged = true;
+  order.admin_notes = adminNotes;
+
+  return {
+    success: true,
+    message: '訂單已標記為異常',
+  };
+};
+
+/**
+ * 取消標記訂單異常
+ * TODO: 替換為 PATCH /api/v1/admin/orders/:orderId/unflag
+ */
+export const unflagOrder = async (
+  orderId: string
+): Promise<{ success: boolean; message: string }> => {
+  await delay(300);
+
+  const order = mockAdminOrders.find((o) => o.order_id === orderId);
+  if (!order) throw new Error('訂單不存在');
+
+  order.is_flagged = false;
+  order.admin_notes = undefined;
+
+  return {
+    success: true,
+    message: '已取消標記異常',
+  };
+};
+
 // ========== System Discounts ==========
 
 /**
  * 獲取系統折扣列表
  * TODO: 替換為 GET /api/v1/admin/discounts
  */
-export const getSystemDiscounts = async (): Promise<SystemDiscount[]> => {
+export const getSystemDiscounts = async (params?: {
+  type?: 'seasonal' | 'shipping';
+}): Promise<SystemDiscount[]> => {
   await delay(400);
-  return [...mockSystemDiscounts];
+
+  let filtered = [...mockSystemDiscounts];
+
+  if (params?.type) {
+    filtered = filtered.filter((d) => d.discount_type === params.type);
+  }
+
+  return filtered;
 };
 
 /**
@@ -297,6 +421,27 @@ export const updateSystemDiscount = async (
   };
 
   return mockSystemDiscounts[index];
+};
+
+/**
+ * 更新系統折扣狀態
+ * TODO: 替換為 PATCH /api/v1/admin/discounts/:discountId/status
+ */
+export const updateSystemDiscountStatus = async (
+  discountId: string,
+  isActive: boolean
+): Promise<{ success: boolean; message: string }> => {
+  await delay(300);
+
+  const discount = mockSystemDiscounts.find((d) => d.discount_id === discountId);
+  if (!discount) throw new Error('折扣不存在');
+
+  discount.is_active = isActive;
+
+  return {
+    success: true,
+    message: `折扣已${isActive ? '啟用' : '停用'}`,
+  };
 };
 
 /**
@@ -478,6 +623,225 @@ let mockDisputes: Dispute[] = [
   },
 ];
 
+// 管理員訂單數據
+let mockAdminOrders: AdminOrder[] = [
+  {
+    order_id: '1',
+    order_number: 'ORD20250122001',
+    buyer_id: '1',
+    buyer_name: '王小明',
+    buyer_email: 'user001@example.com',
+    seller_id: '2',
+    seller_name: '張大賣',
+    store_name: '大賣商店',
+    status: 'delivered',
+    payment_method: 'credit_card',
+    items: [
+      {
+        id: '1',
+        productId: 'prod001',
+        productName: 'iPhone 15 Pro',
+        productImage: 'https://picsum.photos/200/200?random=1',
+        quantity: 1,
+        price: 36900,
+      },
+    ],
+    shipping_address: {
+      id: 'addr001',
+      recipientName: '王小明',
+      phone: '0912345678',
+      city: '台北市',
+      district: '信義區',
+      postalCode: '110',
+      detail: '忠孝東路100號',
+      isDefault: true,
+    },
+    note: '請小心包裝',
+    subtotal: 36900,
+    shipping: 60,
+    discount: 0,
+    total_amount: 36960,
+    created_at: '2025-01-22T10:30:00Z',
+    updated_at: '2025-01-22T15:45:00Z',
+    paid_at: '2025-01-22T10:35:00Z',
+    shipped_at: '2025-01-22T14:00:00Z',
+    delivered_at: '2025-01-22T15:45:00Z',
+    is_flagged: false,
+  },
+  {
+    order_id: '2',
+    order_number: 'ORD20250122002',
+    buyer_id: '3',
+    buyer_name: '李小華',
+    buyer_email: 'user002@example.com',
+    seller_id: '4',
+    seller_name: '林賣家',
+    store_name: '3C專賣店',
+    status: 'processing',
+    payment_method: 'cash_on_delivery',
+    items: [
+      {
+        id: '2',
+        productId: 'prod002',
+        productName: 'MacBook Pro 14"',
+        productImage: 'https://picsum.photos/200/200?random=2',
+        quantity: 1,
+        price: 59900,
+      },
+    ],
+    shipping_address: {
+      id: 'addr002',
+      recipientName: '李小華',
+      phone: '0923456789',
+      city: '新北市',
+      district: '板橋區',
+      postalCode: '220',
+      detail: '中山路200號',
+      isDefault: true,
+    },
+    subtotal: 59900,
+    shipping: 80,
+    discount: 500,
+    total_amount: 59480,
+    created_at: '2025-01-22T09:15:00Z',
+    updated_at: '2025-01-22T09:20:00Z',
+    paid_at: '2025-01-22T09:20:00Z',
+    is_flagged: false,
+  },
+  {
+    order_id: '3',
+    order_number: 'ORD20250121003',
+    buyer_id: '5',
+    buyer_name: '陳大明',
+    buyer_email: 'user003@example.com',
+    seller_id: '2',
+    seller_name: '張大賣',
+    store_name: '大賣商店',
+    status: 'pending_payment',
+    payment_method: 'bank_transfer',
+    items: [
+      {
+        id: '3',
+        productId: 'prod003',
+        productName: 'AirPods Pro 2',
+        productImage: 'https://picsum.photos/200/200?random=3',
+        quantity: 2,
+        price: 7990,
+      },
+    ],
+    shipping_address: {
+      id: 'addr003',
+      recipientName: '陳大明',
+      phone: '0934567890',
+      city: '台中市',
+      district: '西屯區',
+      postalCode: '407',
+      detail: '台灣大道300號',
+      isDefault: true,
+    },
+    subtotal: 15980,
+    shipping: 60,
+    discount: 0,
+    total_amount: 16040,
+    created_at: '2025-01-21T16:20:00Z',
+    updated_at: '2025-01-21T16:20:00Z',
+    is_flagged: true,
+    admin_notes: '付款逾期超過24小時，需關注',
+  },
+  {
+    order_id: '4',
+    order_number: 'ORD20250121004',
+    buyer_id: '6',
+    buyer_name: '黃小美',
+    buyer_email: 'user004@example.com',
+    seller_id: '7',
+    seller_name: '趙賣家',
+    store_name: '時尚服飾店',
+    status: 'shipped',
+    payment_method: 'credit_card',
+    items: [
+      {
+        id: '4',
+        productId: 'prod004',
+        productName: '冬季羽絨外套',
+        productImage: 'https://picsum.photos/200/200?random=4',
+        quantity: 1,
+        price: 2990,
+      },
+      {
+        id: '5',
+        productId: 'prod005',
+        productName: '保暖圍巾',
+        productImage: 'https://picsum.photos/200/200?random=5',
+        quantity: 2,
+        price: 490,
+      },
+    ],
+    shipping_address: {
+      id: 'addr004',
+      recipientName: '黃小美',
+      phone: '0945678901',
+      city: '高雄市',
+      district: '左營區',
+      postalCode: '813',
+      detail: '博愛路400號',
+      isDefault: true,
+    },
+    subtotal: 3970,
+    shipping: 60,
+    discount: 100,
+    total_amount: 3930,
+    created_at: '2025-01-21T11:00:00Z',
+    updated_at: '2025-01-22T08:30:00Z',
+    paid_at: '2025-01-21T11:05:00Z',
+    shipped_at: '2025-01-22T08:30:00Z',
+    is_flagged: false,
+  },
+  {
+    order_id: '5',
+    order_number: 'ORD20250120005',
+    buyer_id: '8',
+    buyer_name: '吳小強',
+    buyer_email: 'user005@example.com',
+    seller_id: '9',
+    seller_name: '周賣家',
+    store_name: '運動用品店',
+    status: 'completed',
+    payment_method: 'debit_card',
+    items: [
+      {
+        id: '6',
+        productId: 'prod006',
+        productName: 'Nike Air Max 90',
+        productImage: 'https://picsum.photos/200/200?random=6',
+        quantity: 1,
+        price: 4500,
+      },
+    ],
+    shipping_address: {
+      id: 'addr005',
+      recipientName: '吳小強',
+      phone: '0956789012',
+      city: '台南市',
+      district: '東區',
+      postalCode: '701',
+      detail: '大學路500號',
+      isDefault: true,
+    },
+    subtotal: 4500,
+    shipping: 80,
+    discount: 0,
+    total_amount: 4580,
+    created_at: '2025-01-20T14:30:00Z',
+    updated_at: '2025-01-21T16:00:00Z',
+    paid_at: '2025-01-20T14:35:00Z',
+    shipped_at: '2025-01-20T18:00:00Z',
+    delivered_at: '2025-01-21T10:30:00Z',
+    completed_at: '2025-01-21T16:00:00Z',
+    is_flagged: false,
+  },
+];
+
 // 系統折扣數據
 let mockSystemDiscounts: SystemDiscount[] = [
   {
@@ -529,9 +893,14 @@ export default {
   rejectSellerApplication,
   getDisputes,
   resolveDispute,
+  getAdminOrders,
+  getAdminOrderById,
+  flagOrder,
+  unflagOrder,
+  toggleDiscountStatus,
   getSystemDiscounts,
   createSystemDiscount,
   updateSystemDiscount,
+  updateSystemDiscountStatus,
   deleteSystemDiscount,
-  toggleDiscountStatus,
 };

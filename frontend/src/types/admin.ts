@@ -1,4 +1,6 @@
 import { ChartDataPoint } from './seller';
+import type { OrderStatus, PaymentMethod, OrderItemDetail } from './order';
+import type { Address } from './common';
 
 // Dashboard Types
 export interface DashboardStats {
@@ -100,4 +102,45 @@ export interface SystemDiscount {
   max_discount_amount?: number;
   // Shipping discount field
   discount_amount?: number;
+}
+
+// Admin Order Management Types
+export interface AdminOrder {
+  order_id: string;
+  order_number: string;
+  buyer_id: string;
+  buyer_name: string;
+  buyer_email: string;
+  seller_id: string;
+  seller_name: string;
+  store_name: string;
+  status: OrderStatus;
+  payment_method: PaymentMethod;
+  items: OrderItemDetail[];
+  shipping_address: Address;
+  note?: string;
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total_amount: number;
+  created_at: string;
+  updated_at: string;
+  paid_at?: string;
+  shipped_at?: string;
+  delivered_at?: string;
+  completed_at?: string;
+  cancelled_at?: string;
+  // Admin-specific fields
+  is_flagged?: boolean; // 標記異常
+  admin_notes?: string; // 管理員備註
+}
+
+// Order Filter Parameters
+export interface AdminOrderFilters {
+  search?: string; // 訂單編號、買家、賣家
+  status?: OrderStatus | 'all';
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
 }

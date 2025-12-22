@@ -27,6 +27,7 @@ import AdminCenter from "./pages/Admin";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
 import AdminSellers from "./pages/Admin/Sellers";
+import AdminDisputes from "./pages/Admin/Disputes";
 
 // Header Wrapper Component to handle conditional rendering
 function AppHeader() {
@@ -140,6 +141,7 @@ function AppContent() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="sellers" element={<AdminSellers />} />
+            <Route path="disputes" element={<AdminDisputes />} />
           </Route>
         </Routes>
       </main>
