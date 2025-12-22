@@ -28,6 +28,8 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
 import AdminSellers from "./pages/Admin/Sellers";
 import AdminDisputes from "./pages/Admin/Disputes";
+import AdminDiscounts from "./pages/Admin/Discounts";
+import AdminDiscountEdit from "./pages/Admin/Discounts/DiscountEdit";
 
 // Header Wrapper Component to handle conditional rendering
 function AppHeader() {
@@ -142,6 +144,9 @@ function AppContent() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="sellers" element={<AdminSellers />} />
             <Route path="disputes" element={<AdminDisputes />} />
+            <Route path="discounts" element={<AdminDiscounts />} />
+            <Route path="discount/new" element={<AdminDiscountEdit />} />
+            <Route path="discount/edit/:discountId" element={<AdminDiscountEdit />} />
           </Route>
         </Routes>
       </main>
