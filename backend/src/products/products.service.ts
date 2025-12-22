@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between } from 'typeorm';
+import { Repository, Like, Between, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -15,7 +15,18 @@ import { StoresService } from '../stores/stores.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { SellersService } from '../sellers/sellers.service';
 import { SortImagesDto, UpdateSortedImagesDto } from './dto/upate-sortedImages.dto';
-import { Inventory } from '../inventory/entities/inventory.entity';
+import { InventoryService } from '../inventory/inventory.service';
+
+import { SpecialDiscount } from '../discounts/entities/special-discount.entity';
+
+import { ProductType } from '../product-types/entities/product-type.entity';
+import { ProductTypesService } from '../product-types/product-types.service';
+
+export interface EnrichedProduct extends Product {
+  originalPrice: number;
+  currentPrice: number;
+  discountRate: number;
+}
 
 @Injectable()
 export class ProductsService {
@@ -28,10 +39,225 @@ export class ProductsService {
     private readonly productTypeRepository: Repository<ProductType>,
     private readonly storesService: StoresService,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly sellerService: SellersService
-  ) { }
+    private readonly sellerService: SellersService,
+    private readonly productTypesService: ProductTypesService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
-  async create(userId: string, createDto: CreateProductDto, files: Express.Multer.File[]): Promise<Product> {
+  async findStorefront(
+    queryDto: QueryProductDto,
+  ): Promise<{ data: EnrichedProduct[]; total: number }> {
+    // console.log(queryDto, '=>', queryDto.productTypeId);
+    const page = parseInt(queryDto.page || '1', 10);
+    const limit = parseInt(queryDto.limit || '20', 10);
+    const skip = (page - 1) * limit;
+
+    // Step 1: Query for IDs and Discount Info with Filtering
+    // This query handles filtering, sorting, and pagination
+    const subQueryBuilder =
+      this.productRepository.createQueryBuilder('product');
+
+    // Only join tables needed for filtering/sorting
+    subQueryBuilder
+      .leftJoin(
+        SpecialDiscount,
+        'discount',
+        'discount.storeId = product.storeId AND (discount.productTypeId IS NULL OR discount.productTypeId = product.productTypeId)',
+      )
+      .leftJoin(
+        'discount.discount',
+        'discountInfo',
+        'discountInfo.isActive = true AND discountInfo.startDatetime <= NOW() AND discountInfo.endDatetime >= NOW()',
+      );
+
+    // --- Sorting ---
+    const sortBy = queryDto.sortBy || 'createdAt';
+    const sortOrder =
+      (queryDto.sortOrder?.toUpperCase() as 'ASC' | 'DESC') || 'DESC';
+
+    // Select ID and Max Discount Rate and Sort Column
+    subQueryBuilder
+      .select('product.productId', 'id')
+      .addSelect('MAX(discount.discountRate)', 'maxDiscountRate')
+      .groupBy('product.productId');
+
+    if (sortBy === 'price') {
+      const priceCalc =
+        'MAX(product.price) * (1 - COALESCE(MAX(discount.discountRate), 0))';
+      subQueryBuilder.addSelect(priceCalc, 'sortPrice');
+      subQueryBuilder.addOrderBy('sortPrice', sortOrder);
+    } else {
+      // For strict mode, we should use an aggregate or include in GROUP BY
+      // Since productId is the primary key, product.any_column is functionally dependent on it
+      // but some DB modes still complain. Using MAX() is a safe workaround for non-aggregate columns.
+      subQueryBuilder.addSelect(`MAX(product.${sortBy})`, 'sortVal');
+      subQueryBuilder.addOrderBy('sortVal', sortOrder);
+    }
+
+    // --- Filters ---
+    subQueryBuilder.andWhere('product.isActive = :isActive', {
+      isActive: true,
+    });
+
+    if (queryDto.storeId) {
+      subQueryBuilder.andWhere('product.storeId = :storeId', {
+        storeId: queryDto.storeId,
+      });
+    }
+
+    if (queryDto.productTypeId) {
+      const typeIds = await this.productTypesService.getDescendantIds(
+        queryDto.productTypeId,
+      );
+
+      subQueryBuilder.andWhere('product.productTypeId IN (:...typeIds)', {
+        typeIds,
+      });
+    }
+
+    const keyword = queryDto.keyword || queryDto.search;
+    if (keyword) {
+      subQueryBuilder
+        .leftJoin('product.productType', 'pt_search')
+        .andWhere(
+          '(product.productName LIKE :keyword OR pt_search.typeName LIKE :keyword)',
+          {
+            keyword: `%${keyword}%`,
+          },
+        );
+    }
+
+    if (queryDto.minRating) {
+      subQueryBuilder.andWhere('product.averageRating >= :minRating', {
+        minRating: parseFloat(queryDto.minRating),
+      });
+    }
+
+    // --- Price Filtering (HAVING) ---
+    const effectivePrice =
+      'MAX(product.price) * (1 - COALESCE(MAX(discount.discountRate), 0))';
+
+    if (queryDto.minPrice && queryDto.maxPrice) {
+      subQueryBuilder.having(
+        `${effectivePrice} >= :minPrice AND ${effectivePrice} <= :maxPrice`,
+        {
+          minPrice: parseFloat(queryDto.minPrice),
+          maxPrice: parseFloat(queryDto.maxPrice),
+        },
+      );
+    } else if (queryDto.minPrice) {
+      subQueryBuilder.having(`${effectivePrice} >= :minPrice`, {
+        minPrice: parseFloat(queryDto.minPrice),
+      });
+    } else if (queryDto.maxPrice) {
+      subQueryBuilder.having(`${effectivePrice} <= :maxPrice`, {
+        maxPrice: parseFloat(queryDto.maxPrice),
+      });
+    }
+
+    // --- Total Count (Before Pagination) ---
+    // We need to count the raw results because of GROUP BY
+    const countResult = await subQueryBuilder.getRawMany();
+    const total = countResult.length;
+
+    // --- Pagination ---
+    subQueryBuilder.limit(limit).offset(skip);
+    const paginatedResults = await subQueryBuilder.getRawMany();
+
+    if (paginatedResults.length === 0) {
+      return { data: [], total: 0 };
+    }
+
+    // Step 2: Fetch Full Data for selected IDs
+    const productIds = paginatedResults.map((r) => String(r.id));
+    const products = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.store', 'store')
+      .leftJoinAndSelect('product.productType', 'productType')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoinAndSelect('product.inventory', 'inventory')
+      .whereInIds(productIds)
+      .getMany();
+
+    // Step 3: Merge Data (Attach Discount info and Sort)
+    // The 'products' array from getMany() is NOT guaranteed to be in the same order as 'productIds'
+    // So we map based on the paginatedResults which preserves the sort order
+    const enrichedProducts = paginatedResults
+      .map((rawItem) => {
+        const product = products.find(
+          (p) => String(p.productId) === String(rawItem.id),
+        );
+        if (!product) return null; // Should not happen
+
+        const maxDiscountRate = rawItem.maxDiscountRate
+          ? parseFloat(rawItem.maxDiscountRate as string)
+          : 0;
+        const currentPrice = Math.round(product.price * (1 - maxDiscountRate));
+
+        return {
+          ...product,
+          originalPrice: product.price,
+          currentPrice: currentPrice,
+          discountRate: maxDiscountRate,
+        };
+      })
+      .filter((p) => p !== null);
+
+    return { data: enrichedProducts, total };
+  }
+
+  async findStorefrontDetail(id: string): Promise<EnrichedProduct> {
+    const product = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.store', 'store')
+      .leftJoinAndSelect('product.productType', 'productType')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoinAndSelect('product.inventory', 'inventory')
+      .where('product.productId = :id', { id })
+      .andWhere('product.isActive = :isActive', { isActive: true })
+      .getOne();
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    // Get active discount
+    const discountResult = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoin(
+        SpecialDiscount,
+        'discount',
+        'discount.storeId = product.storeId AND (discount.productTypeId IS NULL OR discount.productTypeId = product.productTypeId)',
+      )
+      .leftJoin(
+        'discount.discount',
+        'discountInfo',
+        'discountInfo.isActive = true AND discountInfo.startDatetime <= NOW() AND discountInfo.endDatetime >= NOW()',
+      )
+      .select('MAX(discount.discountRate)', 'maxDiscountRate')
+      .where('product.productId = :id', { id })
+      .getRawOne<{ maxDiscountRate: string }>();
+
+    // Calculate prices
+    const maxDiscountRate = discountResult?.maxDiscountRate
+      ? parseFloat(discountResult.maxDiscountRate)
+      : 0;
+    const currentPrice = Math.round(product.price * (1 - maxDiscountRate));
+
+    // Construct response
+    return {
+      ...product,
+      originalPrice: product.price,
+      currentPrice: currentPrice,
+      discountRate: maxDiscountRate,
+    };
+  }
+
+  async create(
+    userId: string,
+    createDto: CreateProductDto,
+    files: Express.Multer.File[],
+  ): Promise<Product> {
     // Verify store exists and belongs to seller
     const seller = await this.sellerService.findByUserId(userId);
     if (!seller) {
@@ -40,21 +266,26 @@ export class ProductsService {
 
     const store = await this.storesService.findBySeller(seller.sellerId);
     if (!store) {
-      throw new NotFoundException('Can\'t find the store of this seller acount')
+      throw new NotFoundException("Can't find the store of this seller acount");
     }
 
+    const { initialStock, ...productData } = createDto;
+
     const product = this.productRepository.create({
-      ...createDto,
+      ...productData,
       storeId: store.storeId,
     });
 
     const savedProduct = await this.productRepository.save(product);
 
-    const inventory = this.inventoryRepository.create({
-      quantity: createDto.initialStock,
-      productId: savedProduct.productId
-    });
-    await this.inventoryRepository.save(inventory);
+    // Initialize inventory if initialStock is provided
+    await this.inventoryService.createForProduct(
+      savedProduct.productId,
+      initialStock || 0,
+    );
+
+    // Increment store product count
+    await this.storesService.incrementProductCount(product.storeId);
 
     // Create images if provided
     if (files && files.length > 0) {
@@ -67,14 +298,14 @@ export class ProductsService {
             throw new BadRequestException('Cloudinary error: missing url or publicId');
           }
 
-          const imageData = {
+          return {
             productId: savedProduct.productId,
-            imageUrl: result.url,
+            imageUrl: result.url, // URL
             publicId: result.publicId,
-            displayOrder: index + 1
+            displayOrder: index + 1,
           };
-          return this.imageRepository.create(imageData);
-        }));
+        })
+      );
       await this.imageRepository.save(images);
     }
     return await this.findOne(savedProduct.productId);
@@ -100,7 +331,10 @@ export class ProductsService {
     }
 
     if (queryDto.productTypeId) {
-      where.productTypeId = queryDto.productTypeId;
+      const typeIds = await this.productTypesService.getDescendantIds(
+        queryDto.productTypeId,
+      );
+      (where as any).productTypeId = In(typeIds);
     }
 
     if (queryDto.search) {
@@ -150,9 +384,6 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    // Increment view count
-    await this.productRepository.increment({ productId: id }, 'viewCount', 1);
-
     return product;
   }
 
@@ -165,7 +396,9 @@ export class ProductsService {
 
     const store = await this.storesService.findBySeller(seller.sellerId);
     if (!store) {
-      throw new NotFoundException('Can\'t find the store of this seller account');
+      throw new NotFoundException(
+        "Can't find the store of this seller account",
+      );
     }
 
     const product = await this.findOne(productId, true);
@@ -185,18 +418,21 @@ export class ProductsService {
     id: string,
     updateDto: UpdateProductDto,
   ): Promise<Product> {
-
     const product = await this.getProductAfterVerification(userId, id);
 
     Object.assign(product, updateDto);
     return await this.productRepository.save(product);
   }
 
-  async addImages(userId: string, productId: string, files: Express.Multer.File[]): Promise<Product> {
+  async addImages(
+    userId: string,
+    productId: string,
+    files: Express.Multer.File[],
+  ): Promise<Product> {
     const product = await this.getProductAfterVerification(userId, productId);
     const currentMaxOrder =
       (product.images ?? []).length > 0
-        ? Math.max(...(product.images ?? []).map(img => img.displayOrder))
+        ? Math.max(...(product.images ?? []).map((img) => img.displayOrder))
         : 0;
 
     if (files && files.length > 0) {
@@ -210,7 +446,7 @@ export class ProductsService {
             publicId: result.publicId,
             displayOrder: currentMaxOrder + index + 1,
           });
-        })
+        }),
       );
 
       await this.imageRepository.save(newImages);
@@ -219,10 +455,14 @@ export class ProductsService {
     return await this.findOne(product.productId);
   }
 
-  async sortImages(userId: string, productId: string, sortImages: SortImagesDto): Promise<Product> {
+  async sortImages(
+    userId: string,
+    productId: string,
+    sortImages: SortImagesDto,
+  ): Promise<Product> {
     const product = await this.getProductAfterVerification(userId, productId);
     const productImageIds = new Set(
-      (product.images ?? []).map(img => img.imageId)
+      (product.images ?? []).map((img) => img.imageId),
     );
 
     for (const item of sortImages.images) {
@@ -233,7 +473,7 @@ export class ProductsService {
       }
     }
 
-    const sortOrders = sortImages.images.map(i => i.order);
+    const sortOrders = sortImages.images.map((i) => i.order);
     const uniqueSortOrders = new Set(sortOrders);
 
     if (uniqueSortOrders.size !== sortOrders.length) {
@@ -281,9 +521,7 @@ export class ProductsService {
 
   async deleteImage(userId: string, productId: string, imageId: string) {
     const product = await this.getProductAfterVerification(userId, productId);
-    const image = (product.images ?? []).find(
-      img => img.imageId === imageId,
-    );
+    const image = (product.images ?? []).find((img) => img.imageId === imageId);
 
     if (!image) {
       throw new NotFoundException(
@@ -310,8 +548,15 @@ export class ProductsService {
   }
 
   async remove(userId: string, id: string, isAdmin: boolean = false): Promise<void> {
-    const product = (isAdmin) ? await this.findOne(id) : await this.getProductAfterVerification(userId, id);
+    const product = await this.getProductAfterVerification(userId, id);
+    try {
     await this.productRepository.softRemove(product);
+    } catch (error) {
+      console.error(`Failed to soft remove product ${id}:`, error);
+      throw error;
+    }
+    // Decrement store product count
+    await this.storesService.decrementProductCount(product.storeId);
   }
 
   async updateRating(productId: string, newRating: number): Promise<void> {
