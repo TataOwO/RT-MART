@@ -322,8 +322,9 @@ function Search() {
                   onClick={() => setIsFilterOpen(false)}
                   className={styles.closeButton}
                   ariaLabel="關閉篩選"
+                  icon="times"
+                  iconOnly
                 >
-                  <Icon icon="times" />
                 </Button>
               </div>
               <div className={styles.drawerContent}>
@@ -367,6 +368,7 @@ function Search() {
                 variant="outline"
                 onClick={() => setIsFilterOpen(true)}
                 className={styles.filterToggle}
+                ariaLabel="打開篩選選單"
               >
                 <Icon icon="bars" size="sm" />
                 篩選
