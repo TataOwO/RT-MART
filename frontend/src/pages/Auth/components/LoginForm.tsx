@@ -42,8 +42,9 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = 'checked' in e.target ? e.target.checked : false;
     const newValue = type === 'checkbox' ? checked : value;
 
     setFormData(prev => ({
@@ -59,7 +60,7 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
     }
   };
 
-  const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
+  const handleBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
     setTouched(prev => ({

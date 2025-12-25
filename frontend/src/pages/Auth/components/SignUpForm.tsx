@@ -60,8 +60,9 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = "checked" in e.target ? e.target.checked : false;
     const newValue = type === "checkbox" ? checked : value;
 
     setFormData((prev) => ({
@@ -88,7 +89,7 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
     }
   };
 
-  const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
+  const handleBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
     setTouched((prev) => ({
@@ -280,7 +281,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         required
         fieldName="確認密碼"
         onValidate={(error) => {
-          setErrors((prev) => ({ ...prev, confirmPassword: error || undefined }));
+          setErrors((prev) => ({
+            ...prev,
+            confirmPassword: error || undefined,
+          }));
         }}
       />
 
