@@ -197,6 +197,22 @@ export const validateLoginIdentifier = (identifier: string): ValidationError => 
 };
 
 /**
+ * 銀行賬號 格式驗證
+ */
+export const validateBankAccount = (bank_account_reference: string): ValidationError => {
+  if (!bank_account_reference || bank_account_reference.trim() === "") {
+    return "銀行賬號 為必填欄位"; // TODO: i18n
+  }
+
+  const bank_account_referenceRegex = /^[0-9]{3}-[0-9]+$/;
+  if (!bank_account_referenceRegex.test(bank_account_reference)) {
+    return "銀行賬號 格式不正確"; // TODO: i18n
+  }
+
+  return null;
+};
+
+/**
  * 通用必填驗證
  */
 export const validateRequired = (value: string, fieldName = '此欄位'): ValidationError => {

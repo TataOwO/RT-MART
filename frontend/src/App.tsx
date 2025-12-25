@@ -38,6 +38,7 @@ import {
   DiscountList,
   DiscountEdit,
 } from "./pages/Seller/components/DiscountManagement";
+import SellerApply from "./pages/Seller/Apply";
 import AdminCenter from "./pages/Admin";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
@@ -126,6 +127,16 @@ function AppContent() {
             <Route path="orders" element={<OrderListPage />} />
             <Route path="orders/:order_id" element={<OrderDetailPage />} />
           </Route>
+
+          {/* Seller Application (独立路由，不包含在 SellerCenter 布局中) */}
+          <Route
+            path="/seller/apply"
+            element={
+              <ProtectedRoute requiredRole="buyer">
+                <SellerApply />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Seller Center */}
           <Route

@@ -7,13 +7,40 @@ import {
   ProductFormData,
   RecentOrder,
   Discount,
-  DiscountFormData
+  DiscountFormData,
+  SellerApplicationForm
 } from '@/types/seller';
 
 /**
  * 賣家服務層
  * 提供所有賣家相關的 API 調用
  */
+
+/**
+ * 模擬網路延遲
+ */
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ========== Seller Application ==========
+
+/**
+ * 申請成為賣家
+ * TODO: 替換為 POST /api/v1/sellers
+ */
+export const applyToBeSeller = async (
+  data: SellerApplicationForm
+): Promise<{ success: boolean; message: string }> => {
+  await delay(800);
+
+  // Mock implementation
+  console.log('Applying to be seller:', data);
+
+  // 模擬成功響應
+  return {
+    success: true,
+    message: '申請已提交，請等待管理員審核。審核結果將通過電子郵件通知。',
+  };
+};
 
 // ========== Dashboard ==========
 
@@ -578,6 +605,7 @@ function generateMockCategoryData() {
 }
 
 export default {
+  applyToBeSeller,
   getDashboardData,
   getStoreInfo,
   updateStoreInfo,
