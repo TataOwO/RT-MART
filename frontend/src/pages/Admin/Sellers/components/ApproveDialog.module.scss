@@ -1,0 +1,81 @@
+@use "sass:color";
+
+.dialogContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  padding: $spacing-md 0;
+}
+
+.message {
+  font-size: $font-md;
+  color: $text-primary;
+  line-height: 1.6;
+
+  strong {
+    color: $primary-color;
+    font-weight: 600;
+  }
+}
+
+.infoBox {
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $border-radius-sm;
+  border-left: 4px solid $primary-color;
+}
+
+.infoRow {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: $spacing-xs;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.label {
+  font-size: $font-sm;
+  color: $text-secondary;
+  font-weight: 600;
+  min-width: 6.25rem;
+}
+
+.value {
+  font-size: $font-sm;
+  color: $text-primary;
+  word-break: break-all;
+}
+
+.hint {
+  font-size: $font-sm;
+  color: $text-secondary;
+  font-style: italic;
+  padding: $spacing-sm $spacing-md;
+  background: color.change($info-color, $alpha: 0.1);
+  border-radius: $border-radius-sm;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+}
+
+.btnSuccess {
+  background: $success-color;
+  color: white;
+  border: none;
+
+  &:hover:not(:disabled) {
+    background: color.adjust($success-color, $lightness: -10%);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/shared/hooks/useAuth';
-import SellerSidebar from './components/SellerSidebar';
-import Dialog from '@/shared/components/Dialog';
-import Button from '@/shared/components/Button';
-import styles from './SellerCenter.module.scss';
+import { useEffect, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/shared/hooks/useAuth";
+import SellerSidebar from "./components/SellerSidebar";
+import Dialog from "@/shared/components/Dialog";
+import Button from "@/shared/components/Button";
+import styles from "./SellerCenter.module.scss";
 
 /**
  * Seller Center Layout - 賣家中心主布局
@@ -19,20 +19,18 @@ function SellerCenter() {
 
   // 權限檢查：buyer 彈出申請成為賣家對話框
   useEffect(() => {
-    if (user && user.role === 'buyer') {
+    if (user && user.role === "buyer") {
       setShowApplyDialog(true);
     }
   }, [user]);
 
   // 管理員無權訪問賣家中心
-  if (user?.role === 'admin') {
+  if (user?.role === "admin") {
     return (
       <div className={styles.accessDenied}>
         <h2>無權訪問</h2>
         <p>管理員帳號無法訪問賣家中心。</p>
-        <Button onClick={() => navigate('/')}>
-          返回首頁
-        </Button>
+        <Button onClick={() => navigate("/")}>返回首頁</Button>
       </div>
     );
   }
@@ -51,10 +49,11 @@ function SellerCenter() {
 
       {/* 申請成為賣家對話框 */}
       <Dialog
+        type="custom"
         isOpen={showApplyDialog}
         onClose={() => {
           setShowApplyDialog(false);
-          navigate('/');
+          navigate("/");
         }}
         title="成為賣家"
       >
@@ -65,17 +64,19 @@ function SellerCenter() {
               variant="outline"
               onClick={() => {
                 setShowApplyDialog(false);
-                navigate('/');
+                navigate("/");
               }}
             >
               取消
             </Button>
-            <Button onClick={() => {
-              // TODO: 跳轉到申請頁面
-              alert('申請成為賣家功能尚未實作');
-              setShowApplyDialog(false);
-              navigate('/');
-            }}>
+            <Button
+              onClick={() => {
+                // TODO: 跳轉到申請頁面
+                alert("申請成為賣家功能尚未實作");
+                setShowApplyDialog(false);
+                navigate("/");
+              }}
+            >
               立即申請
             </Button>
           </div>
