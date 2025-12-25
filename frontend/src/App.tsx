@@ -131,7 +131,7 @@ function AppContent() {
           <Route
             path="/seller/*"
             element={
-              <ProtectedRoute excludeRoles={['buyer', 'admin']}>
+              <ProtectedRoute excludeRoles={['admin']}>
                 <SellerCenter />
               </ProtectedRoute>
             }
