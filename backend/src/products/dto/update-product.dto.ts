@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -31,4 +32,8 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   productTypeId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

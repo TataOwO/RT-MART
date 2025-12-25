@@ -19,7 +19,7 @@ export class CartsService {
     @InjectRepository(CartItem)
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly inventoryService: InventoryService,
-  ) {}
+  ) { }
 
   async getOrCreateCart(userId: string): Promise<Cart> {
     let cart = await this.cartRepository.findOne({
@@ -49,15 +49,9 @@ export class CartsService {
     });
 
     // Check stock availability
-    const isAvailable = await this.inventoryService.checkStockAvailability(
-      addToCartDto.productId,
-      existingItem
-        ? existingItem.quantity + addToCartDto.quantity
-        : addToCartDto.quantity,
-    );
-
-    if (!isAvailable) {
-      throw new BadRequestException('Insufficient stock for this product');
+    const stock = await this.inventoryService.getAvailableStock(addToCartDto.productId);
+    if (stock < addToCartDto.quantity) {
+      throw new BadRequestException('Product quantity is not enough');
     }
 
     if (existingItem) {
@@ -93,12 +87,9 @@ export class CartsService {
     }
 
     // Check stock availability
-    const isAvailable = await this.inventoryService.checkStockAvailability(
-      cartItem.productId,
-      updateDto.quantity,
-    );
+    const stock = await this.inventoryService.getAvailableStock(cartItem.productId);
 
-    if (!isAvailable) {
+    if (stock < updateDto.quantity) {
       throw new BadRequestException('Insufficient stock for this product');
     }
 

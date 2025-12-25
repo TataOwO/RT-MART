@@ -13,6 +13,7 @@ export class CreateProductTable20251116030007 implements MigrationInterface {
         sold_count BIGINT DEFAULT 0,
         average_rating DECIMAL(2,1) DEFAULT 0.0,
         total_reviews INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
         deleted_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -57,6 +57,10 @@ export class Product {
 
   @Column({ name: 'total_reviews', type: 'int', default: 0 })
   totalReviews: number;
+  
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
 
   @DeleteDateColumn({ type: 'timestamp', name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
@@ -90,7 +94,7 @@ export class Product {
   images?: ProductImage[];
 
   @OneToOne(() => Inventory, (inventory) => inventory.product, {
-    cascade: true,
+    cascade: false,
   })
   inventory?: Inventory;
 
