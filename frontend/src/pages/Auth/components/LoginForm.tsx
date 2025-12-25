@@ -141,6 +141,10 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
         disabled={isLoading}
         autoComplete="username"
         required
+        fieldName="帳號或 Email"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, loginIdentifier: error || undefined }));
+        }}
       />
 
       <FormInput
@@ -155,6 +159,10 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
         disabled={isLoading}
         autoComplete="current-password"
         required
+        fieldName="密碼"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, password: error || undefined }));
+        }}
       />
 
       <div className={styles.formOptions}>

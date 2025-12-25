@@ -6,8 +6,8 @@ import Alert from "@/shared/components/Alert";
 import sellerService from "@/shared/services/sellerService";
 import {
   validateEmail,
-  validateRequired,
   validateBankAccount,
+  validateRequired,
 } from "@/shared/utils/validation";
 import { AlertType } from "@/types";
 import type { SellerApplicationForm } from "@/types/seller";
@@ -83,7 +83,7 @@ function SellerApply() {
     validateField(name as keyof SellerApplicationForm, value);
   };
 
-  // 單一欄位驗證
+  // 單一欄位驗證（處理自定義驗證邏輯）
   const validateField = (
     name: keyof SellerApplicationForm,
     value: string
@@ -92,8 +92,7 @@ function SellerApply() {
 
     switch (name) {
       case "store_name":
-        error = validateRequired(value, "商店名稱");
-        if (!error && value.length > 200) {
+        if (value && value.length > 200) {
           error = "商店名稱不得超過200字";
         }
         break;
@@ -103,8 +102,8 @@ function SellerApply() {
         }
         break;
       case "store_phone":
-        if (value && !/^[\d\s\-()]+$/.test(value)) {
-          error = "請輸入有效的電話號碼";
+        if (value && !/^09[0-9]{2}-[0-9]{3}-[0-9]{3}$/.test(value)) {
+          error = "請輸入有效的電話號碼格式（例：0912-345-678）";
         }
         break;
       case "store_email":
@@ -113,16 +112,20 @@ function SellerApply() {
         }
         break;
       case "bank_account_reference":
-        error = validateBankAccount(value);
+        if (value) {
+          error = validateBankAccount(value);
+        }
         break;
       default:
         break;
     }
 
-    setErrors((prev) => ({
-      ...prev,
-      [name]: error,
-    }));
+    if (error) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: error,
+      }));
+    }
 
     return error;
   };
@@ -135,8 +138,8 @@ function SellerApply() {
     const storeNameError = validateRequired(formData.store_name, "商店名稱");
     if (storeNameError) {
       newErrors.store_name = storeNameError;
-    } else if (formData.store_name.length > 200) {
-      newErrors.store_name = "商店名稱不得超過200字";
+    } else if (formData.store_name.length > 20) {
+      newErrors.store_name = "商店名稱不得超過20字";
     }
 
     // 商店描述：可選，0-500字
@@ -145,8 +148,8 @@ function SellerApply() {
     }
 
     // 商店電話：可選，格式驗證
-    if (formData.store_phone && !/^[\d\s\-()]+$/.test(formData.store_phone)) {
-      newErrors.store_phone = "請輸入有效的電話號碼";
+    if (formData.store_phone && !/^09[0-9]{2}-[0-9]{3}-[0-9]{3}$/.test(formData.store_phone)) {
+      newErrors.store_phone = "請輸入有效的電話號碼格式（例：0912-345-678）";
     }
 
     // 商店 Email：可選，格式驗證
@@ -266,6 +269,10 @@ function SellerApply() {
                 onBlur={handleBlur}
                 placeholder="請輸入商店名稱（1-200字）"
                 required
+                fieldName="商店名稱"
+                onValidate={(error) => {
+                  setErrors((prev) => ({ ...prev, store_name: error || undefined }));
+                }}
                 error={touched.store_name ? errors.store_name : undefined}
                 disabled={loading}
               />
@@ -309,7 +316,7 @@ function SellerApply() {
                 value={formData.store_phone}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="例如：02-1234-5678 或 0912-345-678（選填）"
+                placeholder="例如：0912-345-678（選填）"
                 error={touched.store_phone ? errors.store_phone : undefined}
                 disabled={loading}
               />
@@ -339,6 +346,10 @@ function SellerApply() {
                 onBlur={handleBlur}
                 placeholder="請輸入銀行帳戶參考號"
                 required
+                fieldName="銀行帳戶"
+                onValidate={(error) => {
+                  setErrors((prev) => ({ ...prev, bank_account_reference: error || undefined }));
+                }}
                 error={
                   touched.bank_account_reference
                     ? errors.bank_account_reference

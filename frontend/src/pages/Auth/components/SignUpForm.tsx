@@ -200,6 +200,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         disabled={isLoading}
         autoComplete="username"
         required
+        fieldName="用戶名"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, loginId: error || undefined }));
+        }}
       />
 
       <FormInput
@@ -214,6 +218,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         disabled={isLoading}
         autoComplete="email"
         required
+        fieldName="Email"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, email: error || undefined }));
+        }}
       />
 
       <FormInput
@@ -228,6 +236,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         disabled={isLoading}
         autoComplete="tel"
         required
+        fieldName="電話號碼"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, phone: error || undefined }));
+        }}
       />
 
       <FormInput
@@ -242,6 +254,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         disabled={isLoading}
         autoComplete="new-password"
         required
+        fieldName="密碼"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, password: error || undefined }));
+        }}
       />
 
       {formData.password && <PasswordStrength password={formData.password} />}
@@ -262,6 +278,10 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         disabled={isLoading}
         autoComplete="new-password"
         required
+        fieldName="確認密碼"
+        onValidate={(error) => {
+          setErrors((prev) => ({ ...prev, confirmPassword: error || undefined }));
+        }}
       />
 
       <div className={styles.termsContainer}>

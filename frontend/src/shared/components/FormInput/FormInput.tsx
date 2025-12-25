@@ -6,6 +6,7 @@
 import { useState, ChangeEvent, FocusEvent, KeyboardEvent } from 'react';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import Icon from '../Icon/Icon';
+import { validateRequired } from '@/shared/utils/validation';
 import styles from './FormInput.module.scss';
 
 interface FormInputProps {
@@ -13,8 +14,8 @@ interface FormInputProps {
   type?: string;
   name: string;
   value: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onBlur?: (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   error?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -22,6 +23,8 @@ interface FormInputProps {
   required?: boolean;
   icon?: IconProp | string;
   className?: string;
+  fieldName?: string;
+  onValidate?: (error: string | null) => void;
   [key: string]: any;
 }
 
@@ -39,6 +42,8 @@ const FormInput = ({
   required = false,
   icon,
   className,
+  fieldName,
+  onValidate,
   ...rest
 }: FormInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +51,25 @@ const FormInput = ({
   // 切換密碼可見性
   const togglePasswordVisibility = () => {
     setShowPassword(prev => !prev);
+  };
+
+  // 處理 onBlur 事件，自動進行必填驗證
+  const handleBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // 如果設置為 required，自動進行必填驗證
+    if (required) {
+      const displayName = fieldName || label || name;
+      const validationError = validateRequired(value, displayName);
+
+      // 調用父組件的驗證回調
+      if (onValidate) {
+        onValidate(validationError);
+      }
+    }
+
+    // 調用父組件傳入的 onBlur
+    if (onBlur) {
+      onBlur(e);
+    }
   };
 
   // 判斷是否為密碼欄位
@@ -75,7 +99,7 @@ const FormInput = ({
           name={name}
           value={value}
           onChange={onChange}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete={autoComplete}
