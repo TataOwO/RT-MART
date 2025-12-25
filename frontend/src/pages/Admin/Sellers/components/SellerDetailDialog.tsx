@@ -1,7 +1,7 @@
-import Dialog from '@/shared/components/Dialog';
-import Button from '@/shared/components/Button';
-import { SellerApplication } from '@/types/admin';
-import styles from './SellerDetailDialog.module.scss';
+import Dialog from "@/shared/components/Dialog";
+import Button from "@/shared/components/Button";
+import { SellerApplication } from "@/types/admin";
+import styles from "./SellerDetailDialog.module.scss";
 
 interface SellerDetailDialogProps {
   isOpen: boolean;

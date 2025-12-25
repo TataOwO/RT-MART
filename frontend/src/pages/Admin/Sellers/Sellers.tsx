@@ -1,24 +1,28 @@
-import { useState, useEffect } from 'react';
-import Icon from '@/shared/components/Icon';
-import Button from '@/shared/components/Button';
-import Alert from '@/shared/components/Alert';
-import Tab from '@/shared/components/Tab';
-import adminService from '@/shared/services/adminService';
-import { SellerApplication } from '@/types/admin';
-import { AlertType } from '@/types';
-import SellerDetailDialog from './components/SellerDetailDialog';
-import ApproveDialog from './components/ApproveDialog';
-import RejectDialog from './components/RejectDialog';
-import styles from './Sellers.module.scss';
+import { useState, useEffect } from "react";
+import Icon from "@/shared/components/Icon";
+import Button from "@/shared/components/Button";
+import Alert from "@/shared/components/Alert";
+import Tab from "@/shared/components/Tab";
+import adminService from "@/shared/services/adminService";
+import { SellerApplication } from "@/types/admin";
+import { AlertType } from "@/types";
+import SellerDetailDialog from "./components/SellerDetailDialog";
+import ApproveDialog from "./components/ApproveDialog";
+import RejectDialog from "./components/RejectDialog";
+import styles from "./Sellers.module.scss";
 
 function Sellers() {
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('pending');
-  const [alert, setAlert] = useState<{ type: AlertType; message: string } | null>(null);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [alert, setAlert] = useState<{
+    type: AlertType;
+    message: string;
+  } | null>(null);
 
   // Dialog states
-  const [selectedApplication, setSelectedApplication] = useState<SellerApplication | null>(null);
+  const [selectedApplication, setSelectedApplication] =
+    useState<SellerApplication | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -26,20 +30,22 @@ function Sellers() {
 
   // Tab items
   const tabItems = [
-    { key: 'pending', label: '待審核' },
-    { key: 'approved', label: '已批准' },
-    { key: 'rejected', label: '已拒絕' },
+    { key: "pending", label: "待審核" },
+    { key: "approved", label: "已批准" },
+    { key: "rejected", label: "已拒絕" },
   ];
 
   // Fetch applications
-  const fetchApplications = async (status: 'pending' | 'approved' | 'rejected') => {
+  const fetchApplications = async (
+    status: "pending" | "approved" | "rejected"
+  ) => {
     setLoading(true);
     try {
       const data = await adminService.getSellerApplications({ status });
       setApplications(data);
     } catch (error) {
-      console.error('獲取賣家申請失敗:', error);
-      setAlert({ type: 'error', message: '獲取賣家申請失敗' });
+      console.error("獲取賣家申請失敗:", error);
+      setAlert({ type: "error", message: "獲取賣家申請失敗" });
     } finally {
       setLoading(false);
     }
@@ -48,12 +54,12 @@ function Sellers() {
   // Fetch applications when tab changes
   const handleTabChange = async (tab: string) => {
     setActiveTab(tab);
-    await fetchApplications(tab as 'pending' | 'approved' | 'rejected');
+    await fetchApplications(tab as "pending" | "approved" | "rejected");
   };
 
   // Initial load
   useEffect(() => {
-    fetchApplications('pending');
+    fetchApplications("pending");
   }, []);
 
   // Dialog handlers
@@ -88,14 +94,16 @@ function Sellers() {
 
     setActionLoading(true);
     try {
-      await adminService.approveSellerApplication(selectedApplication.seller_id);
-      setAlert({ type: 'success', message: '賣家申請已批准' });
+      await adminService.approveSellerApplication(
+        selectedApplication.seller_id
+      );
+      setAlert({ type: "success", message: "賣家申請已批准" });
       setShowApproveDialog(false);
       setSelectedApplication(null);
-      await fetchApplications(activeTab as 'pending' | 'approved' | 'rejected');
+      await fetchApplications(activeTab as "pending" | "approved" | "rejected");
     } catch (error) {
-      console.error('批准賣家申請失敗:', error);
-      setAlert({ type: 'error', message: '批准賣家申請失敗' });
+      console.error("批准賣家申請失敗:", error);
+      setAlert({ type: "error", message: "批准賣家申請失敗" });
     } finally {
       setActionLoading(false);
     }
@@ -107,14 +115,17 @@ function Sellers() {
 
     setActionLoading(true);
     try {
-      await adminService.rejectSellerApplication(selectedApplication.seller_id, reason);
-      setAlert({ type: 'success', message: '賣家申請已拒絕' });
+      await adminService.rejectSellerApplication(
+        selectedApplication.seller_id,
+        reason
+      );
+      setAlert({ type: "success", message: "賣家申請已拒絕" });
       setShowRejectDialog(false);
       setSelectedApplication(null);
-      await fetchApplications(activeTab as 'pending' | 'approved' | 'rejected');
+      await fetchApplications(activeTab as "pending" | "approved" | "rejected");
     } catch (error) {
-      console.error('拒絕賣家申請失敗:', error);
-      setAlert({ type: 'error', message: '拒絕賣家申請失敗' });
+      console.error("拒絕賣家申請失敗:", error);
+      setAlert({ type: "error", message: "拒絕賣家申請失敗" });
     } finally {
       setActionLoading(false);
     }
@@ -159,7 +170,15 @@ function Sellers() {
       {!loading && applications.length === 0 && (
         <div className={styles.emptyState}>
           <Icon icon="store-slash" />
-          <p>目前沒有{activeTab === 'pending' ? '待審核' : activeTab === 'approved' ? '已批准' : '已拒絕'}的賣家申請</p>
+          <p>
+            目前沒有
+            {activeTab === "pending"
+              ? "待審核"
+              : activeTab === "approved"
+              ? "已批准"
+              : "已拒絕"}
+            的賣家申請
+          </p>
         </div>
       )}
 
@@ -189,15 +208,27 @@ function Sellers() {
                   <td>{getStatusBadge(app)}</td>
                   <td>
                     <div className={styles.actionButtons}>
-                      <Button size="sm" variant="outline" onClick={() => handleViewDetail(app)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewDetail(app)}
+                      >
                         查看詳情
                       </Button>
                       {!app.verified && !app.rejected_at && (
                         <>
-                          <Button size="sm" className={styles.btnSuccess} onClick={() => handleApproveClick(app)}>
+                          <Button
+                            size="sm"
+                            className={styles.btnSuccess}
+                            onClick={() => handleApproveClick(app)}
+                          >
                             批准
                           </Button>
-                          <Button size="sm" className={styles.btnDanger} onClick={() => handleRejectClick(app)}>
+                          <Button
+                            size="sm"
+                            className={styles.btnDanger}
+                            onClick={() => handleRejectClick(app)}
+                          >
                             拒絕
                           </Button>
                         </>
