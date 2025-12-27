@@ -11,7 +11,7 @@ import adminService from '@/shared/services/adminService';
 import { AdminOrder, AdminOrderFilters } from '@/types/admin';
 import { AlertType, SelectOption } from '@/types';
 import { OrderStatus } from '@/types/order';
-import styles from './Disputes.module.scss';
+import styles from './Orders.module.scss';
 
 // 訂單狀態選項
 const STATUS_OPTIONS: SelectOption[] = [
@@ -66,7 +66,7 @@ const getPaymentMethodLabel = (method: string): string => {
   return paymentMap[method] || method;
 };
 
-function Disputes() {
+function Orders() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -83,8 +83,8 @@ function Disputes() {
   // Dialog states
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [showFlagDialog, setShowFlagDialog] = useState(false);
-  const [flagNotes, setFlagNotes] = useState('');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   // 初始載入最新訂單
   useEffect(() => {
@@ -139,40 +139,29 @@ function Disputes() {
     }
   };
 
-  const handleFlagOrder = (order: AdminOrder) => {
+  const handleCancelOrder = async (order: AdminOrder) => {
     setSelectedOrder(order);
-    setFlagNotes('');
-    setShowFlagDialog(true);
+    setCancelReason('');
+    setShowCancelDialog(true);
   };
 
-  const handleConfirmFlag = async () => {
+  const handleConfirmCancel = async () => {
     if (!selectedOrder) return;
-    if (!flagNotes.trim()) {
-      setAlert({ type: 'warning', message: '請輸入備註說明' });
+    if (!cancelReason.trim()) {
+      setAlert({ type: 'warning', message: '請輸入取消原因' });
       return;
     }
 
     try {
-      await adminService.flagOrder(selectedOrder.order_id, flagNotes);
-      setAlert({ type: 'success', message: '訂單已標記為異常' });
-      setShowFlagDialog(false);
-      setFlagNotes('');
+      await adminService.cancelAdminOrder(selectedOrder.order_id, cancelReason);
+      setAlert({ type: 'success', message: '訂單已取消' });
+      setShowCancelDialog(false);
+      setCancelReason('');
       setSelectedOrder(null);
       loadOrders();
     } catch (error) {
-      console.error('標記失敗:', error);
-      setAlert({ type: 'error', message: '標記失敗' });
-    }
-  };
-
-  const handleUnflagOrder = async (order: AdminOrder) => {
-    try {
-      await adminService.unflagOrder(order.order_id);
-      setAlert({ type: 'success', message: '已取消標記異常' });
-      loadOrders();
-    } catch (error) {
-      console.error('取消標記失敗:', error);
-      setAlert({ type: 'error', message: '取消標記失敗' });
+      console.error('取消訂單失敗:', error);
+      setAlert({ type: 'error', message: '取消訂單失敗' });
     }
   };
 
@@ -191,7 +180,7 @@ function Disputes() {
   };
 
   return (
-    <div className={styles.disputes}>
+    <div className={styles.ordersPage}>
       <h1 className={styles.pageTitle}>訂單管理</h1>
 
       {alert && (
@@ -252,7 +241,7 @@ function Disputes() {
         </div>
       ) : !searched || orders.length === 0 ? (
         <EmptyState
-          icon="magnifying-glass"
+          type="admin-order"
           title={searched ? "未找到訂單" : "請使用上方篩選條件查詢訂單"}
           message={
             searched
@@ -277,18 +266,9 @@ function Disputes() {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr
-                  key={order.order_id}
-                  className={order.is_flagged ? styles.flagged : ""}
-                >
+                <tr key={order.order_id}>
                   <td>
                     <div className={styles.orderNumber}>
-                      {order.is_flagged && (
-                        <Icon
-                          icon="triangle-exclamation"
-                          className={styles.flagIcon}
-                        />
-                      )}
                       {order.order_number}
                     </div>
                   </td>
@@ -333,23 +313,14 @@ function Disputes() {
                         onClick={() => handleViewDetail(order)}
                         ariaLabel="檢視詳情"
                       />
-                      {order.is_flagged ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon="circle-check"
-                          onClick={() => handleUnflagOrder(order)}
-                          ariaLabel="取消標記"
-                        />
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon="flag"
-                          onClick={() => handleFlagOrder(order)}
-                          ariaLabel="標記異常"
-                        />
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="xmark"
+                        onClick={() => handleCancelOrder(order)}
+                        ariaLabel="取消訂單"
+                        disabled={order.status === 'cancelled'}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -554,38 +525,37 @@ function Disputes() {
         )}
       </Dialog>
 
-      {/* 標記異常 Dialog */}
+      {/* 取消訂單 Dialog */}
       <Dialog
-        isOpen={showFlagDialog}
+        isOpen={showCancelDialog}
         onClose={() => {
-          setShowFlagDialog(false);
-          setFlagNotes("");
+          setShowCancelDialog(false);
+          setCancelReason("");
           setSelectedOrder(null);
         }}
-        title="標記訂單異常"
+        title="取消訂單"
         type="confirm"
         variant="warning"
-        confirmText="確認標記"
-        cancelText="取消"
-        onConfirm={handleConfirmFlag}
+        confirmText="確認取消"
+        cancelText="返回"
+        onConfirm={handleConfirmCancel}
         onCancel={() => {
-          setShowFlagDialog(false);
-          setFlagNotes("");
+          setShowCancelDialog(false);
+          setCancelReason("");
           setSelectedOrder(null);
         }}
       >
         {selectedOrder && (
           <div className={styles.flagDialogContent}>
             <p className={styles.warningText}>
-              您正在標記訂單 <strong>{selectedOrder.order_number}</strong>{" "}
-              為異常狀態
+              您正在取消訂單 <strong>{selectedOrder.order_number}</strong>
             </p>
             <FormInput
-              name="flagNotes"
-              label="備註說明"
-              value={flagNotes}
-              onChange={(e) => setFlagNotes(e.target.value)}
-              placeholder="請輸入異常原因或備註說明"
+              name="cancelReason"
+              label="取消原因"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="請輸入取消原因"
               required
             />
           </div>
@@ -595,4 +565,4 @@ function Disputes() {
   );
 }
 
-export default Disputes;
+export default Orders;

@@ -4,7 +4,6 @@ import type {
   AdminUser,
   AdminStore,
   SellerApplication,
-  Dispute,
   SystemDiscount,
   AdminOrder,
   AdminOrderFilters,
@@ -324,164 +323,193 @@ export const rejectSellerApplication = async (
   };
 };
 
-// ========== Disputes ==========
-
-/**
- * 獲取訂單爭議列表
- * TODO: 替換為 GET /api/v1/admin/disputes
- */
-export const getDisputes = async (params?: {
-  status?: "pending" | "resolved" | "all";
-}): Promise<Dispute[]> => {
-  await delay(400);
-
-  let filtered = [...mockDisputes];
-
-  if (params?.status && params.status !== "all") {
-    filtered = filtered.filter((d) => d.status === params.status);
-  }
-
-  return filtered;
-};
-
-/**
- * 判決訂單爭議
- * TODO: 替換為 POST /api/v1/admin/disputes/:disputeId/resolve
- */
-export const resolveDispute = async (
-  disputeId: string,
-  resolution: {
-    type: "full_refund" | "partial_refund" | "reject";
-    amount?: number;
-    reason: string;
-  }
-): Promise<{ success: boolean; message: string }> => {
-  await delay(500);
-
-  const dispute = mockDisputes.find((d) => d.dispute_id === disputeId);
-  if (!dispute) throw new Error("爭議不存在");
-
-  dispute.status = "resolved";
-  dispute.resolved_at = new Date().toISOString();
-  dispute.resolution = resolution;
-
-  return {
-    success: true,
-    message: "爭議已判決",
-  };
-};
-
 // ========== Order Management ==========
 
 /**
+ * Map backend order data to frontend AdminOrder type
+ */
+const mapBackendOrderToAdminOrder = (order: any): AdminOrder => ({
+  order_id: order.orderId,
+  order_number: order.orderNumber,
+  buyer_id: order.buyerId,
+  buyer_name: order.buyerName,
+  buyer_email: order.buyerEmail,
+  seller_id: order.sellerId,
+  seller_name: order.sellerName,
+  store_name: order.storeName,
+  status: order.status,
+  payment_method: order.paymentMethod,
+  items: order.items,
+  shipping_address: order.shippingAddress,
+  note: order.note,
+  subtotal: order.subtotal,
+  shipping: order.shipping,
+  discount: order.discount,
+  total_amount: order.totalAmount,
+  created_at: order.createdAt,
+  updated_at: order.updatedAt,
+  paid_at: order.paidAt,
+  shipped_at: order.shippedAt,
+  delivered_at: order.deliveredAt,
+  completed_at: order.completedAt,
+  cancelled_at: order.cancelledAt,
+});
+
+/**
  * 獲取訂單列表（管理員）
- * TODO: 替換為 GET /api/v1/admin/orders
+ * GET /orders/admin/all
  */
 export const getAdminOrders = async (
   filters?: AdminOrderFilters
 ): Promise<{ orders: AdminOrder[]; total: number }> => {
-  await delay(400);
+  const queryParams = new URLSearchParams();
 
-  let filtered = [...mockAdminOrders];
-
-  // 搜尋篩選（訂單編號、買家、賣家）
   if (filters?.search) {
-    const search = filters.search.toLowerCase();
-    filtered = filtered.filter(
-      (order) =>
-        order.order_number.toLowerCase().includes(search) ||
-        order.buyer_name.toLowerCase().includes(search) ||
-        order.seller_name.toLowerCase().includes(search) ||
-        order.store_name.toLowerCase().includes(search)
-    );
+    queryParams.append('search', filters.search);
   }
-
-  // 狀態篩選
-  if (filters?.status && filters.status !== "all") {
-    filtered = filtered.filter((order) => order.status === filters.status);
+  if (filters?.status && filters.status !== 'all') {
+    queryParams.append('status', filters.status);
   }
-
-  // 日期範圍篩選
   if (filters?.startDate) {
-    filtered = filtered.filter(
-      (order) => new Date(order.created_at) >= new Date(filters.startDate!)
-    );
+    queryParams.append('startDate', filters.startDate);
   }
   if (filters?.endDate) {
-    filtered = filtered.filter(
-      (order) => new Date(order.created_at) <= new Date(filters.endDate!)
-    );
+    queryParams.append('endDate', filters.endDate);
+  }
+  if (filters?.page) {
+    queryParams.append('page', filters.page.toString());
+  }
+  if (filters?.limit) {
+    queryParams.append('limit', filters.limit.toString());
   }
 
-  // 分頁
-  const page = filters?.page || 1;
-  const limit = filters?.limit || 20;
-  const start = (page - 1) * limit;
-  const end = start + limit;
-  const paginatedOrders = filtered.slice(start, end);
+  const result = await get<{ data: any[]; total: number }>(
+    `/orders/admin/all?${queryParams.toString()}`
+  );
 
   return {
-    orders: paginatedOrders,
-    total: filtered.length,
+    orders: result.data.map(mapBackendOrderToAdminOrder),
+    total: result.total,
   };
 };
 
 /**
  * 獲取單個訂單詳情（管理員）
- * TODO: 替換為 GET /api/v1/admin/orders/:orderId
+ * GET /orders/admin/:id
  */
 export const getAdminOrderById = async (
   orderId: string
 ): Promise<AdminOrder> => {
-  await delay(300);
-
-  const order = mockAdminOrders.find((o) => o.order_id === orderId);
-  if (!order) throw new Error("訂單不存在");
-
-  return { ...order };
+  const order = await get<any>(`/orders/admin/${orderId}`);
+  return mapBackendOrderToAdminOrder(order);
 };
 
 /**
- * 標記訂單異常
- * TODO: 替換為 PATCH /api/v1/admin/orders/:orderId/flag
+ * 標記訂單異常（已改為直接取消訂單）
+ * POST /orders/admin/:id/cancel
+ * @deprecated 原本的標記功能已改為直接取消訂單，adminNotes 參數現在作為取消原因
  */
 export const flagOrder = async (
   orderId: string,
   adminNotes: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const order = mockAdminOrders.find((o) => o.order_id === orderId);
-  if (!order) throw new Error("訂單不存在");
-
-  order.is_flagged = true;
-  order.admin_notes = adminNotes;
+  await post(`/orders/admin/${orderId}/cancel`, {
+    reason: adminNotes,
+  });
 
   return {
     success: true,
-    message: "訂單已標記為異常",
+    message: "訂單已取消",
   };
 };
 
 /**
  * 取消標記訂單異常
- * TODO: 替換為 PATCH /api/v1/admin/orders/:orderId/unflag
+ * @deprecated 此功能已棄用。因為訂單取消操作不可逆，所以不再提供取消標記功能。
+ * 如果管理員發現異常，應直接使用 flagOrder (現在會取消訂單)。
  */
 export const unflagOrder = async (
   orderId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
+  console.warn('unflagOrder is deprecated: 訂單取消操作不可逆，此功能已停用');
+  throw new Error("此功能已棄用：訂單取消操作不可逆，無法恢復");
+};
 
-  const order = mockAdminOrders.find((o) => o.order_id === orderId);
-  if (!order) throw new Error("訂單不存在");
-
-  order.is_flagged = false;
-  order.admin_notes = undefined;
+/**
+ * Admin 更新訂單狀態（無狀態轉換限制）
+ * PATCH /orders/admin/:orderId/status
+ */
+export const updateAdminOrderStatus = async (
+  orderId: string,
+  status: string
+): Promise<{ success: boolean; message: string }> => {
+  await patch(`/orders/admin/${orderId}/status`, { status });
 
   return {
     success: true,
-    message: "已取消標記異常",
+    message: "訂單狀態已更新",
   };
+};
+
+/**
+ * Admin 取消訂單（附原因）
+ * POST /orders/admin/:orderId/cancel
+ */
+export const cancelAdminOrder = async (
+  orderId: string,
+  reason: string
+): Promise<{ success: boolean; message: string }> => {
+  await post(`/orders/admin/${orderId}/cancel`, { reason });
+
+  return {
+    success: true,
+    message: "訂單已取消",
+  };
+};
+
+/**
+ * 獲取異常訂單列表（pending_payment 超過 24 小時）
+ * GET /orders/admin/anomalies
+ */
+export const getAnomalyOrders = async (): Promise<AdminOrder[]> => {
+  const result = await get<any[]>('/orders/admin/anomalies');
+
+  // Map backend format to AdminOrder format
+  return result.map((order) => ({
+    order_id: order.orderId,
+    order_number: order.orderNumber,
+    buyer_id: order.userId?.toString() || '',
+    buyer_name: order.buyerName || '',
+    buyer_email: order.buyerEmail || '',
+    seller_id: order.storeId?.toString() || '',
+    seller_name: order.sellerName || '',
+    store_name: order.storeName || '',
+    status: order.orderStatus,
+    payment_method: order.paymentMethod || '',
+    items: [],
+    shipping_address: {
+      id: '',
+      recipientName: '',
+      phone: '',
+      city: '',
+      district: '',
+      postalCode: '',
+      detail: '',
+      isDefault: false,
+    },
+    subtotal: order.subtotal || 0,
+    shipping: order.shippingFee || 0,
+    discount: order.totalDiscount || 0,
+    total_amount: order.totalAmount,
+    created_at: order.createdAt,
+    updated_at: order.updatedAt,
+    paid_at: order.paidAt,
+    shipped_at: order.shippedAt,
+    delivered_at: order.deliveredAt,
+    completed_at: order.completedAt,
+    cancelled_at: order.cancelledAt,
+    is_flagged: true, // Anomaly orders are flagged by default
+  }));
 };
 
 // ========== System Discounts ==========
@@ -624,8 +652,8 @@ const mockDashboardStats: DashboardStats = {
     },
     {
       id: "3",
-      type: "dispute",
-      message: "訂單爭議",
+      type: "order",
+      message: "異常訂單",
       count: 7,
       timestamp: "2025-01-15 18:45",
     },
@@ -669,24 +697,6 @@ const mockDashboardStats: DashboardStats = {
     { label: "退款中", value: 150 },
   ],
 };
-
-// 訂單爭議數據
-let mockDisputes: Dispute[] = [
-  {
-    dispute_id: "1",
-    order_number: "ORD20250101001",
-    buyer_name: "王小明",
-    seller_name: "張大賣",
-    dispute_type: "not_received",
-    description: "商品未送達",
-    buyer_evidence: "物流顯示已簽收但我沒收到",
-    seller_response: null,
-    status: "pending",
-    created_at: "2025-01-15T10:30:00Z",
-    resolved_at: null,
-    resolution: null,
-  },
-];
 
 // 管理員訂單數據
 let mockAdminOrders: AdminOrder[] = [
@@ -920,12 +930,13 @@ export default {
   getSellerApplications,
   approveSellerApplication,
   rejectSellerApplication,
-  getDisputes,
-  resolveDispute,
   getAdminOrders,
   getAdminOrderById,
   flagOrder,
   unflagOrder,
+  updateAdminOrderStatus,
+  cancelAdminOrder,
+  getAnomalyOrders,
   toggleDiscountStatus,
   getSystemDiscounts,
   createSystemDiscount,

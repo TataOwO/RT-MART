@@ -17,7 +17,7 @@ export interface DashboardStats {
 
 export interface RecentActivity {
   id: string;
-  type: "seller_application" | "product_review" | "dispute";
+  type: "seller_application" | "product_review" | "order";
   message: string;
   count: number;
   timestamp: string;
@@ -74,26 +74,6 @@ export interface SellerApplication {
   // Timestamps
   created_at: string; // Seller.created_at (申請時間)
   updated_at: string;
-}
-
-// Dispute Type
-export interface Dispute {
-  dispute_id: string;
-  order_number: string;
-  buyer_name: string;
-  seller_name: string;
-  dispute_type: "not_received" | "not_as_described" | "damaged" | "other";
-  description: string;
-  buyer_evidence: string;
-  seller_response: string | null;
-  status: "pending" | "resolved";
-  created_at: string;
-  resolved_at: string | null;
-  resolution: {
-    type: "full_refund" | "partial_refund" | "reject";
-    amount?: number;
-    reason: string;
-  } | null;
 }
 
 // System Discount Type

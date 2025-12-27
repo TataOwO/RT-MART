@@ -1,6 +1,6 @@
 @use "sass:color";
 
-.disputes {
+.ordersPage {
   padding: $spacing-xl;
   max-width: 1400px;
   margin: 0 auto;
@@ -442,7 +442,7 @@
 }
 
 @media (max-width: 768px) {
-  .disputes {
+  .ordersPage {
     padding: $spacing-md;
   }
 

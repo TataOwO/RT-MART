@@ -28,7 +28,9 @@ const ADMIN_NAV_SECTIONS: NavSection[] = [
   {
     label: "訂單管理",
     icon: "bolt",
-    items: [{ path: "/admin/disputes", label: "訂單爭議處理" }],
+    items: [
+      { path: "/admin/orders", label: "訂單查詢" },
+    ],
   },
   {
     label: "系統設定",
