@@ -15,7 +15,6 @@ interface RejectDialogProps {
 const COMMON_REASONS = [
   '資料不完整',
   '銀行帳戶資訊有誤',
-  '商店資訊不符規範',
   '疑似重複申請',
 ];
 

@@ -37,18 +37,10 @@ export interface AdminUser {
 
 // Seller Application Type
 export interface SellerApplication {
-  application_id: string;
-
   user_id: string;
   user_name: string;
   email: string;
   phone_number: string;
-
-  store_name: string;
-  store_description: string;
-  store_address: string;
-  store_email: string;
-  store_phone: string;
 
   bank_account_reference: string;
 
