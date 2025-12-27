@@ -197,7 +197,7 @@ const SignUpForm = ({ onSubmit, isLoading }: SignUpFormProps) => {
         onChange={handleChange}
         onBlur={handleBlur}
         error={touched.loginId ? errors.loginId ?? undefined : undefined}
-        placeholder="4-20 個英數字"
+        placeholder="4-20 個英數字或符號(_ - .)"
         disabled={isLoading}
         autoComplete="username"
         required
