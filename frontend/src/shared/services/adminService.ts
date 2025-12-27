@@ -2,6 +2,7 @@ import { get, post, patch, del } from './api';
 import type {
   DashboardStats,
   AdminUser,
+  AdminStore,
   SellerApplication,
   Dispute,
   SystemDiscount,
@@ -55,6 +56,26 @@ const mapBackendUserToAdminUser = (user: any): AdminUser => ({
   role: user.role,
   created_at: user.createdAt,
   deleted_at: user.deletedAt,
+});
+
+/**
+ * 將後端 Store 資料轉換為前端 AdminStore 格式
+ */
+const mapBackendStoreToAdminStore = (store: any): AdminStore => ({
+  store_id: store.storeId,
+  store_name: store.storeName,
+  seller_id: store.sellerId,
+  seller_name: store.seller?.name || '',
+  seller_email: store.seller?.email || '',
+  description: store.storeDescription || '',
+  address: store.storeAddress || '',
+  email: store.storeEmail || '',
+  phone: store.storePhone || '',
+  rating: store.averageRating || 0,
+  total_ratings: store.totalRatings || 0,
+  product_count: store.productCount || 0,
+  created_at: store.createdAt,
+  deleted_at: store.deletedAt,
 });
 
 /**
@@ -196,6 +217,60 @@ export const deleteUser = async (
   return {
     success: true,
     message: "使用者已刪除",
+  };
+};
+
+// ========== Stores Management ==========
+
+/**
+ * 獲取商家列表
+ * GET /stores?search=
+ */
+export const getStores = async (params?: {
+  search?: string;
+}): Promise<{ stores: AdminStore[]; total: number }> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.search) {
+    queryParams.append('search', params.search);
+  }
+
+  const result = await get<{ data: any[]; total: number }>(`/stores?${queryParams.toString()}`);
+
+  return {
+    stores: result.data.map(mapBackendStoreToAdminStore),
+    total: result.total,
+  };
+};
+
+/**
+ * 停權商家（軟刪除）
+ * DELETE /stores/:storeId
+ */
+export const suspendStore = async (
+  storeId: string,
+  reason: string
+): Promise<{ success: boolean; message: string }> => {
+  await del(`/stores/${storeId}`);
+
+  return {
+    success: true,
+    message: "商家已停權",
+  };
+};
+
+/**
+ * 解除商家停權
+ * POST /stores/:storeId/restore
+ */
+export const unsuspendStore = async (
+  storeId: string
+): Promise<{ success: boolean; message: string }> => {
+  await post(`/stores/${storeId}/restore`);
+
+  return {
+    success: true,
+    message: "已解除停權",
   };
 };
 
@@ -839,6 +914,9 @@ export default {
   suspendUser,
   unsuspendUser,
   deleteUser,
+  getStores,
+  suspendStore,
+  unsuspendStore,
   getSellerApplications,
   approveSellerApplication,
   rejectSellerApplication,

@@ -35,6 +35,24 @@ export interface AdminUser {
   deleted_at: string | null; // null = active, timestamp = suspended
 }
 
+// Admin Store Type (with admin-specific fields)
+export interface AdminStore {
+  store_id: string;
+  store_name: string;
+  seller_id: string;
+  seller_name: string;
+  seller_email: string;
+  description: string;
+  address: string;
+  email: string;
+  phone: string;
+  rating: number;
+  total_ratings: number;
+  product_count: number;
+  created_at: string;
+  deleted_at: string | null; // null = active, timestamp = suspended
+}
+
 // Seller Application Type
 export interface SellerApplication {
   seller_id: string;
