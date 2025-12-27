@@ -234,14 +234,14 @@ function DiscountEdit() {
       <div className={styles.header}>
         <Button
           variant="ghost"
-          onClick={() => navigate('/admin/discounts')}
+          onClick={() => navigate("/admin/discounts")}
           className={styles.backButton}
         >
           <Icon icon="arrow-left" />
           返回列表
         </Button>
         <h1 className={styles.pageTitle}>
-          {isEditMode ? '編輯系統折扣' : '新增系統折扣'}
+          {isEditMode ? "編輯系統折扣" : "新增系統折扣"}
         </h1>
       </div>
 
@@ -263,20 +263,20 @@ function DiscountEdit() {
               <button
                 type="button"
                 className={`${styles.typeButton} ${
-                  values.discountType === 'seasonal' ? styles.active : ''
+                  values.discountType === "seasonal" ? styles.active : ""
                 }`}
-                onClick={() => handleChange('discountType', 'seasonal')}
+                onClick={() => handleChange("discountType", "seasonal")}
               >
-                <Icon icon="percent" />
+                <Icon icon="ticket" />
                 <span>季節性折扣</span>
                 <p className={styles.typeDesc}>百分比折扣優惠</p>
               </button>
               <button
                 type="button"
                 className={`${styles.typeButton} ${
-                  values.discountType === 'shipping' ? styles.active : ''
+                  values.discountType === "shipping" ? styles.active : ""
                 }`}
-                onClick={() => handleChange('discountType', 'shipping')}
+                onClick={() => handleChange("discountType", "shipping")}
               >
                 <Icon icon="truck-fast" />
                 <span>免運費</span>
@@ -306,8 +306,8 @@ function DiscountEdit() {
             <textarea
               name="description"
               value={values.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              onBlur={() => handleBlur('description')}
+              onChange={(e) => handleChange("description", e.target.value)}
+              onBlur={() => handleBlur("description")}
               className={styles.textarea}
               rows={3}
               placeholder="請輸入折扣活動描述"
@@ -322,7 +322,9 @@ function DiscountEdit() {
               <input
                 type="checkbox"
                 checked={values.isActive}
-                onChange={(e) => handleChange('isActive', e.target.checked.toString())}
+                onChange={(e) =>
+                  handleChange("isActive", e.target.checked.toString())
+                }
               />
               <span>立即啟用此折扣</span>
             </label>
@@ -333,7 +335,7 @@ function DiscountEdit() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>折扣設定</h2>
 
-          {values.discountType === 'seasonal' ? (
+          {values.discountType === "seasonal" ? (
             <>
               <div className={styles.row}>
                 <FormInput
@@ -427,11 +429,14 @@ function DiscountEdit() {
 
         {/* 操作按鈕 */}
         <div className={styles.actions}>
-          <Button variant="outline" onClick={() => navigate('/admin/discounts')}>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/discounts")}
+          >
             取消
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? '儲存中...' : '儲存折扣'}
+            {saving ? "儲存中..." : "儲存折扣"}
           </Button>
         </div>
       </div>
