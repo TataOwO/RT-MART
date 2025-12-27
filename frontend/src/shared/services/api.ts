@@ -10,31 +10,24 @@ interface RequestOptions extends RequestInit {
 }
 
 /**
- * 取得儲存的 token（優先從 localStorage，其次 sessionStorage）
- */
-const getToken = (): string | null => {
-  return localStorage.getItem('token') || sessionStorage.getItem('token');
-};
-
-/**
  * 統一的 Fetch 請求封裝
  * @param endpoint - API 端點（例如：'/auth/login'）
  * @param options - Fetch 選項
  * @returns API 回應
  */
 const apiRequest = async <T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
+  const isFormData = options.body instanceof FormData;
 
   const config: RequestOptions = {
     ...options,
     credentials: 'include', // 确保发送 cookie
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  // const data = await response.json();
   let data: any = null;
   const text = await response.text();
 
@@ -69,7 +62,7 @@ export const get = <T = any>(endpoint: string, options: RequestOptions = {}): Pr
 export const post = <T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> => {
   return apiRequest<T>(endpoint, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
     ...options,
   });
 };
@@ -80,7 +73,18 @@ export const post = <T = any>(endpoint: string, data?: any, options: RequestOpti
 export const put = <T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> => {
   return apiRequest<T>(endpoint, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
+    ...options,
+  });
+};
+
+/**
+ * PATCH 請求
+ */
+export const patch = <T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> => {
+  return apiRequest<T>(endpoint, {
+    method: 'PATCH',
+    body: data instanceof FormData ? data : JSON.stringify(data),
     ...options,
   });
 };
@@ -88,9 +92,10 @@ export const put = <T = any>(endpoint: string, data?: any, options: RequestOptio
 /**
  * DELETE 請求
  */
-export const del = <T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
+export const del = <T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> => {
   return apiRequest<T>(endpoint, {
     method: 'DELETE',
+    body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined,
     ...options,
   });
 };
@@ -99,5 +104,6 @@ export default {
   get,
   post,
   put,
+  patch,
   delete: del,
 };
