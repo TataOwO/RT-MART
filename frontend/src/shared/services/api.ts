@@ -26,6 +26,7 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestOptions = {
 
   const config: RequestOptions = {
     ...options,
+    credentials: 'include', // 确保发送 cookie
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

@@ -1,0 +1,278 @@
+@use "sass:color";
+
+.sellerApply {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-primary;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+/* ===== 左側面板 - 品牌視覺 ===== */
+.leftPanel {
+  flex: 1;
+  background: linear-gradient(135deg, $primary-color 0%, $primary-light 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xxl;
+  position: relative;
+
+  @include tablet {
+    flex: 0.4;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+.brandContent {
+  position: fixed;
+  top: 55%;
+  left: 25%;
+  z-index: 1;
+  text-align: center;
+  color: white;
+  max-width: 500px;
+  transform: translate(-50%, -50%);
+}
+
+.logo {
+  margin-bottom: $spacing-xl;
+
+  .logoText {
+    font-size: $font-4xl;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.slogan {
+  font-size: $font-3xl;
+  font-weight: 600;
+  margin-bottom: $spacing-md;
+  line-height: 1.3;
+
+  @include tablet {
+    font-size: $font-2xl;
+  }
+}
+
+.description {
+  font-size: $font-lg;
+  opacity: 0.9;
+  line-height: 1.6;
+
+  @include tablet {
+    font-size: $font-md;
+  }
+}
+
+/* ===== 右側面板 - 表單 ===== */
+.rightPanel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xxl $spacing-xl;
+  background: $bg-secondary;
+  overflow-y: auto;
+
+  @include tablet {
+    flex: 0.6;
+  }
+
+  @include mobile {
+    padding: $spacing-xl $spacing-lg;
+  }
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 500px;
+  padding: $spacing-md 0;
+}
+
+/* ===== 表單頭部 ===== */
+.formHeader {
+  margin-bottom: $spacing-xl;
+  text-align: center;
+}
+
+.formTitle {
+  font-size: $font-2xl;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.formSubtitle {
+  font-size: $font-sm;
+  color: $text-secondary;
+  line-height: 1.5;
+}
+
+/* ===== 表單內容 ===== */
+.form {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.formSection {
+  margin-bottom: $spacing-xl;
+
+  &:last-of-type {
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.sectionTitle {
+  font-size: $font-lg;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-sm;
+  border-bottom: 2px solid $border-color;
+}
+
+.hint {
+  margin-top: $spacing-sm;
+  font-size: $font-xs;
+  color: $text-tertiary;
+  line-height: 1.5;
+  padding-left: $spacing-sm;
+  border-left: 2px solid $border-color;
+}
+
+/* ===== 表單按鈕 ===== */
+.formActions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-xl;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.cancelButton,
+.submitButton {
+  flex: 1;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-md;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.cancelButton {
+  background: $bg-tertiary;
+  color: $text-secondary;
+  border: 1px solid $border-color;
+
+  &:hover:not(:disabled) {
+    background: color.adjust($bg-tertiary, $lightness: -5%);
+  }
+}
+
+.submitButton {
+  background: $primary-color;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+/* ===== 底部連結 ===== */
+.footer {
+  text-align: center;
+  padding-top: $spacing-lg;
+  margin-top: $spacing-lg;
+  border-top: 1px solid $border-color;
+
+  p {
+    font-size: $font-sm;
+    color: $text-secondary;
+  }
+
+  .linkButton {
+    background: none;
+    border: none;
+    color: $primary-color;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: $spacing-xs;
+    transition: color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      color: $primary-hover;
+      text-decoration: underline;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ===== Dark Mode 調整 ===== */
+[data-theme='dark'] {
+  .rightPanel {
+    background: var(--bg-primary);
+  }
+
+  .sectionTitle {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .hint {
+    border-left-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .footer {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .cancelButton {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}

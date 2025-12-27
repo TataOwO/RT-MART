@@ -1,6 +1,6 @@
-import { ChartDataPoint } from './seller';
-import type { OrderStatus, PaymentMethod, OrderItemDetail } from './order';
-import type { Address } from './common';
+import { ChartDataPoint } from "./seller";
+import type { OrderStatus, PaymentMethod, OrderItemDetail } from "./order";
+import type { Address } from "./common";
 
 // Dashboard Types
 export interface DashboardStats {
@@ -17,7 +17,7 @@ export interface DashboardStats {
 
 export interface RecentActivity {
   id: string;
-  type: 'seller_application' | 'product_review' | 'dispute';
+  type: "seller_application" | "product_review" | "dispute";
   message: string;
   count: number;
   timestamp: string;
@@ -30,7 +30,7 @@ export interface AdminUser {
   name: string;
   email: string;
   phone_number: string;
-  role: 'buyer' | 'seller' | 'admin';
+  role: "buyer" | "seller" | "admin";
   created_at: string;
   deleted_at: string | null; // null = active, timestamp = suspended
 }
@@ -60,22 +60,21 @@ export interface SellerApplication {
   application_created_at: string;
 }
 
-
 // Dispute Type
 export interface Dispute {
   dispute_id: string;
   order_number: string;
   buyer_name: string;
   seller_name: string;
-  dispute_type: 'not_received' | 'not_as_described' | 'damaged' | 'other';
+  dispute_type: "not_received" | "not_as_described" | "damaged" | "other";
   description: string;
   buyer_evidence: string;
   seller_response: string | null;
-  status: 'pending' | 'resolved';
+  status: "pending" | "resolved";
   created_at: string;
   resolved_at: string | null;
   resolution: {
-    type: 'full_refund' | 'partial_refund' | 'reject';
+    type: "full_refund" | "partial_refund" | "reject";
     amount?: number;
     reason: string;
   } | null;
@@ -85,7 +84,7 @@ export interface Dispute {
 export interface SystemDiscount {
   discount_id: string;
   discount_code: string;
-  discount_type: 'seasonal' | 'shipping';
+  discount_type: "seasonal" | "shipping";
   name: string;
   description: string;
   min_purchase_amount: number;
@@ -94,7 +93,7 @@ export interface SystemDiscount {
   is_active: boolean;
   usage_limit: number | null;
   usage_count: number;
-  created_by_type: 'system';
+  created_by_type: "system";
   created_by_id: null;
   created_at: string;
   // Seasonal discount fields
@@ -138,7 +137,7 @@ export interface AdminOrder {
 // Order Filter Parameters
 export interface AdminOrderFilters {
   search?: string; // 訂單編號、買家、賣家
-  status?: OrderStatus | 'all';
+  status?: OrderStatus | "all";
   startDate?: string;
   endDate?: string;
   page?: number;

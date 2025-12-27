@@ -119,9 +119,12 @@ export class SellersService {
     seller.verifiedAt = new Date();
     seller.verifiedBy = verifier;
 
+    // 创建默认商店
+    const storeName = `${user.name}'s Store`;
+
     const defaultStore = this.storeRepository.create({
       sellerId: seller.sellerId,
-      storeName: `${(await this.usersService.findOne(seller.userId)).name}'s Store`,
+      storeName: storeName,
       storeDescription: 'Default store created upon seller verification',
       storeAddress: null,
       storeEmail: null,
