@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
 import { User } from '../users/entities/user.entity';
 import { Seller } from '../sellers/entities/seller.entity';
@@ -18,7 +18,7 @@ interface RecentActivity {
   timestamp: string;
 }
 
-interface DashboardStats {
+export interface DashboardStats {
   totalRevenue: number;
   totalUsers: number;
   activeSellers: number;
@@ -97,7 +97,7 @@ export class AdminService {
   private async getPendingReviews(): Promise<number> {
     // Count pending seller applications (not verified and not rejected)
     return await this.sellerRepository.count({
-      where: { verified: false, rejectedAt: null },
+      where: { verified: false, rejectedAt: IsNull() },
     });
   }
 
@@ -106,7 +106,7 @@ export class AdminService {
 
     // Pending seller applications
     const pendingSellers = await this.sellerRepository.count({
-      where: { verified: false, rejectedAt: null },
+      where: { verified: false, rejectedAt: IsNull() },
     });
     if (pendingSellers > 0) {
       activities.push({
@@ -193,7 +193,7 @@ export class AdminService {
       .getRawMany();
 
     // Map status to Chinese labels
-    const statusLabelMap: Record<OrderStatus, string> = {
+    const statusLabelMap: Partial<Record<OrderStatus, string>> = {
       [OrderStatus.PENDING_PAYMENT]: '待付款',
       [OrderStatus.PROCESSING]: '處理中',
       [OrderStatus.SHIPPED]: '配送中',
