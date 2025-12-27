@@ -189,7 +189,6 @@ function Sellers() {
             <thead>
               <tr>
                 <th>賣家名稱</th>
-                <th>商店名稱</th>
                 <th>Email</th>
                 <th>銀行帳戶</th>
                 <th>申請時間</th>
@@ -201,10 +200,9 @@ function Sellers() {
               {applications.map((app) => (
                 <tr key={app.seller_id}>
                   <td>{app.user_name}</td>
-                  <td>{app.store_name}</td>
                   <td>{app.email}</td>
                   <td>{app.bank_account_reference}</td>
-                  <td>{new Date(app.user_created_at).toLocaleDateString()}</td>
+                  <td>{new Date(app.created_at).toLocaleDateString()}</td>
                   <td>{getStatusBadge(app)}</td>
                   <td>
                     <div className={styles.actionButtons}>
