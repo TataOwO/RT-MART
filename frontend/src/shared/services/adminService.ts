@@ -1,4 +1,4 @@
-// import api from './api'; // TODO: 當實作真實 API 時取消註解
+import { get, post, patch, del } from './api';
 import type {
   DashboardStats,
   AdminUser,
@@ -16,6 +16,104 @@ import type {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// ========== Mapper Functions ==========
+
+/**
+ * 將後端 Seller 資料轉換為前端 SellerApplication 格式
+ */
+const mapBackendSellerToApplication = (seller: any): SellerApplication => ({
+  seller_id: seller.sellerId,
+  user_id: seller.userId,
+
+  // User info from joined relation
+  login_id: seller.user?.loginId || '',
+  user_name: seller.user?.name || '',
+  email: seller.user?.email || '',
+  phone_number: seller.user?.phoneNumber || '',
+
+  // Seller info
+  bank_account_reference: seller.bankAccountReference || '',
+  verified: seller.verified,
+  verified_at: seller.verifiedAt,
+  verified_by: seller.verifiedBy,
+  rejected_at: seller.rejectedAt,
+
+  // Timestamps
+  created_at: seller.createdAt,
+  updated_at: seller.updatedAt,
+});
+
+/**
+ * 將後端 User 資料轉換為前端 AdminUser 格式
+ */
+const mapBackendUserToAdminUser = (user: any): AdminUser => ({
+  user_id: user.userId,
+  login_id: user.loginId,
+  name: user.name,
+  email: user.email,
+  phone_number: user.phoneNumber || '',
+  role: user.role,
+  created_at: user.createdAt,
+  deleted_at: user.deletedAt,
+});
+
+/**
+ * 將後端 Discount 資料轉換為前端 SystemDiscount 格式
+ */
+const mapBackendDiscountToSystemDiscount = (discount: any): SystemDiscount => ({
+  discount_id: discount.discountId,
+  discount_code: discount.discountCode,
+  discount_type: discount.discountType,
+  name: discount.name,
+  description: discount.description || '',
+  min_purchase_amount: discount.minPurchaseAmount,
+  start_datetime: discount.startDatetime,
+  end_datetime: discount.endDatetime,
+  is_active: discount.isActive,
+  usage_limit: discount.usageLimit,
+  usage_count: discount.usageCount,
+  created_by_type: discount.createdByType,
+  created_by_id: discount.createdById,
+  created_at: discount.createdAt,
+  // Type-specific fields
+  discount_rate: discount.seasonalDiscount?.discountRate,
+  max_discount_amount: discount.seasonalDiscount?.maxDiscountAmount,
+  discount_amount: discount.shippingDiscount?.discountAmount,
+});
+
+/**
+ * 將前端 SystemDiscount 資料轉換為後端格式
+ */
+const mapSystemDiscountToBackend = (data: Partial<SystemDiscount>): any => {
+  const baseData: any = {
+    discountCode: data.discount_code,
+    discountType: data.discount_type,
+    name: data.name,
+    description: data.description,
+    minPurchaseAmount: data.min_purchase_amount,
+    startDatetime: data.start_datetime,
+    endDatetime: data.end_datetime,
+    isActive: data.is_active,
+    usageLimit: data.usage_limit,
+  };
+
+  // Add type-specific details
+  if (data.discount_type === 'seasonal' && data.discount_rate !== undefined) {
+    baseData.seasonalDetails = {
+      discountRate: data.discount_rate,
+      maxDiscountAmount: data.max_discount_amount,
+    };
+  }
+
+  if (data.discount_type === 'shipping' && data.discount_amount !== undefined) {
+    baseData.shippingDetails = {
+      discountAmount: data.discount_amount,
+    };
+  }
+
+  return baseData;
+};
+
 // ========== Dashboard ==========
 
 /**
@@ -31,52 +129,39 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
 /**
  * 獲取使用者列表
- * TODO: 替換為 GET /api/v1/admin/users
+ * GET /users?search=&role=
  */
 export const getUsers = async (params?: {
   search?: string;
   role?: "buyer" | "seller" | "all";
 }): Promise<{ users: AdminUser[]; total: number }> => {
-  await delay(400);
+  const queryParams = new URLSearchParams();
 
-  let filteredUsers = [...mockUsers];
-
-  // 搜尋篩選
   if (params?.search) {
-    const search = params.search.toLowerCase();
-    filteredUsers = filteredUsers.filter(
-      (user) =>
-        user.login_id.toLowerCase().includes(search) ||
-        user.name.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search)
-    );
+    queryParams.append('search', params.search);
   }
 
-  // 角色篩選
   if (params?.role && params.role !== "all") {
-    filteredUsers = filteredUsers.filter((user) => user.role === params.role);
+    queryParams.append('role', params.role);
   }
+
+  const result = await get<{ data: any[]; total: number }>(`/users?${queryParams.toString()}`);
 
   return {
-    users: filteredUsers,
-    total: filteredUsers.length,
+    users: result.data.map(mapBackendUserToAdminUser),
+    total: result.total,
   };
 };
 
 /**
- * 停權使用者
- * TODO: 替換為 PUT /api/v1/admin/users/:userId/suspend
+ * 停權使用者（軟刪除）
+ * DELETE /users/:userId
  */
 export const suspendUser = async (
   userId: string,
   reason: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const user = mockUsers.find((u) => u.user_id === userId);
-  if (!user) throw new Error("使用者不存在");
-
-  user.deleted_at = new Date().toISOString();
+  await del(`/users/${userId}`);
 
   return {
     success: true,
@@ -86,17 +171,12 @@ export const suspendUser = async (
 
 /**
  * 解除停權
- * TODO: 替換為 PUT /api/v1/admin/users/:userId/unsuspend
+ * POST /users/:userId/restore
  */
 export const unsuspendUser = async (
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const user = mockUsers.find((u) => u.user_id === userId);
-  if (!user) throw new Error("使用者不存在");
-
-  user.deleted_at = null;
+  await post(`/users/${userId}/restore`);
 
   return {
     success: true,
@@ -105,18 +185,13 @@ export const unsuspendUser = async (
 };
 
 /**
- * 刪除使用者
- * TODO: 替換為 DELETE /api/v1/admin/users/:userId
+ * 刪除使用者（永久刪除）
+ * DELETE /users/:userId/permanent
  */
 export const deleteUser = async (
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const index = mockUsers.findIndex((u) => u.user_id === userId);
-  if (index === -1) throw new Error("使用者不存在");
-
-  mockUsers.splice(index, 1);
+  await del(`/users/${userId}/permanent`);
 
   return {
     success: true,
@@ -128,47 +203,29 @@ export const deleteUser = async (
 
 /**
  * 獲取賣家申請列表
- * TODO: 替換為 GET /api/v1/sellers?status=pending
+ * GET /sellers?status=pending|approved|rejected
  */
 export const getSellerApplications = async (params?: {
   status?: "pending" | "approved" | "rejected" | "all";
 }): Promise<SellerApplication[]> => {
-  await delay(400);
-
-  let filtered = [...mockSellerApplications];
+  const queryParams = new URLSearchParams();
 
   if (params?.status && params.status !== "all") {
-    if (params.status === "pending") {
-      filtered = filtered.filter(
-        (app) => !app.verified && !app.rejected_at
-      );
-    } else if (params.status === "approved") {
-      filtered = filtered.filter((app) => app.verified);
-    } else if (params.status === "rejected") {
-      filtered = filtered.filter((app) => app.rejected_at);
-    }
+    queryParams.append('status', params.status);
   }
-  return filtered;
+
+  const result = await get<{ data: any[] }>(`/sellers?${queryParams.toString()}`);
+  return result.data.map(mapBackendSellerToApplication);
 };
 
 /**
  * 批准賣家申請
- * TODO: 替換為 POST /api/v1/sellers/:sellerId/verify
+ * POST /sellers/:sellerId/verify
  */
 export const approveSellerApplication = async (
   sellerId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(500);
-
-  const application = mockSellerApplications.find(
-    (a) => a.seller_id === sellerId
-  );
-  if (!application) throw new Error("申請不存在");
-
-  application.verified = true;
-  application.verified_at = new Date().toISOString();
-  application.verified_by = "admin001";
-  application.updated_at = new Date().toISOString();
+  await post(`/sellers/${sellerId}/verify`);
 
   return {
     success: true,
@@ -178,23 +235,13 @@ export const approveSellerApplication = async (
 
 /**
  * 拒絕賣家申請
- * TODO: 替換為 POST /api/v1/sellers/:sellerId/reject
+ * POST /sellers/:sellerId/reject
  */
 export const rejectSellerApplication = async (
   sellerId: string,
   reason?: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(500);
-
-  const application = mockSellerApplications.find(
-    (a) => a.seller_id === sellerId
-  );
-  if (!application) throw new Error("申請不存在");
-
-  application.rejected_at = new Date().toISOString();
-  application.updated_at = new Date().toISOString();
-
-  // Note: reason is not stored in database, will be sent via email (future implementation)
+  await post(`/sellers/${sellerId}/reject`, reason ? { reason } : undefined);
 
   return {
     success: true,
@@ -366,25 +413,28 @@ export const unflagOrder = async (
 
 /**
  * 獲取系統折扣列表
- * TODO: 替換為 GET /api/v1/admin/discounts
+ * GET /discounts?discountType=seasonal|shipping
  */
 export const getSystemDiscounts = async (params?: {
   type?: "seasonal" | "shipping";
 }): Promise<SystemDiscount[]> => {
-  await delay(400);
-
-  let filtered = [...mockSystemDiscounts];
+  const queryParams = new URLSearchParams();
 
   if (params?.type) {
-    filtered = filtered.filter((d) => d.discount_type === params.type);
+    queryParams.append('discountType', params.type);
   }
 
-  return filtered;
+  const result = await get<{ data: any[] }>(`/discounts?${queryParams.toString()}`);
+
+  // Filter system discounts only
+  return result.data
+    .filter(d => d.createdByType === 'system')
+    .map(mapBackendDiscountToSystemDiscount);
 };
 
 /**
  * 創建系統折扣
- * TODO: 替換為 POST /api/v1/admin/discounts
+ * POST /discounts/admin
  */
 export const createSystemDiscount = async (
   discountData: Omit<
@@ -396,24 +446,14 @@ export const createSystemDiscount = async (
     | "created_by_id"
   >
 ): Promise<SystemDiscount> => {
-  await delay(500);
-
-  const newDiscount: SystemDiscount = {
-    discount_id: `disc_${Date.now()}`,
-    ...discountData,
-    usage_count: 0,
-    created_by_type: "system",
-    created_by_id: null,
-    created_at: new Date().toISOString(),
-  };
-
-  mockSystemDiscounts.push(newDiscount);
-  return newDiscount;
+  const backendData = mapSystemDiscountToBackend(discountData);
+  const result = await post<any>('/discounts/admin', backendData);
+  return mapBackendDiscountToSystemDiscount(result);
 };
 
 /**
  * 更新系統折扣
- * TODO: 替換為 PUT /api/v1/admin/discounts/:discountId
+ * PATCH /discounts/admin/:discountId
  */
 export const updateSystemDiscount = async (
   discountId: string,
@@ -428,37 +468,20 @@ export const updateSystemDiscount = async (
     >
   >
 ): Promise<SystemDiscount> => {
-  await delay(500);
-
-  const index = mockSystemDiscounts.findIndex(
-    (d) => d.discount_id === discountId
-  );
-  if (index === -1) throw new Error("折扣不存在");
-
-  mockSystemDiscounts[index] = {
-    ...mockSystemDiscounts[index],
-    ...discountData,
-  };
-
-  return mockSystemDiscounts[index];
+  const backendData = mapSystemDiscountToBackend(discountData);
+  const result = await patch<any>(`/discounts/admin/${discountId}`, backendData);
+  return mapBackendDiscountToSystemDiscount(result);
 };
 
 /**
  * 更新系統折扣狀態
- * TODO: 替換為 PATCH /api/v1/admin/discounts/:discountId/status
+ * PATCH /discounts/admin/:discountId
  */
 export const updateSystemDiscountStatus = async (
   discountId: string,
   isActive: boolean
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const discount = mockSystemDiscounts.find(
-    (d) => d.discount_id === discountId
-  );
-  if (!discount) throw new Error("折扣不存在");
-
-  discount.is_active = isActive;
+  await patch(`/discounts/admin/${discountId}`, { isActive });
 
   return {
     success: true,
@@ -468,19 +491,12 @@ export const updateSystemDiscountStatus = async (
 
 /**
  * 刪除系統折扣
- * TODO: 替換為 DELETE /api/v1/admin/discounts/:discountId
+ * DELETE /discounts/:discountId
  */
 export const deleteSystemDiscount = async (
   discountId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(300);
-
-  const index = mockSystemDiscounts.findIndex(
-    (d) => d.discount_id === discountId
-  );
-  if (index === -1) throw new Error("折扣不存在");
-
-  mockSystemDiscounts.splice(index, 1);
+  await del(`/discounts/${discountId}`);
 
   return {
     success: true,
@@ -490,30 +506,27 @@ export const deleteSystemDiscount = async (
 
 /**
  * 切換系統折扣狀態
- * TODO: 替換為 PATCH /api/v1/admin/discounts/:discountId/toggle
+ * GET + PATCH /discounts/code/:discountId + /discounts/admin/:discountId
  */
 export const toggleDiscountStatus = async (
   discountId: string
 ): Promise<{ success: boolean; message: string; isActive: boolean }> => {
-  await delay(300);
+  // First get current status
+  const currentDiscount = await get<any>(`/discounts/code/${discountId}`);
+  const newStatus = !currentDiscount.isActive;
 
-  const discount = mockSystemDiscounts.find(
-    (d) => d.discount_id === discountId
-  );
-  if (!discount) throw new Error("折扣不存在");
-
-  discount.is_active = !discount.is_active;
+  // Update status
+  await patch(`/discounts/admin/${discountId}`, { isActive: newStatus });
 
   return {
     success: true,
-    message: `折扣已${discount.is_active ? "啟用" : "停用"}`,
-    isActive: discount.is_active,
+    message: `折扣已${newStatus ? "啟用" : "停用"}`,
+    isActive: newStatus,
   };
 };
 
 // ========== Mock Data ==========
-
-// Dashboard 統計數據
+// Dashboard 統計數據 (尚未遷移)
 const mockDashboardStats: DashboardStats = {
   totalRevenue: 5000000,
   totalUsers: 10000,
@@ -581,97 +594,6 @@ const mockDashboardStats: DashboardStats = {
     { label: "退款中", value: 150 },
   ],
 };
-
-// 使用者數據
-let mockUsers: AdminUser[] = [
-  {
-    user_id: "1",
-    login_id: "user001",
-    name: "王小明",
-    email: "user001@example.com",
-    phone_number: "0912345678",
-    role: "buyer",
-    created_at: "2024-01-01T00:00:00Z",
-    deleted_at: null,
-  },
-  {
-    user_id: "2",
-    login_id: "seller001",
-    name: "張大賣",
-    email: "seller001@example.com",
-    phone_number: "0923456789",
-    role: "seller",
-    created_at: "2024-02-01T00:00:00Z",
-    deleted_at: null,
-  },
-];
-
-// 賣家申請數據
-let mockSellerApplications: SellerApplication[] = [
-  {
-    seller_id: "1",
-    user_id: "3",
-
-    // User 資訊
-    login_id: "seller001",
-    user_name: "張大賣",
-    email: "seller001@example.com",
-    phone_number: "0912345678",
-
-    // Seller 資訊
-    bank_account_reference: "123-456-789",
-    verified: false,
-    verified_at: null,
-    verified_by: null,
-    rejected_at: null,
-
-    // Timestamps
-    created_at: "2025-01-15T10:30:00Z",
-    updated_at: "2025-01-15T10:30:00Z",
-  },
-  {
-    seller_id: "2",
-    user_id: "4",
-
-    // User 資訊
-    login_id: "seller002",
-    user_name: "李小華",
-    email: "seller002@example.com",
-    phone_number: "0923456789",
-
-    // Seller 資訊
-    bank_account_reference: "987-654-321",
-    verified: true,
-    verified_at: "2025-01-10T14:20:00Z",
-    verified_by: "admin001",
-    rejected_at: null,
-
-    // Timestamps
-    created_at: "2025-01-08T09:15:00Z",
-    updated_at: "2025-01-10T14:20:00Z",
-  },
-  {
-    seller_id: "3",
-    user_id: "5",
-
-    // User 資訊
-    login_id: "seller003",
-    user_name: "王小明",
-    email: "seller003@example.com",
-    phone_number: "0934567890",
-
-    // Seller 資訊
-    bank_account_reference: "555-666-777",
-    verified: false,
-    verified_at: null,
-    verified_by: null,
-    rejected_at: "2025-01-12T16:45:00Z",
-
-    // Timestamps
-    created_at: "2025-01-11T11:00:00Z",
-    updated_at: "2025-01-12T16:45:00Z",
-  },
-];
 
 // 訂單爭議數據
 let mockDisputes: Dispute[] = [
@@ -907,45 +829,6 @@ let mockAdminOrders: AdminOrder[] = [
     delivered_at: "2025-01-21T10:30:00Z",
     completed_at: "2025-01-21T16:00:00Z",
     is_flagged: false,
-  },
-];
-
-// 系統折扣數據
-let mockSystemDiscounts: SystemDiscount[] = [
-  {
-    discount_id: "1",
-    discount_code: "NEWYEAR2025",
-    discount_type: "seasonal",
-    name: "新年慶季節折扣",
-    description: "新年期間全站商品享 10% 折扣",
-    min_purchase_amount: 0,
-    start_datetime: "2025-01-01T00:00:00Z",
-    end_datetime: "2025-01-31T23:59:59Z",
-    is_active: true,
-    usage_limit: null,
-    usage_count: 45,
-    created_by_type: "system",
-    created_by_id: null,
-    created_at: "2024-12-20T00:00:00Z",
-    discount_rate: 10,
-    max_discount_amount: 500,
-  },
-  {
-    discount_id: "2",
-    discount_code: "FREESHIP30",
-    discount_type: "shipping",
-    name: "春節運費優惠",
-    description: "滿額免運費優惠",
-    min_purchase_amount: 500,
-    start_datetime: "2025-01-20T00:00:00Z",
-    end_datetime: "2025-02-10T23:59:59Z",
-    is_active: true,
-    usage_limit: 1000,
-    usage_count: 234,
-    created_by_type: "system",
-    created_by_id: null,
-    created_at: "2025-01-10T00:00:00Z",
-    discount_amount: 30,
   },
 ];
 
