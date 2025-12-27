@@ -37,19 +37,25 @@ export interface AdminUser {
 
 // Seller Application Type
 export interface SellerApplication {
+  seller_id: string;
   user_id: string;
+
+  // User 資訊 (from JOIN)
+  login_id: string;
   user_name: string;
   email: string;
   phone_number: string;
 
+  // Seller 資訊
   bank_account_reference: string;
+  verified: boolean;
+  verified_at: string | null;
+  verified_by: string | null;
+  rejected_at: string | null;
 
-  status: "pending" | "approved" | "rejected";
-  reviewed_by?: string;
-  reviewed_at?: string;
-  rejection_reason?: string;
-
-  application_created_at: string;
+  // Timestamps
+  created_at: string; // Seller.created_at (申請時間)
+  updated_at: string;
 }
 
 // Dispute Type
