@@ -99,7 +99,7 @@ export class OrdersService {
             productId: item.productId,
             productSnapshot: {
               productId: item.product.productId,
-              productName: item.product.productName,
+              product_name: item.product.productName,
               price: item.product.price,
               images: item.product.images,
             },
@@ -319,7 +319,17 @@ export class OrdersService {
       storeName: order.store.storeName,
       status: order.orderStatus,
       paymentMethod: order.paymentMethod,
-      items: order.items,
+      items: (order.items || []).map((item) => {
+        const snapshot = item.productSnapshot as any;
+        return {
+          id: item.orderItemId,
+          productId: item.productId,
+          productName: snapshot?.product_name || 'Unknown Product',
+          productImage: snapshot?.images?.[0] || null,
+          quantity: item.quantity,
+          price: parseFloat(item.unitPrice.toString()),
+        };
+      }),
       shippingAddress: order.shippingAddressSnapshot,
       note: order.notes,
       subtotal: order.subtotal,
@@ -366,7 +376,17 @@ export class OrdersService {
       storeName: order.store.storeName,
       status: order.orderStatus,
       paymentMethod: order.paymentMethod,
-      items: order.items,
+      items: (order.items || []).map((item) => {
+        const snapshot = item.productSnapshot as any;
+        return {
+          id: item.orderItemId,
+          productId: item.productId,
+          productName: snapshot?.product_name || 'Unknown Product',
+          productImage: snapshot?.images?.[0] || null,
+          quantity: item.quantity,
+          price: parseFloat(item.unitPrice.toString()),
+        };
+      }),
       shippingAddress: order.shippingAddressSnapshot,
       note: order.notes,
       subtotal: order.subtotal,
