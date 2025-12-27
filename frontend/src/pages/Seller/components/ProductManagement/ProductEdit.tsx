@@ -217,6 +217,10 @@ function ProductEdit() {
             onBlur={handleBlur}
             error={errors.productName}
             required
+            fieldName="商品名稱"
+            onValidate={(error) => {
+              form.setErrors((prev) => ({ ...prev, productName: error || undefined }));
+            }}
             placeholder="請輸入商品名稱"
           />
 
