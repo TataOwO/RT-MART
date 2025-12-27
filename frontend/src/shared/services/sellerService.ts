@@ -1,4 +1,4 @@
-// import api from './api'; // TODO: 當實作真實 API 時取消註解
+import api from './api';
 import {
   DashboardData,
   SalesPeriod,
@@ -16,30 +16,39 @@ import {
  * 提供所有賣家相關的 API 調用
  */
 
-/**
- * 模擬網路延遲
- */
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 // ========== Seller Application ==========
 
 /**
  * 申請成為賣家
- * TODO: 替換為 POST /api/v1/sellers
+ * POST /sellers
  */
 export const applyToBeSeller = async (
   data: SellerApplicationForm
 ): Promise<{ success: boolean; message: string }> => {
-  await delay(800);
+  try {
+    // 調用後端 API
+    // userId 會從 JWT token 自動獲取
+    await api.post('/sellers', {
+      bankAccountReference: data.bank_account_reference,
+    });
 
-  // Mock implementation
-  console.log('Applying to be seller:', data);
+    return {
+      success: true,
+      message: '您的賣家申請已提交成功！我們將在 1-3 個工作天內完成審核。',
+    };
+  } catch (error: any) {
+    console.error('申請成為賣家失敗:', error);
 
-  // 模擬成功響應
-  return {
-    success: true,
-    message: '申請已提交，請等待管理員審核。審核結果將通過電子郵件通知。',
-  };
+    // 處理特定錯誤
+    if (error.message?.includes('already a seller')) {
+      throw new Error('您已經是賣家了');
+    }
+    if (error.message?.includes('Only buyers can become sellers')) {
+      throw new Error('只有買家可以申請成為賣家');
+    }
+
+    throw new Error(error.message || '申請提交失敗，請稍後再試');
+  }
 };
 
 // ========== Dashboard ==========

@@ -5,9 +5,7 @@ import FormInput from "@/shared/components/FormInput";
 import Alert from "@/shared/components/Alert";
 import sellerService from "@/shared/services/sellerService";
 import {
-  validateEmail,
   validateBankAccount,
-  validateRequired,
 } from "@/shared/utils/validation";
 import { AlertType } from "@/types";
 import type { SellerApplicationForm } from "@/types/seller";
@@ -35,11 +33,6 @@ function SellerApply() {
 
   // Form State
   const [formData, setFormData] = useState<SellerApplicationForm>({
-    store_name: "",
-    store_description: "",
-    store_address: "",
-    store_phone: "",
-    store_email: "",
     bank_account_reference: "",
   });
 
@@ -90,34 +83,8 @@ function SellerApply() {
   ): string | null => {
     let error: string | null = null;
 
-    switch (name) {
-      case "store_name":
-        if (value && value.length > 200) {
-          error = "商店名稱不得超過200字";
-        }
-        break;
-      case "store_description":
-        if (value && value.length > 500) {
-          error = "商店描述不得超過500字";
-        }
-        break;
-      case "store_phone":
-        if (value && !/^09[0-9]{2}-[0-9]{3}-[0-9]{3}$/.test(value)) {
-          error = "請輸入有效的電話號碼格式（例：0912-345-678）";
-        }
-        break;
-      case "store_email":
-        if (value) {
-          error = validateEmail(value);
-        }
-        break;
-      case "bank_account_reference":
-        if (value) {
-          error = validateBankAccount(value);
-        }
-        break;
-      default:
-        break;
+    if (name === 'bank_account_reference' && value) {
+      error = validateBankAccount(value);
     }
 
     if (error) {
@@ -134,32 +101,6 @@ function SellerApply() {
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof SellerApplicationForm, string>> = {};
 
-    // 商店名稱：必填，1-200字
-    const storeNameError = validateRequired(formData.store_name, "商店名稱");
-    if (storeNameError) {
-      newErrors.store_name = storeNameError;
-    } else if (formData.store_name.length > 20) {
-      newErrors.store_name = "商店名稱不得超過20字";
-    }
-
-    // 商店描述：可選，0-500字
-    if (formData.store_description && formData.store_description.length > 500) {
-      newErrors.store_description = "商店描述不得超過500字";
-    }
-
-    // 商店電話：可選，格式驗證
-    if (formData.store_phone && !/^09[0-9]{2}-[0-9]{3}-[0-9]{3}$/.test(formData.store_phone)) {
-      newErrors.store_phone = "請輸入有效的電話號碼格式（例：0912-345-678）";
-    }
-
-    // 商店 Email：可選，格式驗證
-    if (formData.store_email) {
-      const emailError = validateEmail(formData.store_email);
-      if (emailError) {
-        newErrors.store_email = emailError;
-      }
-    }
-
     // 銀行帳戶：必填，格式驗證
     const bankAccountError = validateBankAccount(formData.bank_account_reference);
     if (bankAccountError) {
@@ -168,11 +109,6 @@ function SellerApply() {
 
     setErrors(newErrors);
     setTouched({
-      store_name: true,
-      store_description: true,
-      store_address: true,
-      store_phone: true,
-      store_email: true,
       bank_account_reference: true,
     });
 
@@ -257,83 +193,6 @@ function SellerApply() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className={styles.form}>
-            {/* 商店資訊 */}
-            <div className={styles.formSection}>
-              <h3 className={styles.sectionTitle}>商店資訊</h3>
-              <FormInput
-                name="store_name"
-                label="商店名稱"
-                type="text"
-                value={formData.store_name}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="請輸入商店名稱（1-200字）"
-                required
-                fieldName="商店名稱"
-                onValidate={(error) => {
-                  setErrors((prev) => ({ ...prev, store_name: error || undefined }));
-                }}
-                error={touched.store_name ? errors.store_name : undefined}
-                disabled={loading}
-              />
-
-              <FormInput
-                name="store_description"
-                label="商店描述"
-                type="textarea"
-                value={formData.store_description}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="簡單介紹您的商店（選填，最多500字）"
-                error={
-                  touched.store_description
-                    ? errors.store_description
-                    : undefined
-                }
-                disabled={loading}
-              />
-
-              <FormInput
-                name="store_address"
-                label="商店地址"
-                type="text"
-                value={formData.store_address}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="請輸入商店地址（選填）"
-                error={touched.store_address ? errors.store_address : undefined}
-                disabled={loading}
-              />
-            </div>
-
-            {/* 聯絡資訊 */}
-            <div className={styles.formSection}>
-              <h3 className={styles.sectionTitle}>聯絡資訊</h3>
-              <FormInput
-                name="store_phone"
-                label="商店電話"
-                type="tel"
-                value={formData.store_phone}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="例如：0912-345-678（選填）"
-                error={touched.store_phone ? errors.store_phone : undefined}
-                disabled={loading}
-              />
-
-              <FormInput
-                name="store_email"
-                label="商店電子郵件"
-                type="email"
-                value={formData.store_email}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="例如：store@example.com（選填）"
-                error={touched.store_email ? errors.store_email : undefined}
-                disabled={loading}
-              />
-            </div>
-
             {/* 金流資訊 */}
             <div className={styles.formSection}>
               <h3 className={styles.sectionTitle}>金流資訊</h3>
@@ -357,7 +216,9 @@ function SellerApply() {
                 }
                 disabled={loading}
               />
-              <p className={styles.hint}>銀行帳戶資訊用於收款</p>
+              <p className={styles.hint}>
+                銀行帳戶資訊用於收款。商店名稱將在審核通過後自動生成為「您的姓名's Store」。
+              </p>
             </div>
 
             {/* 提交按鈕 */}
