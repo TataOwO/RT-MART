@@ -194,7 +194,6 @@ export class SeedService {
       'SeasonalDiscount',
       'Discount',
       'CartItem',
-      'Cart',
       'ProductImage',
       'Inventory',
       'Product',

@@ -98,7 +98,11 @@ export class ProductsController {
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('admin')
   async findAllByAdmin(@Query() queryDto: QueryProductDto) {
-    const { data, total } = await this.productsService.findAll(queryDto, true, true);
+    const { data, total } = await this.productsService.findAll(
+      queryDto,
+      true,
+      true,
+    );
     return {
       data,
       total,

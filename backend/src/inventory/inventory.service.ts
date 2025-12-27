@@ -9,9 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inventory } from './entities/inventory.entity';
-import {
-  UpdateInventoryDto,
-} from './dto/update-inventory.dto';
+import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { SellersService } from '../sellers/sellers.service';
 import { StoresService } from '../stores/stores.service';
 import { ProductsService } from '../products/products.service';
@@ -24,8 +22,8 @@ export class InventoryService {
     private readonly storesService: StoresService,
     @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
-    private readonly sellerService: SellersService
-  ) { }
+    private readonly sellerService: SellersService,
+  ) {}
 
   async createForProduct(
     productId: string,
@@ -67,11 +65,11 @@ export class InventoryService {
 
     const store = await this.storesService.findBySeller(seller.sellerId);
     if (!store) {
-      throw new NotFoundException('Can\'t find the store of this seller acount')
+      throw new NotFoundException("Can't find the store of this seller acount");
     }
 
-    const product = await this.productsService.findOne(productId);
-    if(product.storeId!=store.storeId){
+    const product = await this.productsService.findOne(productId, true);
+    if (product.storeId != store.storeId) {
       throw new ForbiddenException('Not own this product');
     }
 
@@ -121,9 +119,7 @@ export class InventoryService {
     const inventory = await this.findByProduct(productId);
 
     if (inventory.quantity < numOfOrderItems) {
-      throw new BadRequestException(
-        'Quentity is not enough',
-      );
+      throw new BadRequestException('Quentity is not enough');
     }
 
     inventory.quantity -= numOfOrderItems;
@@ -138,9 +134,7 @@ export class InventoryService {
     const inventory = await this.findByProduct(productId);
 
     if (inventory.reserved < numOfOrderItems) {
-      throw new BadRequestException(
-        'Reserved quantity is not enougth',
-      );
+      throw new BadRequestException('Reserved quantity is not enougth');
     }
     inventory.reserved -= numOfOrderItems;
     return await this.inventoryRepository.save(inventory);
@@ -153,9 +147,7 @@ export class InventoryService {
     const inventory = await this.findByProduct(productId);
 
     if (inventory.quantity < numOfOrderItems) {
-      throw new BadRequestException(
-        'Quentity is not enough',
-      );
+      throw new BadRequestException('Quentity is not enough');
     }
 
     inventory.reserved -= numOfOrderItems;
@@ -163,17 +155,16 @@ export class InventoryService {
     return await this.inventoryRepository.save(inventory);
   }
 
-
   async getAvailableStock(productId: string): Promise<number> {
     const inventory = await this.findByProduct(productId);
     return inventory.quantity;
   }
 
-  // async checkStockAvailability(
-  //   productId: string,
-  //   requestedQuantity: number,
-  // ): Promise<boolean> {
-  //   const availableStock = await this.getAvailableStock(productId);
-  //   return availableStock >= requestedQuantity;
-  // }
+  async checkStockAvailability(
+    productId: string,
+    requestedQuantity: number,
+  ): Promise<boolean> {
+    const availableStock = await this.getAvailableStock(productId);
+    return availableStock >= requestedQuantity;
+  }
 }

@@ -14,8 +14,8 @@ import { Product } from '../../products/entities/product.entity';
 
 @Entity('CartItem')
 export class CartItem {
-  @PrimaryGeneratedColumn({ name: 'cart_id', type: 'bigint' })
-  cartId: string;
+  @PrimaryGeneratedColumn({ name: 'cart_item_id', type: 'bigint' })
+  cartItemId: string;
 
   @Column({ name: 'user_id', type: 'bigint', unique: true })
   userId: string;
@@ -30,7 +30,7 @@ export class CartItem {
   selected: boolean;
 
   @CreateDateColumn({
-    name: 'created_at',
+    name: 'added_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })

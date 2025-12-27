@@ -8,7 +8,12 @@ import { StoresModule } from '../stores/stores.module';
 import { SellersModule } from '../sellers/sellers.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Inventory]), forwardRef(() => ProductsModule), StoresModule, SellersModule],
+  imports: [
+    TypeOrmModule.forFeature([Inventory]),
+    forwardRef(() =>ProductsModule),
+    StoresModule,
+    SellersModule,
+  ],
   controllers: [InventoryController],
   providers: [InventoryService],
   exports: [InventoryService],

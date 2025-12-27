@@ -7,6 +7,7 @@ interface SearchBarProps {
   type?: string;
   placeholder?: string;
   onSearch?: (keyword: string, type: string) => void;
+  formClassName?: string;
 }
 
 /**
@@ -20,7 +21,8 @@ interface SearchBarProps {
 const SearchBar = ({
   type = "products",
   placeholder = "搜尋商品",
-  onSearch
+  onSearch,
+  formClassName
 }: SearchBarProps) => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const navigate = useNavigate();
@@ -42,8 +44,10 @@ const SearchBar = ({
   };
 
   return (
-    <form onSubmit={handleSearch} className={styles.searchForm}>
+    <form onSubmit={handleSearch} className={formClassName || styles.searchForm}>
       <input
+        id="search-input"
+        name="search"
         type="text"
         placeholder={placeholder}
         value={searchKeyword}

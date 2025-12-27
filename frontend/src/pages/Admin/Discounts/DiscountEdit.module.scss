@@ -1,0 +1,214 @@
+@use "sass:color";
+
+.discountEdit {
+  padding: $spacing-lg;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+// Header
+.header {
+  margin-bottom: $spacing-xl;
+}
+
+.backButton {
+  margin-bottom: $spacing-md;
+  color: $text-secondary;
+
+  &:hover {
+    color: $primary-color;
+  }
+}
+
+.pageTitle {
+  font-size: $font-3xl;
+  font-weight: 600;
+  color: $text-primary;
+  margin: 0;
+}
+
+// Loading
+.loading {
+  @include flex-center;
+  min-height: 300px;
+  font-size: $font-lg;
+  color: $text-secondary;
+}
+
+// Form Container
+.formContainer {
+  background: $bg-secondary;
+  border-radius: $border-radius-md;
+  padding: $spacing-xl;
+  box-shadow: $shadow-sm;
+}
+
+// Section
+.section {
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid $border-color;
+
+  &:last-of-type {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.sectionTitle {
+  font-size: $font-lg;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: $spacing-lg;
+}
+
+// Type Selection
+.typeSelection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.typeButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+  background: $bg-tertiary;
+  border: 2px solid $border-color;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  svg {
+    font-size: $font-2xl;
+    color: $text-secondary;
+  }
+
+  span {
+    font-size: $font-md;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &:hover {
+    border-color: $primary-color;
+    background: $bg-secondary;
+  }
+
+  &.active {
+    border-color: $primary-color;
+    background: color.adjust($primary-color, $lightness: 45%);
+
+    svg {
+      color: $primary-color;
+    }
+
+    span {
+      color: $primary-color;
+    }
+  }
+}
+
+.typeDesc {
+  font-size: $font-xs;
+  color: $text-tertiary;
+  margin: 0;
+}
+
+// Form Group
+.formGroup {
+  margin-bottom: $spacing-lg;
+}
+
+.label {
+  display: block;
+  font-size: $font-sm;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.textarea {
+  width: 100%;
+  padding: $spacing-md;
+  border: 2px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-sm;
+  font-family: inherit;
+  resize: vertical;
+  transition: $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+  }
+
+  &::placeholder {
+    color: $text-tertiary;
+  }
+}
+
+.errorText {
+  display: block;
+  font-size: $font-xs;
+  color: $error-color;
+  margin-top: $spacing-xs;
+}
+
+// Checkbox Group
+.checkboxGroup {
+  margin-top: $spacing-md;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+  }
+
+  span {
+    font-size: $font-sm;
+    color: $text-primary;
+  }
+}
+
+// Row (for side-by-side inputs)
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Actions
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-color;
+
+  @include mobile {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+}

@@ -526,6 +526,10 @@ function ProfilePage() {
             placeholder="請輸入姓名"
             disabled={isProfileLoading}
             required
+            fieldName="姓名"
+            onValidate={(error) => {
+              setProfileErrors((prev) => ({ ...prev, name: error || undefined }));
+            }}
           />
 
           <FormInput
@@ -544,6 +548,10 @@ function ProfilePage() {
             disabled={isProfileLoading}
             autoComplete="email"
             required
+            fieldName="Email"
+            onValidate={(error) => {
+              setProfileErrors((prev) => ({ ...prev, email: error || undefined }));
+            }}
           />
 
           <FormInput
@@ -562,6 +570,10 @@ function ProfilePage() {
             disabled={isProfileLoading}
             autoComplete="tel"
             required
+            fieldName="電話號碼"
+            onValidate={(error) => {
+              setProfileErrors((prev) => ({ ...prev, phone: error || undefined }));
+            }}
           />
 
           <Button
@@ -605,6 +617,10 @@ function ProfilePage() {
             disabled={isPasswordLoading}
             autoComplete="current-password"
             required
+            fieldName="目前密碼"
+            onValidate={(error) => {
+              setPasswordErrors((prev) => ({ ...prev, currentPassword: error || undefined }));
+            }}
           />
 
           <FormInput
@@ -623,6 +639,10 @@ function ProfilePage() {
             disabled={isPasswordLoading}
             autoComplete="new-password"
             required
+            fieldName="新密碼"
+            onValidate={(error) => {
+              setPasswordErrors((prev) => ({ ...prev, newPassword: error || undefined }));
+            }}
           />
 
           {/* Helper text under new password field */}
@@ -646,6 +666,10 @@ function ProfilePage() {
             disabled={isPasswordLoading}
             autoComplete="new-password"
             required
+            fieldName="確認新密碼"
+            onValidate={(error) => {
+              setPasswordErrors((prev) => ({ ...prev, confirmPassword: error || undefined }));
+            }}
           />
 
           <Button
@@ -706,6 +730,10 @@ function ProfilePage() {
             disabled={deleteDialog.isDeleting}
             autoComplete="current-password"
             required
+            fieldName="密碼"
+            onValidate={(error) => {
+              setDeleteDialog((prev) => ({ ...prev, error: error || '' }));
+            }}
           />
 
           <div className={styles.deleteDialogActions}>

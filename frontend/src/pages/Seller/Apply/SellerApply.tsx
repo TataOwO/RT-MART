@@ -1,0 +1,263 @@
+import { useState, FormEvent, ChangeEvent, FocusEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/shared/hooks/useAuth";
+import FormInput from "@/shared/components/FormInput";
+import Alert from "@/shared/components/Alert";
+import sellerService from "@/shared/services/sellerService";
+import {
+  validateBankAccount,
+} from "@/shared/utils/validation";
+import { AlertType } from "@/types";
+import type { SellerApplicationForm } from "@/types/seller";
+import styles from "./SellerApply.module.scss";
+
+interface AlertState {
+  type: AlertType | "";
+  message: string;
+}
+
+/**
+ * Seller Apply Page - 賣家申請頁面
+ * 允許買家填寫申請表單成為賣家
+ * 佈局：左側品牌視覺 + 右側表單（參考 Auth.tsx 設計）
+ */
+function SellerApply() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // 權限檢查：只有 buyer 可以申請
+  if (!user || user.role !== "buyer") {
+    navigate("/");
+    return null;
+  }
+
+  // Form State
+  const [formData, setFormData] = useState<SellerApplicationForm>({
+    bank_account_reference: "",
+  });
+
+  // UI State
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<AlertState>({ type: "", message: "" });
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof SellerApplicationForm, string>>
+  >({});
+  const [touched, setTouched] = useState<
+    Partial<Record<keyof SellerApplicationForm, boolean>>
+  >({});
+
+  // 處理表單輸入
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // 清除該欄位的錯誤
+    if (errors[name as keyof SellerApplicationForm]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
+  };
+
+  // 處理欄位失焦
+  const handleBlur = (
+    e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+    validateField(name as keyof SellerApplicationForm, value);
+  };
+
+  // 單一欄位驗證（處理自定義驗證邏輯）
+  const validateField = (
+    name: keyof SellerApplicationForm,
+    value: string
+  ): string | null => {
+    let error: string | null = null;
+
+    if (name === 'bank_account_reference' && value) {
+      error = validateBankAccount(value);
+    }
+
+    if (error) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: error,
+      }));
+    }
+
+    return error;
+  };
+
+  // 表單驗證
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof SellerApplicationForm, string>> = {};
+
+    // 銀行帳戶：必填，格式驗證
+    const bankAccountError = validateBankAccount(formData.bank_account_reference);
+    if (bankAccountError) {
+      newErrors.bank_account_reference = bankAccountError;
+    }
+
+    setErrors(newErrors);
+    setTouched({
+      bank_account_reference: true,
+    });
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // 處理表單提交
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      setAlert({ type: "error", message: "請修正表單中的錯誤" });
+      return;
+    }
+
+    setLoading(true);
+    setAlert({ type: "", message: "" });
+
+    try {
+      const response = await sellerService.applyToBeSeller(formData);
+
+      if (response.success) {
+        setAlert({
+          type: "success",
+          message: response.message,
+        });
+
+        // 2秒後重定向到首頁
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else {
+        setAlert({
+          type: "error",
+          message: "申請提交失敗，請稍後再試",
+        });
+      }
+    } catch (error) {
+      console.error("申請失敗:", error);
+      setAlert({
+        type: "error",
+        message: "申請提交失敗，請檢查網路連接後重試",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.sellerApply}>
+      {/* 左側面板 - 品牌視覺 */}
+      <div className={styles.leftPanel}>
+        <div className={styles.brandContent}>
+          <div className={styles.logo}>
+            <span className={styles.logoText}>RT-MART</span>
+          </div>
+          <h1 className={styles.slogan}>歡迎加入 RT-MART</h1>
+          <p className={styles.description}>
+            成為我們最忠實的夥伴，開啟您的線上銷售之旅
+          </p>
+        </div>
+      </div>
+
+      {/* 右側面板 - 表單 */}
+      <div className={styles.rightPanel}>
+        <div className={styles.formContainer}>
+          <div className={styles.formHeader}>
+            <h2 className={styles.formTitle}>賣家申請表單</h2>
+            <p className={styles.formSubtitle}>
+              填寫以下資訊即可申請成為賣家，我們將在 1-3 個工作天內完成審核
+            </p>
+          </div>
+
+          {/* Alert */}
+          {alert.message && alert.type && (
+            <Alert
+              type={alert.type as AlertType}
+              message={alert.message}
+              onClose={() => setAlert({ type: "", message: "" })}
+            />
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className={styles.form}>
+            {/* 金流資訊 */}
+            <div className={styles.formSection}>
+              <h3 className={styles.sectionTitle}>金流資訊</h3>
+              <FormInput
+                name="bank_account_reference"
+                label="銀行帳戶"
+                type="text"
+                value={formData.bank_account_reference}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="請輸入銀行帳戶參考號"
+                required
+                fieldName="銀行帳戶"
+                onValidate={(error) => {
+                  setErrors((prev) => ({ ...prev, bank_account_reference: error || undefined }));
+                }}
+                error={
+                  touched.bank_account_reference
+                    ? errors.bank_account_reference
+                    : undefined
+                }
+                disabled={loading}
+              />
+              <p className={styles.hint}>
+                銀行帳戶資訊用於收款。商店名稱將在審核通過後自動生成為「您的姓名's Store」。
+              </p>
+            </div>
+
+            {/* 提交按鈕 */}
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={() => navigate("/")}
+                disabled={loading}
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={loading}
+              >
+                {loading ? "提交中..." : "提交申請"}
+              </button>
+            </div>
+          </form>
+
+          {/* 底部連結 */}
+          <div className={styles.footer}>
+            <p>
+              已經是賣家？
+              <button
+                className={styles.linkButton}
+                onClick={() => navigate("/seller/center")}
+                disabled={loading}
+              >
+                前往賣家中心
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SellerApply;

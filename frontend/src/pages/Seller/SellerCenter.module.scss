@@ -32,19 +32,3 @@
     color: $text-secondary;
   }
 }
-
-.applyDialog {
-  padding: $spacing-md;
-
-  p {
-    margin-bottom: $spacing-lg;
-    color: $text-secondary;
-    line-height: 1.6;
-  }
-}
-
-.dialogActions {
-  @include flex-center;
-  justify-content: flex-end;
-  gap: $spacing-md;
-}

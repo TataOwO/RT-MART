@@ -405,8 +405,9 @@ function Search() {
                   onClick={() => setIsFilterOpen(false)}
                   className={styles.closeButton}
                   ariaLabel="關閉篩選"
+                  icon="times"
+                  iconOnly
                 >
-                  <Icon icon="times" />
                 </Button>
               </div>
               <div className={styles.drawerContent}>

@@ -8,10 +8,6 @@ import { ValidationError, PasswordStrength } from '@/types';
  * Email 格式驗證
  */
 export const validateEmail = (email: string): ValidationError => {
-  if (!email || email.trim() === '') {
-    return 'Email 為必填欄位'; // TODO: i18n
-  }
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return 'Email 格式不正確'; // TODO: i18n
@@ -24,10 +20,6 @@ export const validateEmail = (email: string): ValidationError => {
  * 密碼驗證（基本）
  */
 export const validatePassword = (password: string): ValidationError => {
-  if (!password || password.trim() === '') {
-    return '密碼為必填欄位'; // TODO: i18n
-  }
-
   if (password.length < 6) {
     return '密碼至少需要 6 個字元'; // TODO: i18n
   }
@@ -39,10 +31,6 @@ export const validatePassword = (password: string): ValidationError => {
  * 密碼強度驗證（註冊用）
  */
 export const validatePasswordStrength = (password: string): ValidationError => {
-  if (!password || password.trim() === '') {
-    return '密碼為必填欄位'; // TODO: i18n
-  }
-
   if (password.length < 8) {
     return '密碼至少需要 8 個字元'; // TODO: i18n
   }
@@ -107,10 +95,6 @@ export const calculatePasswordStrength = (password: string): PasswordStrength =>
  * 確認密碼驗證
  */
 export const validateConfirmPassword = (password: string, confirmPassword: string): ValidationError => {
-  if (!confirmPassword || confirmPassword.trim() === '') {
-    return '請確認密碼'; // TODO: i18n
-  }
-
   if (password !== confirmPassword) {
     return '兩次輸入的密碼不一致'; // TODO: i18n
   }
@@ -122,10 +106,6 @@ export const validateConfirmPassword = (password: string, confirmPassword: strin
  * 姓名驗證
  */
 export const validateName = (name: string): ValidationError => {
-  if (!name || name.trim() === '') {
-    return '姓名為必填欄位'; // TODO: i18n
-  }
-
   if (name.trim().length < 2) {
     return '姓名至少需要 2 個字元'; // TODO: i18n
   }
@@ -141,10 +121,6 @@ export const validateName = (name: string): ValidationError => {
  * 帳號驗證（login_id）
  */
 export const validateUsername = (username: string): ValidationError => {
-  if (!username || username.trim() === '') {
-    return '帳號為必填欄位'; // TODO: i18n
-  }
-
   if (username.length < 4) {
     return '帳號至少需要 4 個字元'; // TODO: i18n
   }
@@ -153,10 +129,10 @@ export const validateUsername = (username: string): ValidationError => {
     return '帳號不能超過 20 個字元'; // TODO: i18n
   }
 
-  // 只允許英數字（a-z, A-Z, 0-9）
-  const usernameRegex = /^[a-zA-Z0-9]+$/;
+  // 允許英數字及安全符號（a-z, A-Z, 0-9, _, -, .）
+  const usernameRegex = /^[a-zA-Z0-9._-]+$/;
   if (!usernameRegex.test(username)) {
-    return '帳號只能包含英文字母和數字'; // TODO: i18n
+    return '帳號只能包含英文字母、數字及符號（_ - .）'; // TODO: i18n
   }
 
   return null;
@@ -166,10 +142,6 @@ export const validateUsername = (username: string): ValidationError => {
  * 電話號碼驗證
  */
 export const validatePhone = (phone: string): ValidationError => {
-  if (!phone || phone.trim() === '') {
-    return '電話號碼為必填欄位'; // TODO: i18n
-  }
-
   // 台灣手機號碼格式：09XX-XXX-XXX 或 09XXXXXXXX
   const phoneRegex = /^09\d{2}-?\d{3}-?\d{3}$/;
   if (!phoneRegex.test(phone)) {
@@ -183,10 +155,6 @@ export const validatePhone = (phone: string): ValidationError => {
  * 登入帳號驗證（支援 email 或 username）
  */
 export const validateLoginIdentifier = (identifier: string): ValidationError => {
-  if (!identifier || identifier.trim() === '') {
-    return '請輸入帳號或 Email'; // TODO: i18n
-  }
-
   // 如果包含 @，當作 email 驗證
   if (identifier.includes('@')) {
     return validateEmail(identifier);
@@ -194,6 +162,18 @@ export const validateLoginIdentifier = (identifier: string): ValidationError => 
 
   // 否則當作 username 驗證
   return validateUsername(identifier);
+};
+
+/**
+ * 銀行賬號 格式驗證
+ */
+export const validateBankAccount = (bank_account_reference: string): ValidationError => {
+  const bank_account_referenceRegex = /^[0-9]{3}-[0-9]+$/;
+  if (!bank_account_referenceRegex.test(bank_account_reference)) {
+    return "銀行賬號 格式不正確"; // TODO: i18n
+  }
+
+  return null;
 };
 
 /**
