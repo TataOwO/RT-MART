@@ -58,8 +58,13 @@ function StoreSettings() {
   const { values, errors, validateAll, setValue } = form;
 
   // 包裝 handleChange 以支持直接傳值的方式
-  const handleChange = (nameOrEvent: string | React.ChangeEvent<HTMLInputElement>, value?: string) => {
-    if (typeof nameOrEvent === 'string') {
+  const handleChange = (
+    nameOrEvent:
+      | string
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    value?: string
+  ) => {
+    if (typeof nameOrEvent === "string") {
       // 直接傳遞字段名和值
       const name = nameOrEvent;
       setValue(name as any, value);
