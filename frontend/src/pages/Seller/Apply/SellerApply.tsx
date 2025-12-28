@@ -151,20 +151,6 @@ function SellerApply() {
               </button>
             </div>
           </form>
-
-          {/* 底部連結 */}
-          <div className={styles.footer}>
-            <p>
-              已經是賣家？
-              <button
-                className={styles.linkButton}
-                onClick={() => navigate("/seller/center")}
-                disabled={isSubmitting}
-              >
-                前往賣家中心
-              </button>
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -143,7 +143,7 @@ function AppContent() {
           <Route
             path="/seller/*"
             element={
-              <ProtectedRoute excludeRoles={['admin']}>
+              <ProtectedRoute requiredRole="seller">
                 <SellerCenter />
               </ProtectedRoute>
             }
