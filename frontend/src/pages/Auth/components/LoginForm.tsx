@@ -20,16 +20,6 @@ interface LoginFormData {
   remember: boolean;
 }
 
-interface FormErrors {
-  loginIdentifier?: string | null;
-  password?: string | null;
-}
-
-interface TouchedFields {
-  loginIdentifier?: boolean;
-  password?: boolean;
-}
-
 const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
   const navigate = useNavigate();
 

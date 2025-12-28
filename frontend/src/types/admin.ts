@@ -1,6 +1,9 @@
-import { ChartDataPoint } from "./seller";
 import type { OrderStatus, PaymentMethod, OrderItemDetail } from "./order";
 import type { Address } from "./common";
+import type { ChartDataPoint } from "./seller";
+
+// Re-export ChartDataPoint from seller types
+export type { ChartDataPoint } from "./seller";
 
 // Dashboard Types
 export interface DashboardStats {

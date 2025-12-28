@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormInput from '@/shared/components/FormInput';
-import Select from '@/shared/components/Select';
 import Button from '@/shared/components/Button';
 import Icon from '@/shared/components/Icon';
 import Alert from '@/shared/components/Alert';
 import adminService from '@/shared/services/adminService.index';
-import { SystemDiscount } from '@/types/admin';
 import { AlertType } from '@/types';
 import { useForm } from '@/shared/hooks/useForm';
 import styles from './DiscountEdit.module.scss';

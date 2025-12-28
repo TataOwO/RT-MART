@@ -493,7 +493,8 @@ function Orders() {
                     {selectedOrder.shipping_address.postalCode}{" "}
                     {selectedOrder.shipping_address.city}
                     {selectedOrder.shipping_address.district}
-                    {selectedOrder.shipping_address.detail}
+                    {selectedOrder.shipping_address.addressLine1}
+                    {selectedOrder.shipping_address.addressLine2 && ` ${selectedOrder.shipping_address.addressLine2}`}
                   </span>
                 </div>
               </div>

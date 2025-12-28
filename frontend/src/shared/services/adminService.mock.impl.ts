@@ -210,7 +210,7 @@ export const flagOrder = async (
 };
 
 export const unflagOrder = async (
-  orderId: string
+  _orderId: string
 ): Promise<{ success: boolean; message: string }> => {
   console.warn('[MOCK] unflagOrder is deprecated');
   throw new Error("此功能已棄用：訂單取消操作不可逆，無法恢復");
@@ -243,7 +243,10 @@ export const cancelAdminOrder = async (
 export const getAnomalyOrders = async (): Promise<AdminOrder[]> => {
   await delay(400);
   console.log('[MOCK] getAnomalyOrders');
-  return mockAdminOrders.filter(order => order.is_flagged);
+  // Mock: return orders with status that might be anomalies
+  return mockAdminOrders.filter(order =>
+    order.status === 'cancelled' || order.status === 'pending_payment'
+  );
 };
 
 // ========== System Discounts ==========

@@ -177,7 +177,7 @@ export const getUsers = async (params?: {
  */
 export const suspendUser = async (
   userId: string,
-  reason: string
+  _reason: string
 ): Promise<{ success: boolean; message: string }> => {
   await del(`/users/${userId}`);
 
@@ -246,7 +246,7 @@ export const getStores = async (params?: {
  */
 export const suspendStore = async (
   storeId: string,
-  reason: string
+  _reason: string
 ): Promise<{ success: boolean; message: string }> => {
   await del(`/stores/${storeId}`);
 
@@ -427,7 +427,7 @@ export const flagOrder = async (
  * 如果管理員發現異常，應直接使用 flagOrder (現在會取消訂單)。
  */
 export const unflagOrder = async (
-  orderId: string
+  _orderId: string
 ): Promise<{ success: boolean; message: string }> => {
   console.warn('unflagOrder is deprecated: 訂單取消操作不可逆，此功能已停用');
   throw new Error("此功能已棄用：訂單取消操作不可逆，無法恢復");
@@ -492,7 +492,7 @@ export const getAnomalyOrders = async (): Promise<AdminOrder[]> => {
       city: '',
       district: '',
       postalCode: '',
-      detail: '',
+      addressLine1: '',
       isDefault: false,
     },
     subtotal: order.subtotal || 0,
