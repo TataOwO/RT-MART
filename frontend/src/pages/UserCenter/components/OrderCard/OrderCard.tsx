@@ -1,13 +1,10 @@
-import { useNavigate } from 'react-router-dom';
 import { OrderStatus } from '@/types/order';
 import Button from '@/shared/components/Button';
-import ItemListCard from '@/shared/components/ItemListCard';
 import styles from './OrderCard.module.scss';
 
 import { OrderCardProps, OrderAction } from '@/types/userCenter';
 
 function OrderCard({ order, onViewDetail, onAction, isProcessing = false }: OrderCardProps) {
-  const navigate = useNavigate();
   
   // 根據訂單狀態顯示操作按鈕
   const getActionButtons = (status: OrderStatus): OrderAction[] => {
@@ -64,25 +61,6 @@ function OrderCard({ order, onViewDetail, onAction, isProcessing = false }: Orde
         <span className={`${styles.statusBadge} ${styles[order.status]}`}>
           {statusLabels[order.status]}
         </span>
-      </div>
-
-      {/* 商品列表（使用 ItemListCard）*/}
-      <div className={styles.itemList}>
-        {order.items.slice(0, 3).map((item) => (
-          <ItemListCard
-            key={item.id}
-            variant="order-list"
-            item={item}
-            onClick={() => {
-              navigate(`/product/${item.productId}`);
-            }}
-          />
-        ))}
-        {order.items.length > 3 && (
-          <p className={styles.moreItems}>
-            還有 {order.items.length - 3} 件商品...
-          </p>
-        )}
       </div>
 
       {/* 訂單底部 */}
