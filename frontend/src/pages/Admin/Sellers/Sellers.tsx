@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/shared/components/Icon";
 import Button from "@/shared/components/Button";
 import Alert from "@/shared/components/Alert";
@@ -12,6 +12,7 @@ import RejectDialog from "./components/RejectDialog";
 import styles from "./Sellers.module.scss";
 
 function Sellers() {
+  const alertRef = useRef<HTMLDivElement>(null);
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
@@ -19,6 +20,16 @@ function Sellers() {
     type: AlertType;
     message: string;
   } | null>(null);
+
+  // Custom setAlert with scroll behavior
+  const showAlert = (alertData: { type: AlertType; message: string } | null) => {
+    setAlert(alertData);
+    if (alertData && alertRef.current) {
+      setTimeout(() => {
+        alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  };
 
   // Dialog states
   const [selectedApplication, setSelectedApplication] =
@@ -45,7 +56,7 @@ function Sellers() {
       setApplications(data);
     } catch (error) {
       console.error("獲取賣家申請失敗:", error);
-      setAlert({ type: "error", message: "獲取賣家申請失敗" });
+      showAlert({ type: "error", message: "獲取賣家申請失敗" });
     } finally {
       setLoading(false);
     }
@@ -97,13 +108,13 @@ function Sellers() {
       await adminService.approveSellerApplication(
         selectedApplication.seller_id
       );
-      setAlert({ type: "success", message: "賣家申請已批准" });
+      showAlert({ type: "success", message: "賣家申請已批准" });
       setShowApproveDialog(false);
       setSelectedApplication(null);
       await fetchApplications(activeTab as "pending" | "approved" | "rejected");
     } catch (error) {
       console.error("批准賣家申請失敗:", error);
-      setAlert({ type: "error", message: "批准賣家申請失敗" });
+      showAlert({ type: "error", message: "批准賣家申請失敗" });
     } finally {
       setActionLoading(false);
     }
@@ -119,13 +130,13 @@ function Sellers() {
         selectedApplication.seller_id,
         reason
       );
-      setAlert({ type: "success", message: "賣家申請已拒絕" });
+      showAlert({ type: "success", message: "賣家申請已拒絕" });
       setShowRejectDialog(false);
       setSelectedApplication(null);
       await fetchApplications(activeTab as "pending" | "approved" | "rejected");
     } catch (error) {
       console.error("拒絕賣家申請失敗:", error);
-      setAlert({ type: "error", message: "拒絕賣家申請失敗" });
+      showAlert({ type: "error", message: "拒絕賣家申請失敗" });
     } finally {
       setActionLoading(false);
     }
@@ -147,11 +158,13 @@ function Sellers() {
 
       {/* Alert */}
       {alert && (
-        <Alert
-          type={alert.type}
-          message={alert.message}
-          onClose={() => setAlert(null)}
-        />
+        <div ref={alertRef}>
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert(null)}
+          />
+        </div>
       )}
 
       {/* Tabs */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/shared/components/Icon";
 import Button from "@/shared/components/Button";
 import Select from "@/shared/components/Select";
@@ -87,6 +87,7 @@ const getPaymentMethodLabel = (method: string): string => {
 };
 
 function Orders() {
+  const alertRef = useRef<HTMLDivElement>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -94,6 +95,16 @@ function Orders() {
     type: AlertType;
     message: string;
   } | null>(null);
+
+  // Custom setAlert with scroll behavior
+  const showAlert = (alertData: { type: AlertType; message: string } | null) => {
+    setAlert(alertData);
+    if (alertData && alertRef.current) {
+      setTimeout(() => {
+        alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  };
 
   // 篩選狀態
   const [filters, setFilters] = useState<AdminOrderFilters>({
@@ -128,7 +139,7 @@ function Orders() {
       setSearched(true);
     } catch (error) {
       console.error("載入訂單失敗:", error);
-      setAlert({ type: "error", message: "載入訂單失敗" });
+      showAlert({ type: "error", message: "載入訂單失敗" });
     } finally {
       setLoading(false);
     }
@@ -159,7 +170,7 @@ function Orders() {
       setShowDetailDialog(true);
     } catch (error) {
       console.error("載入訂單詳情失敗:", error);
-      setAlert({ type: "error", message: "載入訂單詳情失敗" });
+      showAlert({ type: "error", message: "載入訂單詳情失敗" });
     }
   };
 
@@ -175,7 +186,7 @@ function Orders() {
 
     // 如果選擇取消狀態，需要檢查取消原因
     if (newStatus === "cancelled" && !cancelReason.trim()) {
-      setAlert({ type: "warning", message: "請輸入取消原因" });
+      showAlert({ type: "warning", message: "請輸入取消原因" });
       return;
     }
 
@@ -183,11 +194,11 @@ function Orders() {
       if (newStatus === "cancelled") {
         // 使用取消訂單 API（會發送取消原因給買家和賣家）
         await adminService.cancelAdminOrder(selectedOrder.order_id, cancelReason);
-        setAlert({ type: "success", message: "訂單已取消" });
+        showAlert({ type: "success", message: "訂單已取消" });
       } else {
         // 使用更新狀態 API
         await adminService.updateAdminOrderStatus(selectedOrder.order_id, newStatus);
-        setAlert({ type: "success", message: "訂單狀態已更新" });
+        showAlert({ type: "success", message: "訂單狀態已更新" });
       }
 
       setShowStatusDialog(false);
@@ -196,7 +207,7 @@ function Orders() {
       loadOrders();
     } catch (error) {
       console.error("更新訂單狀態失敗:", error);
-      setAlert({ type: "error", message: "更新訂單狀態失敗" });
+      showAlert({ type: "error", message: "更新訂單狀態失敗" });
     }
   };
 
@@ -219,11 +230,13 @@ function Orders() {
       <h1 className={styles.pageTitle}>訂單管理</h1>
 
       {alert && (
-        <Alert
-          type={alert.type}
-          message={alert.message}
-          onClose={() => setAlert(null)}
-        />
+        <div ref={alertRef}>
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert(null)}
+          />
+        </div>
       )}
 
       {/* 篩選工具列 */}

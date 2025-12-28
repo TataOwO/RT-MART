@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Icon from '@/shared/components/Icon';
 import Button from '@/shared/components/Button';
 import FormInput from '@/shared/components/FormInput';
@@ -11,6 +11,7 @@ import { AlertType } from '@/types';
 import styles from './Stores.module.scss';
 
 function Stores() {
+  const alertRef = useRef<HTMLDivElement>(null);
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -20,10 +21,20 @@ function Stores() {
   const [suspendReason, setSuspendReason] = useState('');
   const [alert, setAlert] = useState<{ type: AlertType; message: string } | null>(null);
 
+  // Custom setAlert with scroll behavior
+  const showAlert = (alertData: { type: AlertType; message: string } | null) => {
+    setAlert(alertData);
+    if (alertData && alertRef.current) {
+      setTimeout(() => {
+        alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  };
+
   const handleSearch = async (keyword: string) => {
     setLastSearchKeyword(keyword);
     if (!keyword.trim()) {
-      setAlert({ type: 'warning', message: '請輸入商家名稱或 Store ID' });
+      showAlert({ type: 'warning', message: '請輸入商家名稱或 Store ID' });
       return;
     }
 
@@ -41,7 +52,7 @@ function Stores() {
       setStores(filtered);
     } catch (error) {
       console.error('搜尋商家失敗:', error);
-      setAlert({ type: 'error', message: '搜尋商家失敗' });
+      showAlert({ type: 'error', message: '搜尋商家失敗' });
     } finally {
       setLoading(false);
     }
@@ -50,13 +61,13 @@ function Stores() {
   const handleSuspend = async () => {
     if (!selectedStore) return;
     if (!suspendReason.trim()) {
-      setAlert({ type: 'warning', message: '請輸入停權原因' });
+      showAlert({ type: 'warning', message: '請輸入停權原因' });
       return;
     }
 
     try {
       await adminService.suspendStore(selectedStore.store_id, suspendReason);
-      setAlert({ type: 'success', message: '商家已停權' });
+      showAlert({ type: 'success', message: '商家已停權' });
       setShowSuspendDialog(false);
       setSuspendReason('');
       setSelectedStore(null);
@@ -65,20 +76,20 @@ function Stores() {
       }
     } catch (error) {
       console.error('停權失敗:', error);
-      setAlert({ type: 'error', message: '停權失敗' });
+      showAlert({ type: 'error', message: '停權失敗' });
     }
   };
 
   const handleUnsuspend = async (store: AdminStore) => {
     try {
       await adminService.unsuspendStore(store.store_id);
-      setAlert({ type: 'success', message: '已解除停權' });
+      showAlert({ type: 'success', message: '已解除停權' });
       if (lastSearchKeyword) {
         handleSearch(lastSearchKeyword);
       }
     } catch (error) {
       console.error('解除停權失敗:', error);
-      setAlert({ type: 'error', message: '解除停權失敗' });
+      showAlert({ type: 'error', message: '解除停權失敗' });
     }
   };
 
@@ -201,11 +212,13 @@ function Stores() {
         <div className={styles.dialogContent}>
           {/* Alert */}
           {alert && (
-            <Alert
-              type={alert.type}
-              message={alert.message}
-              onClose={() => setAlert(null)}
-            />
+            <div ref={alertRef}>
+              <Alert
+                type={alert.type}
+                message={alert.message}
+                onClose={() => setAlert(null)}
+              />
+            </div>
           )}
           <p>確定要停權商家「{selectedStore?.store_name}」嗎？</p>
           <FormInput
