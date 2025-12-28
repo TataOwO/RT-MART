@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { OrderListItem, OrderStatus } from '@/types/order';
+import { OrderStatus } from '@/types/order';
 import Button from '@/shared/components/Button';
 import ItemListCard from '@/shared/components/ItemListCard';
 import styles from './OrderCard.module.scss';

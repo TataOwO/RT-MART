@@ -4,15 +4,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, LessThan } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
+import { QueryAdminOrderDto } from './dto/query-admin-order.dto';
 import { CartsService } from '../carts/carts.service';
 import { ShippingAddressesService } from '../shipping-addresses/shipping-addresses.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { DiscountsService } from '../discounts/discounts.service';
 
 @Injectable()
 export class OrdersService {
@@ -24,6 +26,7 @@ export class OrdersService {
     private readonly cartsService: CartsService,
     private readonly shippingAddressesService: ShippingAddressesService,
     private readonly inventoryService: InventoryService,
+    private readonly discountsService: DiscountsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -66,13 +69,28 @@ export class OrdersService {
       for (const [storeId, items] of itemsByStore.entries()) {
         let subtotal = 0;
 
-        // Reserve inventory for all items
-        // for (const item of items) {
-        //   await this.inventoryService.reserveStock(item.productId, {
-        //     quantity: item.quantity,
-        //   });
-        //   subtotal += Number(item.product.price) * item.quantity;
-        // }
+        // Calculate subtotal and reserve inventory for all items
+        for (const item of items) {
+          // Check stock availability
+          const isAvailable = await this.inventoryService.checkStockAvailability(
+            item.productId,
+            item.quantity,
+          );
+
+          if (!isAvailable) {
+            throw new BadRequestException(
+              `Insufficient stock for product: ${item.product.productName}`,
+            );
+          }
+
+          // Reserve inventory (decrease quantity, increase reserved)
+          await this.inventoryService.orderCreated(
+            item.productId,
+            item.quantity,
+          );
+
+          subtotal += Number(item.product.price) * item.quantity;
+        }
 
         const shippingFee = 60; // Default shipping fee
         const totalAmount = subtotal + shippingFee;
@@ -104,7 +122,7 @@ export class OrdersService {
             productId: item.productId,
             productSnapshot: {
               productId: item.product.productId,
-              productName: item.product.productName,
+              product_name: item.product.productName,
               price: item.product.price,
               images: item.product.images,
             },
@@ -194,18 +212,19 @@ export class OrdersService {
       switch (updateDto.status) {
         case OrderStatus.PAID:
           order.paidAt = new Date();
-          // Commit reserved inventory
-          for (const item of order.items || []) {
-            if (item.productId) {
-              // await this.inventoryService.commitReserved(
-              //   item.productId,
-              //   item.quantity,
-              // );
-            }
-          }
+          // Payment confirmed, inventory already reserved
           break;
         case OrderStatus.SHIPPED:
           order.shippedAt = new Date();
+          // Release reserved inventory when shipped
+          for (const item of order.items || []) {
+            if (item.productId) {
+              await this.inventoryService.orderShipped(
+                item.productId,
+                item.quantity,
+              );
+            }
+          }
           break;
         case OrderStatus.DELIVERED:
           order.deliveredAt = new Date();
@@ -215,12 +234,13 @@ export class OrdersService {
           break;
         case OrderStatus.CANCELLED:
           order.cancelledAt = new Date();
-          // Release reserved inventory
+          // Release reserved inventory (restore quantity, decrease reserved)
           for (const item of order.items || []) {
             if (item.productId) {
-              // await this.inventoryService.releaseReserved(item.productId, {
-              //   quantity: item.quantity,
-              // });
+              await this.inventoryService.orderCancel(
+                item.productId,
+                item.quantity,
+              );
             }
           }
           break;
@@ -268,5 +288,261 @@ export class OrdersService {
         `Cannot transition from ${currentStatus} to ${newStatus}`,
       );
     }
+  }
+
+  // ========== Admin Methods ==========
+
+  async findAllAdmin(
+    queryDto: QueryAdminOrderDto,
+  ): Promise<{ data: any[]; total: number }> {
+    const page = parseInt(queryDto.page || '1', 10);
+    const limit = parseInt(queryDto.limit || '20', 10);
+    const skip = (page - 1) * limit;
+
+    const query = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.store', 'store')
+      .leftJoinAndSelect('store.seller', 'seller')
+      .leftJoinAndSelect('seller.user', 'sellerUser')
+      .leftJoinAndSelect('order.items', 'items')
+      .orderBy('order.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    // Search filter (order number, buyer name, seller name, store name)
+    if (queryDto.search) {
+      query.andWhere(
+        '(order.orderNumber LIKE :search OR user.name LIKE :search OR sellerUser.name LIKE :search OR store.storeName LIKE :search)',
+        { search: `%${queryDto.search}%` },
+      );
+    }
+
+    // Status filter
+    if (queryDto.status) {
+      query.andWhere('order.orderStatus = :status', { status: queryDto.status });
+    }
+
+    // Date range filter
+    if (queryDto.startDate) {
+      query.andWhere('order.createdAt >= :startDate', {
+        startDate: queryDto.startDate,
+      });
+    }
+    if (queryDto.endDate) {
+      query.andWhere('order.createdAt <= :endDate', {
+        endDate: queryDto.endDate,
+      });
+    }
+
+    const [data, total] = await query.getManyAndCount();
+
+    // Transform to admin-friendly format
+    const adminOrders = data.map((order) => ({
+      orderId: order.orderId,
+      orderNumber: order.orderNumber,
+      buyerId: order.userId,
+      buyerName: order.user.name,
+      buyerEmail: order.user.email,
+      sellerId: order.store.seller.sellerId,
+      sellerName: order.store.seller.user.name,
+      storeName: order.store.storeName,
+      status: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      items: (order.items || []).map((item) => {
+        const snapshot = item.productSnapshot as any;
+        return {
+          id: item.orderItemId,
+          productId: item.productId,
+          productName: snapshot?.product_name || 'Unknown Product',
+          productImage: snapshot?.images?.[0] || null,
+          quantity: item.quantity,
+          price: parseFloat(item.unitPrice.toString()),
+        };
+      }),
+      shippingAddress: order.shippingAddressSnapshot,
+      note: order.notes,
+      subtotal: order.subtotal,
+      shipping: order.shippingFee,
+      discount: order.totalDiscount,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      paidAt: order.paidAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      completedAt: order.completedAt,
+      cancelledAt: order.cancelledAt,
+    }));
+
+    return { data: adminOrders, total };
+  }
+
+  async findOneAdmin(orderId: string): Promise<any> {
+    const order = await this.orderRepository.findOne({
+      where: { orderId },
+      relations: [
+        'user',
+        'store',
+        'store.seller',
+        'store.seller.user',
+        'items',
+      ],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Transform to admin-friendly format (same as above)
+    return {
+      orderId: order.orderId,
+      orderNumber: order.orderNumber,
+      buyerId: order.userId,
+      buyerName: order.user.name,
+      buyerEmail: order.user.email,
+      sellerId: order.store.seller.sellerId,
+      sellerName: order.store.seller.user.name,
+      storeName: order.store.storeName,
+      status: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      items: (order.items || []).map((item) => {
+        const snapshot = item.productSnapshot as any;
+        return {
+          id: item.orderItemId,
+          productId: item.productId,
+          productName: snapshot?.product_name || 'Unknown Product',
+          productImage: snapshot?.images?.[0] || null,
+          quantity: item.quantity,
+          price: parseFloat(item.unitPrice.toString()),
+        };
+      }),
+      shippingAddress: order.shippingAddressSnapshot,
+      note: order.notes,
+      subtotal: order.subtotal,
+      shipping: order.shippingFee,
+      discount: order.totalDiscount,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      paidAt: order.paidAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      completedAt: order.completedAt,
+      cancelledAt: order.cancelledAt,
+    };
+  }
+
+  async adminCancelOrder(id: string, reason?: string): Promise<any> {
+    const order = await this.orderRepository.findOne({
+      where: { orderId: id },
+      relations: ['items'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    // Admin can cancel any order (skip user check)
+    return await this.dataSource.transaction(async (manager) => {
+      order.orderStatus = OrderStatus.CANCELLED;
+      order.cancelledAt = new Date();
+
+      // Release reserved inventory (restore quantity, decrease reserved)
+      for (const item of order.items || []) {
+        if (item.productId) {
+          await this.inventoryService.orderCancel(item.productId, item.quantity);
+        }
+      }
+
+      // TODO: Send email notification with reason using nodeMailer
+      // if (reason) {
+      //   await this.mailService.sendOrderCancelledEmail(order, reason);
+      // }
+
+      return await manager.save(Order, order);
+    });
+  }
+
+  async updateAdminOrderStatus(
+    id: string,
+    updateDto: { status: OrderStatus },
+  ): Promise<any> {
+    const order = await this.orderRepository.findOne({
+      where: { orderId: id },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    // Admin can update to any status (skip status transition validation)
+    return await this.dataSource.transaction(async (manager) => {
+      order.orderStatus = updateDto.status;
+
+      // Update corresponding timestamp based on new status
+      switch (updateDto.status) {
+        case OrderStatus.PAID:
+          order.paidAt = new Date();
+          break;
+        case OrderStatus.SHIPPED:
+          order.shippedAt = new Date();
+          break;
+        case OrderStatus.DELIVERED:
+          order.deliveredAt = new Date();
+          break;
+        case OrderStatus.COMPLETED:
+          order.completedAt = new Date();
+          break;
+        case OrderStatus.CANCELLED:
+          order.cancelledAt = new Date();
+          // Release reserved inventory (restore quantity, decrease reserved)
+          for (const item of order.items || []) {
+            if (item.productId) {
+              await this.inventoryService.orderCancel(
+                item.productId,
+                item.quantity,
+              );
+            }
+          }
+          break;
+      }
+
+      return await manager.save(Order, order);
+    });
+  }
+
+  async findAnomalies(): Promise<any[]> {
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    const anomalies = await this.orderRepository.find({
+      where: {
+        orderStatus: OrderStatus.PENDING_PAYMENT,
+        createdAt: LessThan(twentyFourHoursAgo),
+      },
+      relations: ['user', 'store', 'store.seller', 'store.seller.user'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    // Format response similar to findAllAdmin
+    return anomalies.map((order) => ({
+      orderId: order.orderId,
+      orderNumber: order.orderNumber,
+      buyerName: order.user?.name,
+      buyerEmail: order.user?.email,
+      sellerName: order.store?.seller?.user?.name,
+      storeName: order.store?.storeName,
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus,
+      createdAt: order.createdAt,
+      paidAt: order.paidAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      completedAt: order.completedAt,
+      cancelledAt: order.cancelledAt,
+    }));
   }
 }
