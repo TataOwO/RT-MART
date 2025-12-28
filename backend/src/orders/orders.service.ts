@@ -170,12 +170,13 @@ export class OrdersService {
       where.storeId = queryDto.storeId;
     }
 
+    // Order list should only return basic info without items for performance
     const [data, total] = await this.orderRepository.findAndCount({
       where,
       skip,
       take: limit,
       order: { createdAt: 'DESC' },
-      relations: ['store', 'items', 'items.product'],
+      relations: ['store'], // Removed 'items' and 'items.product' for performance
     });
 
     return { data, total };
@@ -550,6 +551,7 @@ export class OrdersService {
 
   /**
    * Get orders for a specific seller's store
+   * Returns basic order info without items for performance
    */
   async findSellerOrders(
     sellerId: string,
@@ -559,14 +561,13 @@ export class OrdersService {
     const limit = parseInt(queryDto.limit || '10', 10);
     const skip = (page - 1) * limit;
 
-    // Build query
+    // Build query - removed items and product relations for performance
     const query = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.store', 'store')
       .leftJoinAndSelect('store.seller', 'seller')
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
-      .leftJoinAndSelect('items.product', 'product')
+      // Removed items and product joins - use findSellerOrder() for details
       .where('seller.sellerId = :sellerId', { sellerId })
       .orderBy('order.createdAt', 'DESC')
       .skip(skip)
