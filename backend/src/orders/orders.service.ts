@@ -32,139 +32,133 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
-  // TODO: 付款等待 清空購物車邏輯
   async create(userId: string, createDto: CreateOrderDto): Promise<Order> {
-    // Get cart with items (outside transaction)
+    // 1. 取得購物車與收件地址（transaction 外）
     const { cart } = await this.cartsService.getCartSummary(userId);
+    if (!cart.items?.length) throw new BadRequestException('Cart is empty');
 
-    if (!cart.items || cart.items.length === 0) {
-      throw new BadRequestException('Cart is empty');
-    }
-
-    // Get shipping address (outside transaction)
     const shippingAddress = await this.shippingAddressesService.findOne(
       createDto.shippingAddressId,
       userId,
     );
 
-    // Use transaction for order creation
-    return await this.dataSource.transaction(async (manager) => {
-      // Filter only selected items and group items by store
-      const cartItems = cart.items!.filter((item) => item.selected);
+    // 2. 驗證折扣碼（transaction 外）
+    let validatedShippingDiscount: any = null;
+    let validatedProductDiscount: any = null;
 
-      if (cartItems.length === 0) {
-        throw new BadRequestException('No items selected for checkout');
-      }
+    const cartItems = cart.items.filter((item) => item.selected);
+    if (!cartItems.length)
+      throw new BadRequestException('No items selected for checkout');
 
+    const totalSubtotal = cartItems.reduce(
+      (sum, item) => sum + Number(item.product.price) * item.quantity,
+      0,
+    );
+
+    if (createDto.shippingDiscountCode) {
+      const validation = await this.discountsService.validateDiscount(
+        createDto.shippingDiscountCode,
+        totalSubtotal,
+      );
+      if (!validation.valid)
+        throw new BadRequestException(
+          `Shipping discount invalid: ${validation.reason}`,
+        );
+      validatedShippingDiscount = validation.discount;
+    }
+
+    if (createDto.productDiscountCode) {
+      const validation = await this.discountsService.validateDiscount(
+        createDto.productDiscountCode,
+        totalSubtotal,
+      );
+      if (!validation.valid)
+        throw new BadRequestException(
+          `Product discount invalid: ${validation.reason}`,
+        );
+      validatedProductDiscount = validation.discount;
+    }
+
+    let shippingDiscountAmount = 0;
+    let productDiscountAmount = 0;
+
+    // 3. 用 transaction 創建訂單 + 訂單項目 + 折扣紀錄
+    const orders = await this.dataSource.transaction(async (manager) => {
       const itemsByStore = new Map<string, typeof cartItems>();
       for (const item of cartItems) {
         const storeId = item.product.storeId;
-        if (!itemsByStore.has(storeId)) {
-          itemsByStore.set(storeId, []);
-        }
+        if (!itemsByStore.has(storeId)) itemsByStore.set(storeId, []);
         itemsByStore.get(storeId)!.push(item);
       }
 
-      const orders: Order[] = [];
+      const savedOrders: Order[] = [];
 
-      // Create one order per store
       for (const [storeId, items] of itemsByStore.entries()) {
         let subtotal = 0;
 
-        // Calculate subtotal and reserve inventory for all items
+        // 4. 庫存原子化更新
         for (const item of items) {
-          // Check stock availability
-          const isAvailable = await this.inventoryService.checkStockAvailability(
-            item.productId,
-            item.quantity,
+          const result = await this.dataSource.manager.query(
+            `UPDATE inventory
+           SET quantity = quantity - ?, reserved = reserved + ?
+           WHERE product_id = ? AND quantity >= ?`,
+            [item.quantity, item.quantity, item.productId, item.quantity],
           );
-
-          if (!isAvailable) {
+          if (result.affectedRows === 0) {
             throw new BadRequestException(
               `Insufficient stock for product: ${item.product.productName}`,
             );
           }
 
-          // Reserve inventory (decrease quantity, increase reserved)
-          await this.inventoryService.orderCreated(
-            item.productId,
-            item.quantity,
-          );
-
           subtotal += Number(item.product.price) * item.quantity;
         }
 
-        // Apply discount codes if provided
-        let shippingDiscountAmount = 0;
+        // 計算折扣
+        let shippingDiscountAmount = validatedShippingDiscount
+          ? Number(
+              validatedShippingDiscount.shippingDiscount?.discountAmount || 0,
+            )
+          : 0;
         let productDiscountAmount = 0;
-
-        if (createDto.shippingDiscountCode) {
-          const validation = await this.discountsService.validateDiscount(
-            createDto.shippingDiscountCode,
-            subtotal,
-          );
-
-          if (!validation.valid) {
-            throw new BadRequestException(`Shipping discount invalid: ${validation.reason}`);
-          }
-
-          if (!validation.discount) {
-            throw new BadRequestException('Discount not found');
-          }
-
-          if (validation.discount.discountType !== 'shipping') {
-            throw new BadRequestException('Invalid discount type for shipping');
-          }
-
-          shippingDiscountAmount = Number(validation.discount.shippingDiscount?.discountAmount || 0);
-        }
-
-        if (createDto.productDiscountCode) {
-          const validation = await this.discountsService.validateDiscount(
-            createDto.productDiscountCode,
-            subtotal,
-          );
-
-          if (!validation.valid) {
-            throw new BadRequestException(`Product discount invalid: ${validation.reason}`);
-          }
-
-          if (!validation.discount) {
-            throw new BadRequestException('Discount not found');
-          }
-
-          // Calculate product discount amount based on type
-          if (validation.discount.discountType === 'seasonal') {
-            const rate = Number(validation.discount.seasonalDiscount?.discountRate || 0);
-            const max = Number(validation.discount.seasonalDiscount?.maxDiscountAmount || Infinity);
-            productDiscountAmount = Math.min(subtotal * rate, max);
-          } else if (validation.discount.discountType === 'special') {
-            // Only apply if store matches
-            if (validation.discount.specialDiscount?.storeId === storeId) {
-              const rate = Number(validation.discount.specialDiscount?.discountRate || 0);
-              const max = Number(validation.discount.specialDiscount?.maxDiscountAmount || Infinity);
-              productDiscountAmount = Math.min(subtotal * rate, max);
+        if (validatedProductDiscount) {
+          if (validatedProductDiscount.discountType === 'seasonal') {
+            const rate = Number(
+              validatedProductDiscount.seasonalDiscount?.discountRate || 0,
+            );
+            const max = Number(
+              validatedProductDiscount.seasonalDiscount?.maxDiscountAmount ||
+                Infinity,
+            );
+            productDiscountAmount = Math.floor(Math.min(subtotal * rate, max));
+          } else if (validatedProductDiscount.discountType === 'special') {
+            if (validatedProductDiscount.specialDiscount?.storeId === storeId) {
+              const rate = Number(
+                validatedProductDiscount.specialDiscount?.discountRate || 0,
+              );
+              const max = Number(
+                validatedProductDiscount.specialDiscount?.maxDiscountAmount ||
+                  Infinity,
+              );
+              productDiscountAmount = Math.floor(
+                Math.min(subtotal * rate, max),
+              );
             }
           }
         }
 
         const totalDiscount = shippingDiscountAmount + productDiscountAmount;
-
-        // Calculate adjusted shipping fee and total
         const baseShippingFee = 60;
-        const shippingFee = Math.max(baseShippingFee - shippingDiscountAmount, 0);
+        const shippingFee = Math.max(
+          baseShippingFee - shippingDiscountAmount,
+          0,
+        );
         const totalAmount = subtotal + shippingFee - productDiscountAmount;
-
-        // Generate order number
         const orderNumber = this.generateOrderNumber();
-
-        // Determine initial order status based on payment method
         const isCashOnDelivery = createDto.paymentMethod === 'cash_on_delivery';
         const initialStatus = isCashOnDelivery
           ? OrderStatus.PAID
           : OrderStatus.PENDING_PAYMENT;
 
-        // Create order
         const order = manager.create(Order, {
           orderNumber,
           userId,
@@ -182,36 +176,28 @@ export class OrdersService {
 
         const savedOrder = await manager.save(Order, order);
 
-        // Create OrderDiscount records and increment usage
-        if (createDto.shippingDiscountCode && shippingDiscountAmount > 0) {
-          const shippingDiscount = await this.discountsService.findByCode(createDto.shippingDiscountCode);
-          if (shippingDiscount) {
-            const orderDiscount = manager.create(OrderDiscount, {
-              orderId: savedOrder.orderId,
-              discountId: shippingDiscount.discountId,
-              discountType: DiscountType.SHIPPING,
-              discountAmount: shippingDiscountAmount,
-            });
-            await manager.save(OrderDiscount, orderDiscount);
-            await this.discountsService.incrementUsage(shippingDiscount.discountId);
-          }
+        // 創建折扣紀錄（不更新 usage，usage 在 transaction 外）
+        if (validatedShippingDiscount && shippingDiscountAmount > 0) {
+          const orderDiscount = manager.create(OrderDiscount, {
+            orderId: savedOrder.orderId,
+            discountId: validatedShippingDiscount.discountId,
+            discountType: DiscountType.SHIPPING,
+            discountAmount: shippingDiscountAmount,
+          });
+          await manager.save(OrderDiscount, orderDiscount);
         }
 
-        if (createDto.productDiscountCode && productDiscountAmount > 0) {
-          const productDiscount = await this.discountsService.findByCode(createDto.productDiscountCode);
-          if (productDiscount) {
-            const orderDiscount = manager.create(OrderDiscount, {
-              orderId: savedOrder.orderId,
-              discountId: productDiscount.discountId,
-              discountType: productDiscount.discountType,
-              discountAmount: productDiscountAmount,
-            });
-            await manager.save(OrderDiscount, orderDiscount);
-            await this.discountsService.incrementUsage(productDiscount.discountId);
-          }
+        if (validatedProductDiscount && productDiscountAmount > 0) {
+          const orderDiscount = manager.create(OrderDiscount, {
+            orderId: savedOrder.orderId,
+            discountId: validatedProductDiscount.discountId,
+            discountType: validatedProductDiscount.discountType,
+            discountAmount: productDiscountAmount,
+          });
+          await manager.save(OrderDiscount, orderDiscount);
         }
 
-        // Create order items
+        // 創建訂單項目
         for (const item of items) {
           const orderItem = manager.create(OrderItem, {
             orderId: savedOrder.orderId,
@@ -228,24 +214,36 @@ export class OrdersService {
             unitPrice: item.product.price,
             subtotal: Number(item.product.price) * item.quantity,
           });
-
           await manager.save(OrderItem, orderItem);
         }
 
-        orders.push(savedOrder);
+        savedOrders.push(savedOrder);
       }
 
-      // Clear only selected items after successful order creation (within transaction)
+      // 清空購物車（transaction 外也可）
       await this.cartsService.removeSelectedItems(userId);
 
-      // Return first order (or implement logic to return all orders)
-      // return await this.findOne(orders[0].orderId, userId);
-      // 使用交易內的 manager 來獲取完整訂單資訊，避免交易尚未 commit 導致 findOne 找不到資料
-      return (await manager.findOne(Order, {
-        where: { orderId: orders[0].orderId, userId },
-        relations: ['store', 'items', 'items.product'],
-      })) as Order;
+      return savedOrders;
     });
+
+    // 5. transaction 完成後更新折扣 usage（原子更新）
+    if (validatedShippingDiscount && shippingDiscountAmount > 0) {
+      await this.discountsService.incrementUsage(
+        validatedShippingDiscount.discountId,
+      );
+    }
+    if (validatedProductDiscount && productDiscountAmount > 0) {
+      await this.discountsService.incrementUsage(
+        validatedProductDiscount.discountId,
+      );
+    }
+
+    // 6️. 回傳第一筆訂單
+    const firstOrder = orders[0];
+    return this.orderRepository.findOne({
+      where: { orderId: firstOrder.orderId, userId },
+      relations: ['store', 'items', 'items.product'],
+    }) as Promise<Order>;
   }
 
   async findAll(
@@ -417,7 +415,9 @@ export class OrdersService {
 
     // Status filter
     if (queryDto.status) {
-      query.andWhere('order.orderStatus = :status', { status: queryDto.status });
+      query.andWhere('order.orderStatus = :status', {
+        status: queryDto.status,
+      });
     }
 
     // Date range filter
@@ -548,7 +548,10 @@ export class OrdersService {
       // Release reserved inventory (restore quantity, decrease reserved)
       for (const item of order.items || []) {
         if (item.productId) {
-          await this.inventoryService.orderCancel(item.productId, item.quantity);
+          await this.inventoryService.orderCancel(
+            item.productId,
+            item.quantity,
+          );
         }
       }
 
