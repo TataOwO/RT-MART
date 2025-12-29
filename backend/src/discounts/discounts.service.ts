@@ -18,6 +18,7 @@ import { SpecialDiscount } from './entities/special-discount.entity';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 import { QueryDiscountDto } from './dto/query-discount.dto';
+import { generateDiscountCode } from './utils/discount-code.generator';
 
 @Injectable()
 export class DiscountsService {
@@ -36,14 +37,24 @@ export class DiscountsService {
     createDto: CreateDiscountDto,
     createdById: string,
   ): Promise<Discount> {
-    // Check if discount code already exists
-    const existing = await this.discountRepository.findOne({
-      where: { discountCode: createDto.discountCode },
-    });
+    // Generate discount code with retry mechanism
+    let discountCode: string;
+    let retries = 0;
+    const MAX_RETRIES = 5;
 
-    if (existing) {
-      throw new ConflictException('Discount code already exists');
-    }
+    do {
+      discountCode = generateDiscountCode(createDto.discountType);
+      const existing = await this.discountRepository.findOne({
+        where: { discountCode },
+      });
+
+      if (!existing) break;
+
+      retries++;
+      if (retries >= MAX_RETRIES) {
+        throw new ConflictException('Failed to generate unique discount code');
+      }
+    } while (retries < MAX_RETRIES);
 
     // Validate dates
     if (new Date(createDto.startDatetime) >= new Date(createDto.endDatetime)) {
@@ -61,6 +72,7 @@ export class DiscountsService {
     // Create base discount
     const discount = this.discountRepository.create({
       ...baseDiscountData,
+      discountCode,
       createdByType: CreatedByType.SYSTEM,
       createdById,
     });
@@ -119,14 +131,24 @@ export class DiscountsService {
     createDto: CreateDiscountDto,
     createdById: string,
   ): Promise<Discount> {
-    // Check if discount code already exists
-    const existing = await this.discountRepository.findOne({
-      where: { discountCode: createDto.discountCode },
-    });
+    // Generate discount code with retry mechanism
+    let discountCode: string;
+    let retries = 0;
+    const MAX_RETRIES = 5;
 
-    if (existing) {
-      throw new ConflictException('Discount code already exists');
-    }
+    do {
+      discountCode = generateDiscountCode(DiscountType.SPECIAL);
+      const existing = await this.discountRepository.findOne({
+        where: { discountCode },
+      });
+
+      if (!existing) break;
+
+      retries++;
+      if (retries >= MAX_RETRIES) {
+        throw new ConflictException('Failed to generate unique discount code');
+      }
+    } while (retries < MAX_RETRIES);
 
     // Validate dates
     if (new Date(createDto.startDatetime) >= new Date(createDto.endDatetime)) {
@@ -143,6 +165,7 @@ export class DiscountsService {
     // Create base discount
     const discount = this.discountRepository.create({
       ...baseDiscountData,
+      discountCode,
       createdByType: CreatedByType.SELLER,
       createdById,
     });
