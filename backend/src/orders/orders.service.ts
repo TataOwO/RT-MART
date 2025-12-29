@@ -16,6 +16,7 @@ import { CartsService } from '../carts/carts.service';
 import { ShippingAddressesService } from '../shipping-addresses/shipping-addresses.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { DiscountsService } from '../discounts/discounts.service';
+import { DiscountType } from '../discounts/entities/discount.entity';
 
 @Injectable()
 export class OrdersService {
@@ -107,6 +108,10 @@ export class OrdersService {
             throw new BadRequestException(`Shipping discount invalid: ${validation.reason}`);
           }
 
+          if (!validation.discount) {
+            throw new BadRequestException('Discount not found');
+          }
+
           if (validation.discount.discountType !== 'shipping') {
             throw new BadRequestException('Invalid discount type for shipping');
           }
@@ -122,6 +127,10 @@ export class OrdersService {
 
           if (!validation.valid) {
             throw new BadRequestException(`Product discount invalid: ${validation.reason}`);
+          }
+
+          if (!validation.discount) {
+            throw new BadRequestException('Discount not found');
           }
 
           // Calculate product discount amount based on type
@@ -169,26 +178,30 @@ export class OrdersService {
         // Create OrderDiscount records and increment usage
         if (createDto.shippingDiscountCode && shippingDiscountAmount > 0) {
           const shippingDiscount = await this.discountsService.findByCode(createDto.shippingDiscountCode);
-          const orderDiscount = manager.create(OrderDiscount, {
-            orderId: savedOrder.orderId,
-            discountId: shippingDiscount.discountId,
-            discountType: 'shipping',
-            discountAmount: shippingDiscountAmount,
-          });
-          await manager.save(OrderDiscount, orderDiscount);
-          await this.discountsService.incrementUsage(shippingDiscount.discountId);
+          if (shippingDiscount) {
+            const orderDiscount = manager.create(OrderDiscount, {
+              orderId: savedOrder.orderId,
+              discountId: shippingDiscount.discountId,
+              discountType: DiscountType.SHIPPING,
+              discountAmount: shippingDiscountAmount,
+            });
+            await manager.save(OrderDiscount, orderDiscount);
+            await this.discountsService.incrementUsage(shippingDiscount.discountId);
+          }
         }
 
         if (createDto.productDiscountCode && productDiscountAmount > 0) {
           const productDiscount = await this.discountsService.findByCode(createDto.productDiscountCode);
-          const orderDiscount = manager.create(OrderDiscount, {
-            orderId: savedOrder.orderId,
-            discountId: productDiscount.discountId,
-            discountType: productDiscount.discountType,
-            discountAmount: productDiscountAmount,
-          });
-          await manager.save(OrderDiscount, orderDiscount);
-          await this.discountsService.incrementUsage(productDiscount.discountId);
+          if (productDiscount) {
+            const orderDiscount = manager.create(OrderDiscount, {
+              orderId: savedOrder.orderId,
+              discountId: productDiscount.discountId,
+              discountType: productDiscount.discountType,
+              discountAmount: productDiscountAmount,
+            });
+            await manager.save(OrderDiscount, orderDiscount);
+            await this.discountsService.incrementUsage(productDiscount.discountId);
+          }
         }
 
         // Create order items

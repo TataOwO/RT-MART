@@ -495,7 +495,7 @@ export class DiscountsService {
 
     // Find best shipping discount (highest amount)
     const shippingDiscounts = available.filter(d => d.discountType === DiscountType.SHIPPING);
-    const bestShipping = shippingDiscounts.reduce((best, current) => {
+    const bestShipping = shippingDiscounts.reduce<Discount | null>((best, current) => {
       const currentAmount = Number(current.shippingDiscount?.discountAmount || 0);
       const bestAmount = Number(best?.shippingDiscount?.discountAmount || 0);
       return currentAmount > bestAmount ? current : best;
@@ -504,10 +504,10 @@ export class DiscountsService {
     // Calculate best product discount
     const productDiscounts = available.filter(d =>
       d.discountType === DiscountType.SEASONAL ||
-      (d.discountType === DiscountType.SPECIAL && storeIds.includes(d.specialDiscount?.storeId))
+      (d.discountType === DiscountType.SPECIAL && d.specialDiscount?.storeId && storeIds.includes(d.specialDiscount.storeId))
     );
 
-    let bestProduct = null;
+    let bestProduct: Discount | null = null;
     let bestProductAmount = 0;
 
     for (const discount of productDiscounts) {
