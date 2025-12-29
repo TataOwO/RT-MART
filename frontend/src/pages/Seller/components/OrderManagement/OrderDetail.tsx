@@ -8,10 +8,7 @@ import Dialog from "@/shared/components/Dialog";
 import sellerService from "@/shared/services/sellerService";
 import { AlertType } from "@/types";
 import { Order, OrderStatus } from "@/types/order";
-import {
-  getOrderStatusText,
-  getOrderStatusColor,
-} from "@/shared/utils/orderUtils";
+import { getOrderStatusText } from "@/shared/utils/orderUtils";
 import styles from "./OrderDetail.module.scss";
 
 function OrderDetail() {
@@ -173,10 +170,7 @@ function OrderDetail() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>訂單資訊</h2>
-            <span
-              className={styles.status}
-              style={{ color: getOrderStatusColor(order.status) }}
-            >
+            <span className={`${styles.status} ${styles[order.status]}`}>
               {getOrderStatusText(order.status)}
             </span>
           </div>
