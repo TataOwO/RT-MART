@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Tab from "@/shared/components/Tab";
 import OrderCard from "../OrderCard";
 import EmptyState from "@/shared/components/EmptyState";
 import Dialog from "@/shared/components/Dialog";
 import Alert from "@/shared/components/Alert";
-import { OrderListItem, OrderStatus } from "@/types/order";
+import { AlertType, OrderListItem, OrderStatus } from "@/types";
 import { OrderAction } from "@/types/userCenter";
 import { getOrders, cancelOrder, confirmDelivery } from "@/shared/services/orderService";
 import styles from "./OrderListPage.module.scss";
@@ -15,14 +15,11 @@ import styles from "./OrderListPage.module.scss";
  */
 function OrderListPage() {
   const navigate = useNavigate();
+  const alertRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
-  const [alertMessage, setAlertMessage] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     orderId: string;
@@ -30,6 +27,16 @@ function OrderListPage() {
     title: string;
     message: string;
   } | null>(null);
+  const [alert, setAlert] = useState<{ type: AlertType; message: string } | null>(null);
+  
+  const showAlert = (alertData: { type: AlertType; message: string } | null) => {
+      setAlert(alertData);
+      if (alertData && alertRef.current) {
+        setTimeout(() => {
+          alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
 
   // Tab 項目定義
   const tabItems = [
@@ -94,7 +101,7 @@ function OrderListPage() {
 
       case "pay":
         // TODO: 後續跳出 dialog 讓用戶信用卡支付
-        setAlertMessage({
+        showAlert({
           type: "error",
           message: "付款功能開發中，敬請期待。",
         });
@@ -102,7 +109,7 @@ function OrderListPage() {
 
       case "review":
       case "reorder":
-        setAlertMessage({
+        showAlert({
           type: "error",
           message: "此功能尚未開放，敬請期待。",
         });
@@ -126,7 +133,7 @@ function OrderListPage() {
       switch (action) {
         case "confirm":
           await confirmDelivery(orderId);
-          setAlertMessage({
+          showAlert({
             type: "success",
             message: "已確認收貨，訂單完成！",
           });
@@ -134,7 +141,7 @@ function OrderListPage() {
 
         case "cancel":
           await cancelOrder(orderId);
-          setAlertMessage({
+          showAlert({
             type: "success",
             message: "訂單已成功取消。",
           });
@@ -146,7 +153,7 @@ function OrderListPage() {
 
     } catch (error) {
       console.error("Order action failed:", error);
-      setAlertMessage({
+      showAlert({
         type: "error",
         message: error instanceof Error ? error.message : "操作失敗，請稍後再試。",
       });
@@ -168,6 +175,17 @@ function OrderListPage() {
         className={styles.orderTabs}
       />
 
+      {/* 提示訊息 */}
+      {alert && (
+        <div ref={alertRef}>
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert(null)}
+          />
+        </div>
+      )}
+
       {/* 訂單列表 */}
       <div className={styles.orderList}>
         {isLoading ? (
@@ -186,15 +204,6 @@ function OrderListPage() {
           <EmptyState type="order" icon="receipt" title="暫無訂單" />
         )}
       </div>
-
-      {/* 提示訊息 */}
-      {alertMessage && (
-        <Alert
-          type={alertMessage.type}
-          message={alertMessage.message}
-          onClose={() => setAlertMessage(null)}
-        />
-      )}
 
       {/* 確認對話框 */}
       {confirmDialog && (
