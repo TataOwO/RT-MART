@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LessThan } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
+import { OrderDiscount } from './entities/order-discount.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
@@ -92,8 +93,58 @@ export class OrdersService {
           subtotal += Number(item.product.price) * item.quantity;
         }
 
-        const shippingFee = 60; // Default shipping fee
-        const totalAmount = subtotal + shippingFee;
+        // Apply discount codes if provided
+        let shippingDiscountAmount = 0;
+        let productDiscountAmount = 0;
+
+        if (createDto.shippingDiscountCode) {
+          const validation = await this.discountsService.validateDiscount(
+            createDto.shippingDiscountCode,
+            subtotal,
+          );
+
+          if (!validation.valid) {
+            throw new BadRequestException(`Shipping discount invalid: ${validation.reason}`);
+          }
+
+          if (validation.discount.discountType !== 'shipping') {
+            throw new BadRequestException('Invalid discount type for shipping');
+          }
+
+          shippingDiscountAmount = Number(validation.discount.shippingDiscount?.discountAmount || 0);
+        }
+
+        if (createDto.productDiscountCode) {
+          const validation = await this.discountsService.validateDiscount(
+            createDto.productDiscountCode,
+            subtotal,
+          );
+
+          if (!validation.valid) {
+            throw new BadRequestException(`Product discount invalid: ${validation.reason}`);
+          }
+
+          // Calculate product discount amount based on type
+          if (validation.discount.discountType === 'seasonal') {
+            const rate = Number(validation.discount.seasonalDiscount?.discountRate || 0);
+            const max = Number(validation.discount.seasonalDiscount?.maxDiscountAmount || Infinity);
+            productDiscountAmount = Math.min(subtotal * rate, max);
+          } else if (validation.discount.discountType === 'special') {
+            // Only apply if store matches
+            if (validation.discount.specialDiscount?.storeId === storeId) {
+              const rate = Number(validation.discount.specialDiscount?.discountRate || 0);
+              const max = Number(validation.discount.specialDiscount?.maxDiscountAmount || Infinity);
+              productDiscountAmount = Math.min(subtotal * rate, max);
+            }
+          }
+        }
+
+        const totalDiscount = shippingDiscountAmount + productDiscountAmount;
+
+        // Calculate adjusted shipping fee and total
+        const baseShippingFee = 60;
+        const shippingFee = Math.max(baseShippingFee - shippingDiscountAmount, 0);
+        const totalAmount = subtotal + shippingFee - productDiscountAmount;
 
         // Generate order number
         const orderNumber = this.generateOrderNumber();
@@ -105,7 +156,7 @@ export class OrdersService {
           storeId,
           subtotal,
           shippingFee,
-          totalDiscount: 0,
+          totalDiscount,
           totalAmount,
           paymentMethod: createDto.paymentMethod,
           shippingAddressSnapshot: shippingAddress,
@@ -114,6 +165,31 @@ export class OrdersService {
         });
 
         const savedOrder = await manager.save(Order, order);
+
+        // Create OrderDiscount records and increment usage
+        if (createDto.shippingDiscountCode && shippingDiscountAmount > 0) {
+          const shippingDiscount = await this.discountsService.findByCode(createDto.shippingDiscountCode);
+          const orderDiscount = manager.create(OrderDiscount, {
+            orderId: savedOrder.orderId,
+            discountId: shippingDiscount.discountId,
+            discountType: 'shipping',
+            discountAmount: shippingDiscountAmount,
+          });
+          await manager.save(OrderDiscount, orderDiscount);
+          await this.discountsService.incrementUsage(shippingDiscount.discountId);
+        }
+
+        if (createDto.productDiscountCode && productDiscountAmount > 0) {
+          const productDiscount = await this.discountsService.findByCode(createDto.productDiscountCode);
+          const orderDiscount = manager.create(OrderDiscount, {
+            orderId: savedOrder.orderId,
+            discountId: productDiscount.discountId,
+            discountType: productDiscount.discountType,
+            discountAmount: productDiscountAmount,
+          });
+          await manager.save(OrderDiscount, orderDiscount);
+          await this.discountsService.incrementUsage(productDiscount.discountId);
+        }
 
         // Create order items
         for (const item of items) {
