@@ -435,12 +435,12 @@ export const getDiscount = async (id: string): Promise<Discount> => {
 /**
  * 創建折扣
  */
-export const createDiscount = async (data: DiscountFormData): Promise<void> => {
+export const createDiscount = async (data: DiscountFormData): Promise<Discount> => {
   const store = await getStoreInfo();
   if (!store.storeId) throw new Error('Store ID not found');
 
   const body = {
-    discountCode: data.discountCode,
+    // discountCode removed - backend generates it
     name: data.name,
     description: data.description,
     minPurchaseAmount: data.minPurchaseAmount,
@@ -456,7 +456,8 @@ export const createDiscount = async (data: DiscountFormData): Promise<void> => {
     }
   }
 
-  await api.post('/discounts', body);
+  const response = await api.post<any>('/discounts', body);
+  return transformDiscount(response);
 };
 
 /**
