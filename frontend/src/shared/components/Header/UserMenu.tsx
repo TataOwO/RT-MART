@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/hooks/useAuth";
 import Button from "../Button/Button";
@@ -15,6 +15,7 @@ const UserMenu = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
@@ -27,6 +28,23 @@ const UserMenu = () => {
     }
   };
 
+  // 點擊外部區域關閉選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showUserMenu]);
+
   if (!isAuthenticated) {
     return (
       <Link to="/auth">
@@ -36,7 +54,7 @@ const UserMenu = () => {
   }
 
   return (
-    <div className={styles.userMenu}>
+    <div className={styles.userMenu} ref={menuRef}>
       <Button
         iconOnly={!user?.avatar}
         icon={user?.avatar ? undefined : "user"}
