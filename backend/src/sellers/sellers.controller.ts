@@ -12,7 +12,7 @@ import {
   ConflictException,
   Query,
 } from '@nestjs/common';
-import { SellersService } from './sellers.service';
+import { SellersService, DashboardData } from './sellers.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { VerifySellerDto } from './dto/verify-seller.dto';
@@ -56,6 +56,17 @@ export class SellersController {
   // async findByUserId(@Param('userId') userId: string) {
   //   return await this.sellersService.findByUserId(userId);
   // }
+
+  @Roles(UserRole.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('dashboard')
+  async getDashboardData(
+    @Req() req: any,
+    @Query('period') period: 'day' | 'week' | 'month' = 'week',
+  ): Promise<DashboardData> {
+    const userId = req.user.userId;
+    return await this.sellersService.getDashboardData(userId, period);
+  }
 
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)

@@ -14,6 +14,46 @@ import { UsersService } from '../users/users.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Store } from '../stores/entities/store.entity';
 import { QuerySellerDto } from './dto/query-seller.dto';
+import { Order, OrderStatus } from '../orders/entities/order.entity';
+import { Product } from '../products/entities/product.entity';
+import { ProductType } from '../product-types/entities/product-type.entity';
+
+export interface DashboardData {
+  revenue: number;
+  orderCount: number;
+  chartData: ChartDataPoint[];
+  categoryData: CategoryDataPoint[];
+  popularProducts: PopularProduct[];
+  recentOrders: RecentOrderData[];
+}
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface CategoryDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface PopularProduct {
+  id: string;
+  name: string;
+  image: string | null;
+  salesCount: number;
+  revenue: number;
+}
+
+export interface RecentOrderData {
+  id: string;
+  orderNumber: string;
+  buyerName: string;
+  itemCount: number;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
 
 @Injectable()
 export class SellersService {
@@ -23,7 +63,13 @@ export class SellersService {
     @InjectRepository(Store)
     private readonly storeRepository: Repository<Store>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<Store>,
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(ProductType)
+    private readonly productTypeRepository: Repository<ProductType>,
     private readonly usersService: UsersService,
   ) {}
 
@@ -216,5 +262,225 @@ export class SellersService {
     }
 
     await this.sellerRepository.remove(seller);
+  }
+
+  // ========== Dashboard Methods ==========
+
+  async getDashboardData(
+    userId: string,
+    period: 'day' | 'week' | 'month',
+  ): Promise<DashboardData> {
+    // Get seller's store
+    const seller = await this.findByUserId(userId);
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    const store = await this.storeRepository.findOne({
+      where: { sellerId: seller.sellerId },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    const storeId = store.storeId;
+
+    // Get date range based on period
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'day':
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'month':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+    }
+
+    // Fetch all dashboard data in parallel
+    const [revenue, orderCount, chartData, categoryData, popularProducts, recentOrders] =
+      await Promise.all([
+        this.getRevenue(storeId, startDate),
+        this.getOrderCount(storeId, startDate),
+        this.getChartData(storeId, startDate, period),
+        this.getCategoryData(storeId, startDate),
+        this.getPopularProducts(storeId, startDate),
+        this.getRecentOrders(storeId),
+      ]);
+
+    return {
+      revenue,
+      orderCount,
+      chartData,
+      categoryData,
+      popularProducts,
+      recentOrders,
+    };
+  }
+
+  private async getRevenue(storeId: string, startDate: Date): Promise<number> {
+    const result = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      })
+      .getRawOne();
+
+    return parseFloat(result?.total || '0');
+  }
+
+  private async getOrderCount(storeId: string, startDate: Date): Promise<number> {
+    return await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      })
+      .getCount();
+  }
+
+  private async getChartData(
+    storeId: string,
+    startDate: Date,
+    period: 'day' | 'week' | 'month',
+  ): Promise<ChartDataPoint[]> {
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('order.createdAt', 'createdAt')
+      .addSelect('order.totalAmount', 'totalAmount')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      })
+      .getRawMany();
+
+    // Group by time period
+    const dataMap = new Map<string, number>();
+
+    orders.forEach((order) => {
+      const date = new Date(order.createdAt);
+      let label: string;
+
+      if (period === 'day') {
+        label = `${date.getHours()}:00`;
+      } else if (period === 'week') {
+        const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+        label = days[date.getDay()];
+      } else {
+        label = `${date.getDate()}日`;
+      }
+
+      const current = dataMap.get(label) || 0;
+      dataMap.set(label, current + parseFloat(order.totalAmount));
+    });
+
+    // Generate labels based on period
+    let labels: string[] = [];
+    if (period === 'day') {
+      labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+    } else if (period === 'week') {
+      labels = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+    } else {
+      labels = Array.from({ length: 30 }, (_, i) => `${i + 1}日`);
+    }
+
+    return labels.map((label) => ({
+      label,
+      value: dataMap.get(label) || 0,
+    }));
+  }
+
+  private async getCategoryData(
+    storeId: string,
+    startDate: Date,
+  ): Promise<CategoryDataPoint[]> {
+    const result = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoin('order.items', 'item')
+      .leftJoin('item.product', 'product')
+      .leftJoin('product.productType', 'productType')
+      .select('productType.typeName', 'label')
+      .addSelect('SUM(item.unitPrice * item.quantity)', 'value')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      })
+      .groupBy('productType.productTypeId')
+      .getRawMany();
+
+    return result.map((r) => ({
+      label: r.label || '未分類',
+      value: parseFloat(r.value || '0'),
+    }));
+  }
+
+  private async getPopularProducts(
+    storeId: string,
+    startDate: Date,
+  ): Promise<PopularProduct[]> {
+    const result = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoin('order.items', 'item')
+      .leftJoin('item.product', 'product')
+      .leftJoin('product.images', 'image')
+      .select('product.productId', 'id')
+      .addSelect('product.productName', 'name')
+      .addSelect('MIN(image.imageUrl)', 'image')
+      .addSelect('SUM(item.quantity)', 'salesCount')
+      .addSelect('SUM(item.unitPrice * item.quantity)', 'revenue')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      })
+      .groupBy('product.productId')
+      .orderBy('SUM(item.quantity)', 'DESC')
+      .limit(5)
+      .getRawMany();
+
+    return result.map((r) => ({
+      id: r.id,
+      name: r.name,
+      image: r.image || null,
+      salesCount: parseInt(r.salesCount || '0'),
+      revenue: parseFloat(r.revenue || '0'),
+    }));
+  }
+
+  private async getRecentOrders(storeId: string): Promise<RecentOrderData[]> {
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.items', 'items')
+      .where('order.storeId = :storeId', { storeId })
+      .orderBy('order.createdAt', 'DESC')
+      .limit(10)
+      .getMany();
+
+    return orders.map((order) => ({
+      id: order.orderId,
+      orderNumber: order.orderNumber,
+      buyerName: order.user?.name || 'Unknown',
+      itemCount: order.items?.length || 0,
+      totalAmount: parseFloat(order.totalAmount.toString()),
+      status: order.orderStatus,
+      createdAt: order.createdAt.toISOString(),
+    }));
   }
 }

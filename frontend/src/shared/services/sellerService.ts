@@ -55,22 +55,33 @@ export const applyToBeSeller = async (
 
 /**
  * 獲取 Dashboard 數據
- * 目前後端尚未提供整合的 Dashboard API，暫時保留 Mock
+ * GET /sellers/dashboard?period={period}
  */
 export const getDashboardData = async (period: SalesPeriod): Promise<DashboardData> => {
-  // Mock 數據
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        revenue: period === 'day' ? 15000 : period === 'week' ? 50000 : 180000,
-        orderCount: period === 'day' ? 20 : period === 'week' ? 120 : 450,
-        chartData: generateMockChartData(period),
-        categoryData: generateMockCategoryData(),
-        popularProducts: MOCK_POPULAR_PRODUCTS,
-        recentOrders: MOCK_RECENT_ORDERS
-      });
-    }, 500);
-  });
+  const response = await api.get<any>(`/sellers/dashboard?period=${period}`);
+
+  return {
+    revenue: Number(response.revenue || 0),
+    orderCount: Number(response.orderCount || 0),
+    chartData: response.chartData || [],
+    categoryData: response.categoryData || [],
+    popularProducts: (response.popularProducts || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      image: p.image,
+      salesCount: Number(p.salesCount || 0),
+      revenue: Number(p.revenue || 0),
+    })),
+    recentOrders: (response.recentOrders || []).map((o: any) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      buyerName: o.buyerName,
+      itemCount: Number(o.itemCount || 0),
+      totalAmount: Number(o.totalAmount || 0),
+      status: o.status,
+      createdAt: o.createdAt,
+    })),
+  };
 };
 
 // ========== Store Settings ==========
