@@ -65,6 +65,7 @@ function Checkout() {
   // 優惠碼狀態
   const [appliedDiscounts, setAppliedDiscounts] = useState<ManualDiscountSelection | null>(null);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
+  const [hasUserInteractedWithDiscounts, setHasUserInteractedWithDiscounts] = useState(false);
 
   // 按商店分組
   const storeGroups = useMemo(
@@ -89,9 +90,10 @@ function Checkout() {
         }
         setCheckoutItems(items);
 
-        // 如果購物車有選擇折扣，使用購物車的折扣
+        // 如果購物車有選擇折扣，使用購物車的折扣，並標記為已互動
         if (cartDiscounts && (cartDiscounts.shipping || cartDiscounts.seasonal || cartDiscounts.special)) {
           setAppliedDiscounts(cartDiscounts);
+          setHasUserInteractedWithDiscounts(true);
         }
 
         // 2. 獲取預設地址和所有地址
@@ -121,10 +123,12 @@ function Checkout() {
     setStoreNotes(initialNotes);
   }, [storeGroups]);
 
-  // 自動載入推薦優惠（初始化時）
-  // 只有在用戶沒有從購物車帶折扣過來時才自動載入推薦
+  // 自動載入推薦優惠（僅首次，且用戶未互動過）
   useEffect(() => {
     if (storeGroups.length === 0) return;
+
+    // 如果用戶已經互動過折扣（從購物車帶過來或手動選擇過），不要自動套用
+    if (hasUserInteractedWithDiscounts) return;
 
     // 如果已經有折扣（從購物車帶過來的），不要覆蓋
     if (appliedDiscounts && (appliedDiscounts.shipping || appliedDiscounts.seasonal || appliedDiscounts.special)) {
@@ -160,6 +164,7 @@ function Checkout() {
                 : null,
           };
           setAppliedDiscounts(manualSelection);
+          // 不設置 hasUserInteractedWithDiscounts，因為這是自動推薦，不是用戶主動選擇
         }
       } catch (error) {
         console.error("Failed to load discount recommendations:", error);
@@ -168,7 +173,7 @@ function Checkout() {
     };
 
     loadDiscounts();
-  }, [storeGroups, appliedDiscounts]);
+  }, [storeGroups, appliedDiscounts, hasUserInteractedWithDiscounts]);
 
   // 變更地址
   const handleChangeAddress = () => {
@@ -226,6 +231,8 @@ function Checkout() {
       const newSelection = calculateDiscountAmounts(selections, allDiscounts, subtotal);
 
       setAppliedDiscounts(newSelection);
+      // 標記用戶已經手動選擇過折扣，之後不再自動推薦
+      setHasUserInteractedWithDiscounts(true);
     } catch (error) {
       console.error("Failed to apply discounts:", error);
       alert("套用折扣失敗，請稍後再試");
