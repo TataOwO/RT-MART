@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThan, LessThanOrEqual, FindOptionsWhere } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThan, FindOptionsWhere } from 'typeorm';
 import {
   Discount,
   DiscountType,
@@ -251,7 +251,7 @@ export class DiscountsService {
     return await this.discountRepository.find({
       where: {
         isActive: true,
-        startDatetime: LessThan(now),
+        startDatetime: LessThanOrEqual(now),
         endDatetime: MoreThan(now),
       },
       relations: ['seasonalDiscount', 'shippingDiscount', 'specialDiscount'],
@@ -438,7 +438,7 @@ export class DiscountsService {
       where: {
         discountType: DiscountType.SHIPPING,
         isActive: true,
-        startDatetime: LessThan(now),
+        startDatetime: LessThanOrEqual(now),
         endDatetime: MoreThan(now),
       },
       relations: ['shippingDiscount'],
@@ -477,7 +477,7 @@ export class DiscountsService {
     const activeDiscounts = await this.discountRepository.find({
       where: {
         isActive: true,
-        startDatetime: LessThan(now),
+        startDatetime: LessThanOrEqual(now),
         endDatetime: MoreThan(now),
         minPurchaseAmount: LessThanOrEqual(subtotal),
       },
@@ -516,7 +516,7 @@ export class DiscountsService {
     const activeDiscounts = await this.discountRepository.find({
       where: {
         isActive: true,
-        startDatetime: LessThan(now),
+        startDatetime: LessThanOrEqual(now),
         endDatetime: MoreThan(now),
         minPurchaseAmount: LessThanOrEqual(subtotal),
       },
