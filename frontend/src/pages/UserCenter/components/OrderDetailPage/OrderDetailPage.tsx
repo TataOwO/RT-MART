@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { getOrderDetail } from '@/shared/services/orderService';
 import type { Order, OrderStatus, PaymentMethod } from '@/types/order';
 import Button from '@/shared/components/Button';
@@ -7,6 +7,7 @@ import OrderTimeline from '@/pages/UserCenter/components/OrderTimeline';
 import ItemListCard from '@/shared/components/ItemListCard';
 import AddressCard from '@/pages/Checkout/components/AddressCard';
 import { useSSE } from '@/shared/hooks/useSSE';
+import { useAuth } from '@/shared/contexts/AuthContext';
 import styles from './OrderDetailPage.module.scss';
 
 /**
@@ -14,8 +15,14 @@ import styles from './OrderDetailPage.module.scss';
  */
 function OrderDetailPage() {
   // ========== 1. Hooks 與 State ==========
+  const { user } = useAuth();
   const { order_id } = useParams<{ order_id: string }>();
   const navigate = useNavigate();
+
+  // SECURITY: Defense in depth - block admin access even if routing fails
+  if (user?.role === "admin") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);

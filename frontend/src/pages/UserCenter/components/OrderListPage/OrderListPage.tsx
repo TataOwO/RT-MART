@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import Tab from "@/shared/components/Tab";
 import OrderCard from "../OrderCard";
 import EmptyState from "@/shared/components/EmptyState";
@@ -8,13 +8,20 @@ import Alert from "@/shared/components/Alert";
 import { AlertType, OrderListItem, OrderStatus } from "@/types";
 import { OrderAction } from "@/types/userCenter";
 import { getOrders, cancelOrder, confirmDelivery } from "@/shared/services/orderService";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import styles from "./OrderListPage.module.scss";
 
 /**
  * 訂單列表頁面
  */
 function OrderListPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // SECURITY: Defense in depth - block admin access even if routing fails
+  if (user?.role === "admin") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
   const alertRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [orders, setOrders] = useState<OrderListItem[]>([]);

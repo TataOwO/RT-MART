@@ -83,23 +83,36 @@ const UserMenu = () => {
 
           <div className={styles.divider} />
 
-          {/* Account Link */}
-          <Link
-            to="/user/account/profile"
-            onClick={() => setShowUserMenu(false)}
-            className={styles.dropdownItem}
-          >
-            我的帳戶
-          </Link>
+          {/* SECURITY: Conditional links based on user role */}
+          {user?.role === "admin" ? (
+            // Admin-specific link - goes to admin dashboard
+            <Link
+              to="/admin/dashboard"
+              onClick={() => setShowUserMenu(false)}
+              className={styles.dropdownItem}
+            >
+              管理後台
+            </Link>
+          ) : (
+            // Buyer/Seller links
+            <>
+              <Link
+                to="/user/account/profile"
+                onClick={() => setShowUserMenu(false)}
+                className={styles.dropdownItem}
+              >
+                我的帳戶
+              </Link>
 
-          {/* Orders Link */}
-          <Link
-            to="/user/orders"
-            onClick={() => setShowUserMenu(false)}
-            className={styles.dropdownItem}
-          >
-            我的訂單
-          </Link>
+              <Link
+                to="/user/orders"
+                onClick={() => setShowUserMenu(false)}
+                className={styles.dropdownItem}
+              >
+                我的訂單
+              </Link>
+            </>
+          )}
 
           <div className={styles.divider} />
 
