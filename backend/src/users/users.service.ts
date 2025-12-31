@@ -336,7 +336,7 @@ export class UsersService {
 
   /**
    * Restore a suspended user account
-   * Note: Does NOT automatically restore their store
+   * Note: The controller will automatically restore their store if it was deleted within 1 minute of user suspension
    */
   async restoreSuspendedUser(id: string): Promise<User> {
     const user = await this.userRepository.findOne({

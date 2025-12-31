@@ -114,11 +114,16 @@ export class StoresService implements OnModuleInit {
     return store;
   }
 
-  async findBySeller(sellerId: string): Promise<Store | null> {
+  async findBySeller(sellerId: string, includeDeleted: boolean = false): Promise<Store | null> {
     const queryBuilder = this.storeRepository
       .createQueryBuilder('store')
       .where('store.sellerId = :sellerId', { sellerId })
       .orderBy('store.createdAt', 'DESC');
+
+    if (includeDeleted) {
+      queryBuilder.withDeleted();
+    }
+
     return await queryBuilder.getOne();
   }
 

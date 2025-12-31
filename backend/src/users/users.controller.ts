@@ -206,7 +206,55 @@ export class UsersController {
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Post(':id/restore-suspended')
   async restoreSuspended(@Param('id') id: string) {
+    this.logger.log(`Admin restoring suspended user ${id}`);
+
+    // Get user info before restoration to check deletedAt timestamp
+    const userBeforeRestore = await this.usersService['userRepository'].findOne({
+      where: { userId: id },
+      withDeleted: true,
+    });
+
+    if (!userBeforeRestore || !userBeforeRestore.deletedAt) {
+      return {
+        message: 'User is not suspended',
+        user: null,
+      };
+    }
+
+    const userDeletedAt = userBeforeRestore.deletedAt;
+
+    // 1. Restore the user
     const user = await this.usersService.restoreSuspendedUser(id);
+
+    // 2. If user is a seller, check if store should be restored
+    try {
+      const seller = await this.sellersService.findByUserId(id);
+      if (seller) {
+        const store = await this.storesService.findBySeller(seller.sellerId, true);
+        if (store && store.deletedAt) {
+          // Check if store was deleted within 1 minute of user suspension
+          const timeDiffMs = Math.abs(
+            new Date(store.deletedAt).getTime() - new Date(userDeletedAt).getTime()
+          );
+          const oneMinuteMs = 60 * 1000;
+
+          if (timeDiffMs < oneMinuteMs) {
+            await this.storesService.restore(store.storeId);
+            this.logger.log(
+              `Restored store ${store.storeId} for seller ${seller.sellerId} (deleted within ${timeDiffMs}ms of user suspension)`
+            );
+          } else {
+            this.logger.log(
+              `Store ${store.storeId} not auto-restored (time diff: ${timeDiffMs}ms > ${oneMinuteMs}ms)`
+            );
+          }
+        }
+      }
+    } catch (error) {
+      // User is not a seller or store doesn't exist, skip
+      this.logger.debug(`User ${id} is not a seller or store doesn't exist`);
+    }
+
     return {
       message: 'User restored successfully',
       user: plainToInstance(UserResponseDto, user),
