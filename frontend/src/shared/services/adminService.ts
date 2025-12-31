@@ -135,10 +135,25 @@ const mapSystemDiscountToBackend = (data: Partial<SystemDiscount>): any => {
 
 /**
  * 獲取 Dashboard 統計數據
- * GET /admin/dashboard/stats
+ * GET /admin/dashboard/stats?startDate=&endDate=
  */
-export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const result = await get<DashboardStats>('/admin/dashboard/stats');
+export const getDashboardStats = async (filters?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<DashboardStats> => {
+  const queryParams = new URLSearchParams();
+
+  if (filters?.startDate) {
+    queryParams.append('startDate', filters.startDate);
+  }
+  if (filters?.endDate) {
+    queryParams.append('endDate', filters.endDate);
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `/admin/dashboard/stats?${queryString}` : '/admin/dashboard/stats';
+
+  const result = await get<DashboardStats>(url);
   return result;
 };
 

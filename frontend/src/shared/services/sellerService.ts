@@ -55,10 +55,30 @@ export const applyToBeSeller = async (
 
 /**
  * 獲取 Dashboard 數據
- * GET /sellers/dashboard?period={period}
+ * GET /sellers/dashboard?period=&startDate=&endDate=&productName=
  */
-export const getDashboardData = async (period: SalesPeriod): Promise<DashboardData> => {
-  const response = await api.get<any>(`/sellers/dashboard?period=${period}`);
+export const getDashboardData = async (filters: {
+  period?: SalesPeriod;
+  startDate?: string;
+  endDate?: string;
+  productName?: string;
+}): Promise<DashboardData> => {
+  const queryParams = new URLSearchParams();
+
+  if (filters.period) {
+    queryParams.append('period', filters.period);
+  }
+  if (filters.startDate) {
+    queryParams.append('startDate', filters.startDate);
+  }
+  if (filters.endDate) {
+    queryParams.append('endDate', filters.endDate);
+  }
+  if (filters.productName) {
+    queryParams.append('productName', filters.productName);
+  }
+
+  const response = await api.get<any>(`/sellers/dashboard?${queryParams.toString()}`);
 
   return {
     revenue: Number(response.revenue || 0),
@@ -82,6 +102,52 @@ export const getDashboardData = async (period: SalesPeriod): Promise<DashboardDa
       createdAt: o.createdAt,
     })),
   };
+};
+
+/**
+ * 下載銷售報表
+ * GET /sellers/sales-report?startDate=&endDate=&productName=
+ */
+export const downloadSalesReport = async (filters: {
+  startDate?: string;
+  endDate?: string;
+  productName?: string;
+}): Promise<void> => {
+  const queryParams = new URLSearchParams();
+  if (filters.startDate) queryParams.append('startDate', filters.startDate);
+  if (filters.endDate) queryParams.append('endDate', filters.endDate);
+  if (filters.productName) queryParams.append('productName', filters.productName);
+
+  const response = await fetch(
+    `${api.defaults.baseURL}/sellers/sales-report?${queryParams.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to download report');
+  }
+
+  // Extract filename from Content-Disposition header
+  const contentDisposition = response.headers.get('Content-Disposition');
+  const filename = contentDisposition
+    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+    : `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+
+  // Create blob and trigger download
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
 };
 
 // ========== Store Settings ==========
@@ -604,6 +670,7 @@ const MOCK_RECENT_ORDERS: RecentOrder[] = [
 export default {
   applyToBeSeller,
   getDashboardData,
+  downloadSalesReport,
   getStoreInfo,
   updateStoreInfo,
   getProducts,

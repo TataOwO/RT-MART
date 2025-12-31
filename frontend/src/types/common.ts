@@ -4,6 +4,18 @@ import type { StoreOrderGroup } from './order';
 
 // Common component prop types
 
+// DateRangeFilter types
+export interface DateRangeFilterProps {
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  showQuickSelectors?: boolean;
+  onQuickSelect?: (period: 'day' | 'week' | 'month' | 'year') => void;
+  activeQuickSelector?: 'day' | 'week' | 'month' | 'year' | null;
+  className?: string;
+}
+
 // Alert types
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
