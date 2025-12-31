@@ -17,6 +17,8 @@ import { QuerySellerDto } from './dto/query-seller.dto';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
 import { Product } from '../products/entities/product.entity';
 import { ProductType } from '../product-types/entities/product-type.entity';
+import { QuerySellerDashboardDto } from './dto/query-seller-dashboard.dto';
+import { SalesReportItemDto } from './dto/sales-report-item.dto';
 
 export interface DashboardData {
   revenue: number;
@@ -268,7 +270,7 @@ export class SellersService {
 
   async getDashboardData(
     userId: string,
-    period: 'day' | 'week' | 'month',
+    filters: { period?: 'day' | 'week' | 'month'; startDate?: string; endDate?: string; productName?: string },
   ): Promise<DashboardData> {
     // Get seller's store
     const seller = await this.findByUserId(userId);
@@ -286,35 +288,47 @@ export class SellersService {
 
     const storeId = store.storeId;
 
-    // Get date range based on period
-    const now = new Date();
+    // Calculate date range with priority: explicit dates > period > default
     let startDate: Date;
+    let endDate: Date = new Date();
+    let period: 'day' | 'week' | 'month' = filters.period || 'week';
 
-    switch (period) {
-      case 'day':
-        startDate = new Date(now);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'week':
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 7);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'month':
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 30);
-        startDate.setHours(0, 0, 0, 0);
-        break;
+    if (filters.startDate && filters.endDate) {
+      startDate = new Date(filters.startDate);
+      endDate = new Date(filters.endDate);
+    } else if (filters.period) {
+      const now = new Date();
+      switch (filters.period) {
+        case 'day':
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'month':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 30);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+      }
+    } else {
+      // Default: last 7 days
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
     }
 
     // Fetch all dashboard data in parallel
     const [revenue, orderCount, chartData, categoryData, popularProducts, recentOrders] =
       await Promise.all([
-        this.getRevenue(storeId, startDate),
-        this.getOrderCount(storeId, startDate),
-        this.getChartData(storeId, startDate, period),
-        this.getCategoryData(storeId, startDate),
-        this.getPopularProducts(storeId, startDate),
+        this.getRevenue(storeId, startDate, endDate, filters.productName),
+        this.getOrderCount(storeId, startDate, endDate, filters.productName),
+        this.getChartData(storeId, startDate, endDate, period, filters.productName),
+        this.getCategoryData(storeId, startDate, endDate, filters.productName),
+        this.getPopularProducts(storeId, startDate, endDate, filters.productName),
         this.getRecentOrders(storeId),
       ]);
 
@@ -328,46 +342,77 @@ export class SellersService {
     };
   }
 
-  private async getRevenue(storeId: string, startDate: Date): Promise<number> {
-    const result = await this.orderRepository
+  private async getRevenue(storeId: string, startDate: Date, endDate: Date, productName?: string): Promise<number> {
+    const query = this.orderRepository
       .createQueryBuilder('order')
       .select('SUM(order.totalAmount)', 'total')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
-      })
-      .getRawOne();
+        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      });
 
+    if (productName) {
+      query
+        .leftJoin('order.items', 'item')
+        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+          productName: `%${productName}%`,
+        });
+    }
+
+    const result = await query.getRawOne();
     return parseFloat(result?.total || '0');
   }
 
-  private async getOrderCount(storeId: string, startDate: Date): Promise<number> {
-    return await this.orderRepository
+  private async getOrderCount(storeId: string, startDate: Date, endDate: Date, productName?: string): Promise<number> {
+    const query = this.orderRepository
       .createQueryBuilder('order')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
-      })
-      .getCount();
+        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      });
+
+    if (productName) {
+      query
+        .leftJoin('order.items', 'item')
+        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+          productName: `%${productName}%`,
+        });
+    }
+
+    return await query.getCount();
   }
 
   private async getChartData(
     storeId: string,
     startDate: Date,
+    endDate: Date,
     period: 'day' | 'week' | 'month',
+    productName?: string,
   ): Promise<ChartDataPoint[]> {
-    const orders = await this.orderRepository
+    const query = this.orderRepository
       .createQueryBuilder('order')
       .select('order.createdAt', 'createdAt')
       .addSelect('order.totalAmount', 'totalAmount')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
-      })
-      .getRawMany();
+        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+      });
+
+    if (productName) {
+      query
+        .leftJoin('order.items', 'item')
+        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+          productName: `%${productName}%`,
+        });
+    }
+
+    const orders = await query.getRawMany();
 
     // Group by time period
     const dataMap = new Map<string, number>();
@@ -408,8 +453,10 @@ export class SellersService {
   private async getCategoryData(
     storeId: string,
     startDate: Date,
+    endDate: Date,
+    productName?: string,
   ): Promise<CategoryDataPoint[]> {
-    const result = await this.orderRepository
+    const query = this.orderRepository
       .createQueryBuilder('order')
       .leftJoin('order.items', 'item')
       .leftJoin('item.product', 'product')
@@ -418,11 +465,19 @@ export class SellersService {
       .addSelect('SUM(item.unitPrice * item.quantity)', 'value')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
       })
-      .groupBy('productType.productTypeId')
-      .getRawMany();
+      .groupBy('productType.productTypeId');
+
+    if (productName) {
+      query.andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+        productName: `%${productName}%`,
+      });
+    }
+
+    const result = await query.getRawMany();
 
     return result.map((r) => ({
       label: r.label || '未分類',
@@ -433,8 +488,10 @@ export class SellersService {
   private async getPopularProducts(
     storeId: string,
     startDate: Date,
+    endDate: Date,
+    productName?: string,
   ): Promise<PopularProduct[]> {
-    const result = await this.orderRepository
+    const query = this.orderRepository
       .createQueryBuilder('order')
       .leftJoin('order.items', 'item')
       .leftJoin('item.product', 'product')
@@ -446,13 +503,21 @@ export class SellersService {
       .addSelect('SUM(item.unitPrice * item.quantity)', 'revenue')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
       })
       .groupBy('product.productId')
       .orderBy('SUM(item.quantity)', 'DESC')
-      .limit(5)
-      .getRawMany();
+      .limit(5);
+
+    if (productName) {
+      query.andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+        productName: `%${productName}%`,
+      });
+    }
+
+    const result = await query.getRawMany();
 
     return result.map((r) => ({
       id: r.id,
@@ -482,5 +547,147 @@ export class SellersService {
       status: order.orderStatus,
       createdAt: order.createdAt.toISOString(),
     }));
+  }
+
+  // ========== Sales Report Methods ==========
+
+  async generateSalesReport(
+    userId: string,
+    filters: QuerySellerDashboardDto,
+  ): Promise<string> {
+    // Get seller's store
+    const seller = await this.findByUserId(userId);
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    const store = await this.storeRepository.findOne({
+      where: { sellerId: seller.sellerId },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    const storeId = store.storeId;
+
+    // Calculate date range (default: last 30 days)
+    const endDate = filters.endDate
+      ? new Date(filters.endDate)
+      : new Date();
+    const startDate = filters.startDate
+      ? new Date(filters.startDate)
+      : new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Valid order statuses (exclude pending_payment, cancelled, payment_failed)
+    const validStatuses = [
+      OrderStatus.PAID,
+      OrderStatus.PROCESSING,
+      OrderStatus.SHIPPED,
+      OrderStatus.DELIVERED,
+      OrderStatus.COMPLETED,
+    ];
+
+    // Build query to join Order → OrderItem → OrderDiscount → Discount
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'item')
+      .leftJoinAndSelect('order.orderDiscounts', 'orderDiscount')
+      .leftJoinAndSelect('orderDiscount.discount', 'discount')
+      .where('order.storeId = :storeId', { storeId })
+      .andWhere('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
+      .andWhere('order.orderStatus IN (:...statuses)', { statuses: validStatuses })
+      .orderBy('order.createdAt', 'DESC');
+
+    // Add product name filter if provided
+    if (filters.productName) {
+      queryBuilder.andWhere(
+        "item.productSnapshot->>'product_name' LIKE :productName",
+        { productName: `%${filters.productName}%` },
+      );
+    }
+
+    const orders = await queryBuilder.getMany();
+
+    // Generate CSV rows
+    const csvRows: SalesReportItemDto[] = [];
+
+    orders.forEach((order) => {
+      const discountCode = order.orderDiscounts?.[0]?.discount?.discountCode || null;
+
+      order.items.forEach((item) => {
+        const productSnapshot = item.productSnapshot as any;
+        const productName = productSnapshot?.product_name || 'Unknown';
+
+        csvRows.push({
+          orderDate: this.formatDateTime(order.createdAt),
+          orderNumber: order.orderNumber,
+          orderStatus: order.orderStatus,
+          productName,
+          quantity: item.quantity,
+          originalPrice: parseFloat(item.originalPrice.toString()),
+          unitPrice: parseFloat(item.unitPrice.toString()),
+          subtotal: parseFloat(item.subtotal.toString()),
+          shippingFee: parseFloat(order.shippingFee.toString()),
+          discountCode,
+          paymentMethod: order.paymentMethod || 'Unknown',
+        });
+      });
+    });
+
+    // Convert to CSV string
+    const csv = this.convertToCSV(csvRows);
+
+    return csv;
+  }
+
+  private formatDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  }
+
+  private convertToCSV(data: SalesReportItemDto[]): string {
+    const headers = [
+      '訂單日期',
+      '訂單編號',
+      '訂單狀態',
+      '商品名稱',
+      '銷售數量',
+      '商品原價',
+      '實際單價',
+      '小計',
+      '運費',
+      '使用折扣代碼',
+      '付款方式',
+    ];
+
+    const rows = data.map((item) => [
+      item.orderDate,
+      item.orderNumber,
+      item.orderStatus,
+      item.productName,
+      item.quantity.toString(),
+      item.originalPrice.toFixed(2),
+      item.unitPrice.toFixed(2),
+      item.subtotal.toFixed(2),
+      item.shippingFee.toFixed(2),
+      item.discountCode || '',
+      item.paymentMethod,
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => `"${cell.toString().replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+
+    // Add BOM for Excel UTF-8 compatibility
+    return '\uFEFF' + csvContent;
   }
 }

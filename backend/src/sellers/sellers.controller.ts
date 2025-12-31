@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Res,
   NotFoundException,
   ConflictException,
   Query,
@@ -22,6 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { QuerySellerDto } from './dto/query-seller.dto';
+import { QuerySellerDashboardDto } from './dto/query-seller-dashboard.dto';
 
 @Controller('sellers')
 export class SellersController {
@@ -62,10 +64,27 @@ export class SellersController {
   @Get('dashboard')
   async getDashboardData(
     @Req() req: any,
-    @Query('period') period: 'day' | 'week' | 'month' = 'week',
+    @Query() queryDto: QuerySellerDashboardDto,
   ): Promise<DashboardData> {
     const userId = req.user.userId;
-    return await this.sellersService.getDashboardData(userId, period);
+    return await this.sellersService.getDashboardData(userId, queryDto);
+  }
+
+  @Roles(UserRole.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Get('sales-report')
+  async downloadSalesReport(
+    @Req() req: any,
+    @Query() queryDto: QuerySellerDashboardDto,
+    @Res() res: any,
+  ): Promise<void> {
+    const userId = req.user.userId;
+    const csv = await this.sellersService.generateSalesReport(userId, queryDto);
+
+    const filename = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
   }
 
   @Roles(UserRole.ADMIN)
