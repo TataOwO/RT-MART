@@ -19,6 +19,7 @@ import { OrdersModule } from './orders/orders.module';
 import { DiscountsModule } from './discounts/discounts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CartHistoryModule } from './cart-history/cart-history.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { CartHistoryModule } from './cart-history/cart-history.module';
     // Phase 5: System management modules
     AuditLogsModule,
     CartHistoryModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
