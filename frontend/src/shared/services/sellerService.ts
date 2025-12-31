@@ -119,12 +119,10 @@ export const downloadSalesReport = async (filters: {
   if (filters.productName) queryParams.append('productName', filters.productName);
 
   const response = await fetch(
-    `${api.defaults.baseURL}/sellers/sales-report?${queryParams.toString()}`,
+    `/api/sellers/sales-report?${queryParams.toString()}`,
     {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-      },
+      credentials: 'include', // 使用 cookie 认证
     }
   );
 

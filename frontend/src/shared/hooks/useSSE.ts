@@ -35,8 +35,8 @@ export function useSSE(eventHandlers: SSEEventHandlers) {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const url = `${apiUrl}/sse/events`;
+      // Use relative URL to leverage proxy configuration
+      const url = `/api/sse/events`;
 
       // EventSource with credentials to send httpOnly cookies
       const eventSource = new EventSource(url, {

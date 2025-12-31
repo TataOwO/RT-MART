@@ -356,7 +356,7 @@ export class SellersService {
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
           productName: `%${productName}%`,
         });
     }
@@ -378,7 +378,7 @@ export class SellersService {
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
           productName: `%${productName}%`,
         });
     }
@@ -407,7 +407,7 @@ export class SellersService {
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
+        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
           productName: `%${productName}%`,
         });
     }
