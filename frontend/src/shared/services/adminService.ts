@@ -151,6 +151,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 export const getUsers = async (params?: {
   search?: string;
   role?: "buyer" | "seller" | "all";
+  includeSuspended?: boolean;
 }): Promise<{ users: AdminUser[]; total: number }> => {
   const queryParams = new URLSearchParams();
 
@@ -160,6 +161,11 @@ export const getUsers = async (params?: {
 
   if (params?.role && params.role !== "all") {
     queryParams.append('role', params.role);
+  }
+
+  // Include suspended users
+  if (params?.includeSuspended) {
+    queryParams.append('includeSuspended', 'true');
   }
 
   const result = await get<{ data: any[]; total: number }>(`/users?${queryParams.toString()}`);
@@ -172,13 +178,13 @@ export const getUsers = async (params?: {
 
 /**
  * 停權使用者（軟刪除）
- * DELETE /users/:userId
+ * POST /users/:userId/suspend
  */
 export const suspendUser = async (
   userId: string,
   _reason: string
 ): Promise<{ success: boolean; message: string }> => {
-  await del(`/users/${userId}`);
+  await post(`/users/${userId}/suspend`, {});
 
   return {
     success: true,
@@ -188,12 +194,12 @@ export const suspendUser = async (
 
 /**
  * 解除停權
- * POST /users/:userId/restore
+ * POST /users/:userId/restore-suspended
  */
 export const unsuspendUser = async (
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
-  await post(`/users/${userId}/restore`);
+  await post(`/users/${userId}/restore-suspended`, {});
 
   return {
     success: true,
@@ -220,15 +226,21 @@ export const deleteUser = async (
 
 /**
  * 獲取商家列表
- * GET /stores?search=
+ * GET /stores?search=&includeSuspended=
  */
 export const getStores = async (params?: {
   search?: string;
+  includeSuspended?: boolean;
 }): Promise<{ stores: AdminStore[]; total: number }> => {
   const queryParams = new URLSearchParams();
 
   if (params?.search) {
     queryParams.append('search', params.search);
+  }
+
+  // Include suspended stores
+  if (params?.includeSuspended) {
+    queryParams.append('includeSuspended', 'true');
   }
 
   const result = await get<{ data: any[]; total: number }>(`/stores?${queryParams.toString()}`);
