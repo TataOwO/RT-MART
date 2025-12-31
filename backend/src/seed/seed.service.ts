@@ -22,6 +22,8 @@ import { OrderDiscountLoader } from './loaders/order-discount.loader';
 import { CartHistoryLoader } from './loaders/cart-history.loader';
 import { UserTokenLoader } from './loaders/user-token.loader';
 import { AuditLogLoader } from './loaders/audit-log.loader';
+import { ReviewLoader } from './loaders/review.loader';
+import { ReviewImageLoader } from './loaders/review-image.loader';
 
 @Injectable()
 export class SeedService {
@@ -61,6 +63,8 @@ export class SeedService {
       new SeasonalDiscountLoader(entityManager, idMapping, this.logger),
       new ShippingDiscountLoader(entityManager, idMapping, this.logger),
       new SpecialDiscountLoader(entityManager, idMapping, this.logger),
+      new ReviewLoader(entityManager, idMapping, this.logger),
+      new ReviewImageLoader(entityManager, idMapping, this.logger),
       new OrderLoader(entityManager, idMapping, this.logger),
       new OrderItemLoader(entityManager, idMapping, this.logger),
       new OrderDiscountLoader(entityManager, idMapping, this.logger),
@@ -189,6 +193,8 @@ export class SeedService {
       'OrderDiscount',
       'OrderItem',
       'Order',
+      'ReviewImage',
+      'Review',
       'SpecialDiscount',
       'ShippingDiscount',
       'SeasonalDiscount',

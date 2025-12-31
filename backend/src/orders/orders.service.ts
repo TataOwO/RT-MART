@@ -29,83 +29,87 @@ export class OrdersService {
     private readonly discountsService: DiscountsService,
     private readonly dataSource: DataSource,
   ) {}
-    async createFromSnapshot(
-      userId: string,
-      cartSnapshot: any,
-      createDto: CreateOrderDto,
-    ): Promise<Order[]> {
-      // Expect cartSnapshot.items with product (snapshot) and quantity
-      const items = cartSnapshot.items || [];
-      if (items.length === 0) {
-        throw new BadRequestException('No items in snapshot');
-      }
+  async createFromSnapshot(
+    userId: string,
+    cartSnapshot: any,
+    createDto: CreateOrderDto,
+  ): Promise<Order[]> {
+    // Expect cartSnapshot.items with product (snapshot) and quantity
+    const items = cartSnapshot.items || [];
+    if (items.length === 0) {
+      throw new BadRequestException('No items in snapshot');
+    }
 
-      // Group by storeId (try to read from product.storeId or product.store?.storeId)
-      const itemsByStore = new Map<string, any[]>();
-      for (const it of items) {
-        const storeId = String(it.product?.storeId || it.product?.store?.storeId || '0');
-        if (!itemsByStore.has(storeId)) itemsByStore.set(storeId, []);
-        itemsByStore.get(storeId)!.push(it);
-      }
+    // Group by storeId (try to read from product.storeId or product.store?.storeId)
+    const itemsByStore = new Map<string, any[]>();
+    for (const it of items) {
+      const storeId = String(
+        it.product?.storeId || it.product?.store?.storeId || '0',
+      );
+      if (!itemsByStore.has(storeId)) itemsByStore.set(storeId, []);
+      itemsByStore.get(storeId)!.push(it);
+    }
 
-      const createdOrders: Order[] = [];
+    const createdOrders: Order[] = [];
 
-      return await this.dataSource.transaction(async (manager) => {
-        for (const [storeId, storeItems] of itemsByStore.entries()) {
-          let subtotal = 0;
-          for (const item of storeItems) {
-            subtotal += Number(item.product?.price || 0) * Number(item.quantity || 1);
-          }
+    return await this.dataSource.transaction(async (manager) => {
+      for (const [storeId, storeItems] of itemsByStore.entries()) {
+        let subtotal = 0;
+        for (const item of storeItems) {
+          subtotal +=
+            Number(item.product?.price || 0) * Number(item.quantity || 1);
+        }
 
-          const shippingFee = 60;
-          const totalAmount = subtotal + shippingFee;
+        const shippingFee = 60;
+        const totalAmount = subtotal + shippingFee;
 
-          const orderNumber = this.generateOrderNumber();
+        const orderNumber = this.generateOrderNumber();
 
-          const order = manager.create(Order, {
-            orderNumber,
-            userId,
-            storeId,
-            subtotal,
-            shippingFee,
-            totalDiscount: 0,
-            totalAmount,
-            paymentMethod: createDto?.paymentMethod,
-            shippingAddressSnapshot: createDto?.shippingAddressSnapshot,
-            notes: createDto?.notes,
-            orderStatus: OrderStatus.PENDING_PAYMENT,
+        const order = manager.create(Order, {
+          orderNumber,
+          userId,
+          storeId,
+          subtotal,
+          shippingFee,
+          totalDiscount: 0,
+          totalAmount,
+          paymentMethod: createDto?.paymentMethod,
+          shippingAddressSnapshot: createDto?.shippingAddressSnapshot,
+          notes: createDto?.notes,
+          orderStatus: OrderStatus.PENDING_PAYMENT,
+        });
+
+        const savedOrder = await manager.save(Order, order);
+
+        for (const item of storeItems) {
+          const orderItem = manager.create(OrderItem, {
+            orderId: savedOrder.orderId,
+            productId: item.productId,
+            productSnapshot: item.product,
+            quantity: item.quantity,
+            originalPrice: item.product?.price || 0,
+            itemDiscount: 0,
+            unitPrice: item.product?.price || 0,
+            subtotal:
+              Number(item.product?.price || 0) * Number(item.quantity || 1),
           });
 
-          const savedOrder = await manager.save(Order, order);
-
-          for (const item of storeItems) {
-            const orderItem = manager.create(OrderItem, {
-              orderId: savedOrder.orderId,
-              productId: item.productId,
-              productSnapshot: item.product,
-              quantity: item.quantity,
-              originalPrice: item.product?.price || 0,
-              itemDiscount: 0,
-              unitPrice: item.product?.price || 0,
-              subtotal: Number(item.product?.price || 0) * Number(item.quantity || 1),
-            });
-
-            await manager.save(OrderItem, orderItem);
-          }
-
-          createdOrders.push(savedOrder);
+          await manager.save(OrderItem, orderItem);
         }
 
-        // Optionally clear selected items in cart
-        try {
-          await this.cartsService.removeSelectedItems(userId);
-        } catch (err) {
-          // ignore
-        }
+        createdOrders.push(savedOrder);
+      }
 
-        return createdOrders;
-      });
-    }
+      // Optionally clear selected items in cart
+      try {
+        await this.cartsService.removeSelectedItems(userId);
+      } catch (err) {
+        // ignore
+      }
+
+      return createdOrders;
+    });
+  }
 
   async findAll(
     userId: string,
@@ -276,7 +280,9 @@ export class OrdersService {
 
     // Status filter
     if (queryDto.status) {
-      query.andWhere('order.orderStatus = :status', { status: queryDto.status });
+      query.andWhere('order.orderStatus = :status', {
+        status: queryDto.status,
+      });
     }
 
     // Date range filter
@@ -407,7 +413,10 @@ export class OrdersService {
       // Release reserved inventory (restore quantity, decrease reserved)
       for (const item of order.items || []) {
         if (item.productId) {
-          await this.inventoryService.orderCancel(item.productId, item.quantity);
+          await this.inventoryService.orderCancel(
+            item.productId,
+            item.quantity,
+          );
         }
       }
 

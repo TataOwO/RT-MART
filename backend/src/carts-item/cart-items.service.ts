@@ -20,20 +20,27 @@ export class CartItemsService {
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly inventoryService: InventoryService,
     private readonly cartHistoryService: CartHistoryService,
-  ) { }
+  ) {}
   /**
    * Return all cart items for a user with product relations
    */
   async getCart(userId: string): Promise<CartItem[]> {
     return await this.cartItemRepository.find({
-
       where: { userId },
-      relations: ['product', 'product.images', 'product.store', 'product.inventory'],
+      relations: [
+        'product',
+        'product.images',
+        'product.store',
+        'product.inventory',
+      ],
       order: { createdAt: 'ASC' },
     });
   }
 
-  async addToCart(userId: string, addToCartDto: AddToCartDto): Promise<CartItem> {
+  async addToCart(
+    userId: string,
+    addToCartDto: AddToCartDto,
+  ): Promise<CartItem> {
     // Check if product is already in cart for this user
     const existingItem = await this.cartItemRepository.findOne({
       where: { userId, productId: addToCartDto.productId },
@@ -65,7 +72,7 @@ export class CartItemsService {
       await this.cartItemRepository.save(cartItem);
     }
 
-    return await this.getCart(userId) as any;
+    return (await this.getCart(userId)) as any;
   }
 
   async updateCartItem(
@@ -82,7 +89,9 @@ export class CartItemsService {
     }
 
     // Check stock availability
-    const stock = await this.inventoryService.getAvailableStock(cartItem.productId);
+    const stock = await this.inventoryService.getAvailableStock(
+      cartItem.productId,
+    );
 
     if (stock < updateDto.quantity) {
       throw new BadRequestException('Insufficient stock for this product');
@@ -91,7 +100,7 @@ export class CartItemsService {
     cartItem.quantity = updateDto.quantity;
     await this.cartItemRepository.save(cartItem);
 
-    return await this.getCart(userId) as any;
+    return (await this.getCart(userId)) as any;
   }
 
   async batchUpdateCartItems(
@@ -109,7 +118,7 @@ export class CartItemsService {
       }
     }
 
-    return await this.getCart(userId) as any;
+    return (await this.getCart(userId)) as any;
   }
 
   async removeFromCart(userId: string, cartItemId: string): Promise<CartItem> {
@@ -123,7 +132,7 @@ export class CartItemsService {
 
     await this.cartItemRepository.remove(cartItem);
 
-    return await this.getCart(userId) as any;
+    return (await this.getCart(userId)) as any;
   }
 
   async clearCart(userId: string): Promise<void> {
@@ -170,7 +179,8 @@ export class CartItemsService {
    * Move selected cart items to cart history snapshot and remove them from cart
    */
   async moveSelectedToHistory(userId: string): Promise<CartHistory> {
-    const { cart: items, selectedTotalAmount } = await this.getCartSummary(userId);
+    const { cart: items, selectedTotalAmount } =
+      await this.getCartSummary(userId);
 
     const selectedItems = (items || []).filter((i) => i.selected);
 

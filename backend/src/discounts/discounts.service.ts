@@ -430,7 +430,9 @@ export class DiscountsService {
     for (const discount of activeShippingDiscounts) {
       // Check if order meets minimum purchase requirement
       if (subtotal >= Number(discount.minPurchaseAmount)) {
-        const discountAmount = Number(discount.shippingDiscount?.discountAmount || 0);
+        const discountAmount = Number(
+          discount.shippingDiscount?.discountAmount || 0,
+        );
         if (discountAmount > maxDiscount) {
           maxDiscount = discountAmount;
         }

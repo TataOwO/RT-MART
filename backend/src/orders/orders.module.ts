@@ -14,7 +14,7 @@ import { SellersModule } from '../sellers/sellers.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, OrderDiscount]),
-    forwardRef(() =>CartItemsModule),
+    forwardRef(() => CartItemsModule),
     ShippingAddressesModule,
     InventoryModule,
     DiscountsModule,

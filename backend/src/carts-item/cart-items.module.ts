@@ -7,7 +7,11 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { CartHistoryModule } from '../cart-history/cart-history.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CartItem]), InventoryModule, forwardRef(() => CartHistoryModule)],
+  imports: [
+    TypeOrmModule.forFeature([CartItem]),
+    InventoryModule,
+    forwardRef(() => CartHistoryModule),
+  ],
   controllers: [CartItemsController],
   providers: [CartItemsService],
   exports: [CartItemsService],

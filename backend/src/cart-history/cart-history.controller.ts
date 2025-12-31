@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Query, UseGuards, Req, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Post,
+  Body,
+} from '@nestjs/common';
 import { CartHistoryService } from './cart-history.service';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthRequest } from '../common/types/request.types';
@@ -91,7 +100,10 @@ export class CartHistoryController {
     );
 
     const orderIds = orders.map((o) => o.orderId);
-    await this.cartHistoryService.linkOrdersToSnapshot(history.cartHistoryId, orderIds);
+    await this.cartHistoryService.linkOrdersToSnapshot(
+      history.cartHistoryId,
+      orderIds,
+    );
 
     return { message: 'Orders created', orders: orderIds };
   }

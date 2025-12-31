@@ -20,6 +20,7 @@ import { DiscountsModule } from './discounts/discounts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CartHistoryModule } from './cart-history/cart-history.module';
 import { AdminModule } from './admin/admin.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { AdminModule } from './admin/admin.module';
     CartHistoryModule,
 
     AdminModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
