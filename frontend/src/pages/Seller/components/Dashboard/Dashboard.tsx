@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SalesPeriodSelector from './components/SalesPeriodSelector';
 import ChartTypeSelector from './components/ChartTypeSelector';
 import SalesChart from './components/SalesChart';
 import SalesBarChart from './components/SalesBarChart';
@@ -49,13 +48,7 @@ function Dashboard() {
   const handleFilterChange = (field: keyof SellerDashboardFilters, value: string) => {
     const newFilters = { ...filters, [field]: value };
     setFilters(newFilters);
-    setActiveQuickSelector(null); // Clear quick selector when manually changing dates
-    loadDashboardData(newFilters);
-  };
-
-  const handlePeriodChange = (period: SalesPeriod) => {
-    const newFilters = { ...filters, period, startDate: '', endDate: '' };
-    setFilters(newFilters);
+    setActiveQuickSelector(null);
     loadDashboardData(newFilters);
   };
 
@@ -118,10 +111,6 @@ function Dashboard() {
       {/* Filters Section */}
       <div className={styles.filtersSection}>
         <div className={styles.topRow}>
-          <SalesPeriodSelector
-            value={filters.period || 'week'}
-            onChange={handlePeriodChange}
-          />
           <ChartTypeSelector
             value={chartType}
             onChange={setChartType}
