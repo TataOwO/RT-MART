@@ -295,7 +295,7 @@ export class ProductsService {
             );
           }
 
-          let imageData = {
+          const imageData = {
             productId: savedProduct.productId,
             imageUrl: result.url,
             publicId: result.publicId,

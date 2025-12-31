@@ -20,7 +20,6 @@ import { Inventory } from '../inventory/entities/inventory.entity';
     SellersModule,
     CloudinaryModule,
     forwardRef(() => InventoryModule),
-
   ],
   controllers: [ProductsController],
   providers: [ProductsService, CloudinaryService],
