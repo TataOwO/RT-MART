@@ -11,7 +11,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { QueryAdminOrderDto } from './dto/query-admin-order.dto';
-import { CartsService } from '../carts/carts.service';
+import { CartItemsService } from '../carts-item/cart-items.service';
 import { ShippingAddressesService } from '../shipping-addresses/shipping-addresses.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { DiscountsService } from '../discounts/discounts.service';
@@ -23,134 +23,89 @@ export class OrdersService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
-    private readonly cartsService: CartsService,
+    private readonly cartsService: CartItemsService,
     private readonly shippingAddressesService: ShippingAddressesService,
     private readonly inventoryService: InventoryService,
     private readonly discountsService: DiscountsService,
     private readonly dataSource: DataSource,
   ) {}
-
-  // TODO: 付款等待 清空購物車邏輯
-  async create(userId: string, createDto: CreateOrderDto): Promise<Order> {
-    // Get cart with items (outside transaction)
-    const { cart } = await this.cartsService.getCartSummary(userId);
-
-    if (!cart.items || cart.items.length === 0) {
-      throw new BadRequestException('Cart is empty');
-    }
-
-    // Get shipping address (outside transaction)
-    const shippingAddress = await this.shippingAddressesService.findOne(
-      createDto.shippingAddressId,
-      userId,
-    );
-
-    // Use transaction for order creation
-    return await this.dataSource.transaction(async (manager) => {
-      // Filter only selected items and group items by store
-      const cartItems = cart.items!.filter((item) => item.selected);
-
-      if (cartItems.length === 0) {
-        throw new BadRequestException('No items selected for checkout');
+    async createFromSnapshot(
+      userId: string,
+      cartSnapshot: any,
+      createDto: CreateOrderDto,
+    ): Promise<Order[]> {
+      // Expect cartSnapshot.items with product (snapshot) and quantity
+      const items = cartSnapshot.items || [];
+      if (items.length === 0) {
+        throw new BadRequestException('No items in snapshot');
       }
 
-      const itemsByStore = new Map<string, typeof cartItems>();
-      for (const item of cartItems) {
-        const storeId = item.product.storeId;
-        if (!itemsByStore.has(storeId)) {
-          itemsByStore.set(storeId, []);
-        }
-        itemsByStore.get(storeId)!.push(item);
+      // Group by storeId (try to read from product.storeId or product.store?.storeId)
+      const itemsByStore = new Map<string, any[]>();
+      for (const it of items) {
+        const storeId = String(it.product?.storeId || it.product?.store?.storeId || '0');
+        if (!itemsByStore.has(storeId)) itemsByStore.set(storeId, []);
+        itemsByStore.get(storeId)!.push(it);
       }
 
-      const orders: Order[] = [];
+      const createdOrders: Order[] = [];
 
-      // Create one order per store
-      for (const [storeId, items] of itemsByStore.entries()) {
-        let subtotal = 0;
-
-        // Calculate subtotal and reserve inventory for all items
-        for (const item of items) {
-          // Check stock availability
-          const isAvailable = await this.inventoryService.checkStockAvailability(
-            item.productId,
-            item.quantity,
-          );
-
-          if (!isAvailable) {
-            throw new BadRequestException(
-              `Insufficient stock for product: ${item.product.productName}`,
-            );
+      return await this.dataSource.transaction(async (manager) => {
+        for (const [storeId, storeItems] of itemsByStore.entries()) {
+          let subtotal = 0;
+          for (const item of storeItems) {
+            subtotal += Number(item.product?.price || 0) * Number(item.quantity || 1);
           }
 
-          // Reserve inventory (decrease quantity, increase reserved)
-          await this.inventoryService.orderCreated(
-            item.productId,
-            item.quantity,
-          );
+          const shippingFee = 60;
+          const totalAmount = subtotal + shippingFee;
 
-          subtotal += Number(item.product.price) * item.quantity;
-        }
+          const orderNumber = this.generateOrderNumber();
 
-        const shippingFee = 60; // Default shipping fee
-        const totalAmount = subtotal + shippingFee;
-
-        // Generate order number
-        const orderNumber = this.generateOrderNumber();
-
-        // Create order
-        const order = manager.create(Order, {
-          orderNumber,
-          userId,
-          storeId,
-          subtotal,
-          shippingFee,
-          totalDiscount: 0,
-          totalAmount,
-          paymentMethod: createDto.paymentMethod,
-          shippingAddressSnapshot: shippingAddress,
-          notes: createDto.notes,
-          orderStatus: OrderStatus.PENDING_PAYMENT,
-        });
-
-        const savedOrder = await manager.save(Order, order);
-
-        // Create order items
-        for (const item of items) {
-          const orderItem = manager.create(OrderItem, {
-            orderId: savedOrder.orderId,
-            productId: item.productId,
-            productSnapshot: {
-              productId: item.product.productId,
-              product_name: item.product.productName,
-              price: item.product.price,
-              images: item.product.images,
-            },
-            quantity: item.quantity,
-            originalPrice: item.product.price,
-            itemDiscount: 0,
-            unitPrice: item.product.price,
-            subtotal: Number(item.product.price) * item.quantity,
+          const order = manager.create(Order, {
+            orderNumber,
+            userId,
+            storeId,
+            subtotal,
+            shippingFee,
+            totalDiscount: 0,
+            totalAmount,
+            paymentMethod: createDto?.paymentMethod,
+            shippingAddressSnapshot: createDto?.shippingAddressSnapshot,
+            notes: createDto?.notes,
+            orderStatus: OrderStatus.PENDING_PAYMENT,
           });
 
-          await manager.save(OrderItem, orderItem);
+          const savedOrder = await manager.save(Order, order);
+
+          for (const item of storeItems) {
+            const orderItem = manager.create(OrderItem, {
+              orderId: savedOrder.orderId,
+              productId: item.productId,
+              productSnapshot: item.product,
+              quantity: item.quantity,
+              originalPrice: item.product?.price || 0,
+              itemDiscount: 0,
+              unitPrice: item.product?.price || 0,
+              subtotal: Number(item.product?.price || 0) * Number(item.quantity || 1),
+            });
+
+            await manager.save(OrderItem, orderItem);
+          }
+
+          createdOrders.push(savedOrder);
         }
 
-        orders.push(savedOrder);
-      }
+        // Optionally clear selected items in cart
+        try {
+          await this.cartsService.removeSelectedItems(userId);
+        } catch (err) {
+          // ignore
+        }
 
-      // Clear only selected items after successful order creation (within transaction)
-      await this.cartsService.removeSelectedItems(userId);
-
-      // Return first order (or implement logic to return all orders)
-      // return await this.findOne(orders[0].orderId, userId);
-      // 使用交易內的 manager 來獲取完整訂單資訊，避免交易尚未 commit 導致 findOne 找不到資料
-      return (await manager.findOne(Order, {
-        where: { orderId: orders[0].orderId, userId },
-        relations: ['store', 'items', 'items.product'],
-      })) as Order;
-    });
-  }
+        return createdOrders;
+      });
+    }
 
   async findAll(
     userId: string,
@@ -160,7 +115,7 @@ export class OrdersService {
     const limit = parseInt(queryDto.limit || '10', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string> = { userId };
+    const where: any = { userId };
 
     if (queryDto.status) {
       where.orderStatus = queryDto.status;

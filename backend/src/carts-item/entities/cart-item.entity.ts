@@ -4,29 +4,29 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
+  OneToOne,
   JoinColumn,
-  Index,
+  OneToMany,
+  ManyToOne,
 } from 'typeorm';
-import { Cart } from './cart.entity';
+import { User } from '../../users/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
 
 @Entity('CartItem')
-@Index(['cartId', 'productId'], { unique: true })
 export class CartItem {
   @PrimaryGeneratedColumn({ name: 'cart_item_id', type: 'bigint' })
   cartItemId: string;
 
-  @Column({ name: 'cart_id', type: 'bigint' })
-  cartId: string;
+  @Column({ name: 'user_id', type: 'bigint', unique: true })
+  userId: string;
 
-  @Column({ name: 'product_id', type: 'bigint' })
+  @Column({ name: 'product_id', type: 'bigint' }) 
   productId: string;
 
-  @Column({ type: 'int' })
-  quantity: number;
-
-  @Column({ type: 'boolean', default: true })
+  @Column({ name: 'quantity', type: 'int', nullable: false }) 
+  quantity: number; 
+  
+  @Column({ name: 'selected', type: 'boolean', default: false }) 
   selected: boolean;
 
   @CreateDateColumn({
@@ -34,7 +34,7 @@ export class CartItem {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
-  addedAt: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({
     name: 'updated_at',
@@ -43,14 +43,11 @@ export class CartItem {
   })
   updatedAt: Date;
 
-  // Relations
-  @ManyToOne(() => Cart, (cart) => cart.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'cart_id' })
-  cart: Cart;
+  @ManyToOne(() => User, (user) => user.cartItems, { onDelete: 'CASCADE' }) 
+  @JoinColumn({ name: 'user_id' }) 
+  user: User;
 
-  @ManyToOne(() => Product, (product) => product.cartItems, {
-    onDelete: 'RESTRICT',
-  })
+  @ManyToOne(() => Product, (product) => product.cartItems, { onDelete: 'CASCADE' }) 
   @JoinColumn({ name: 'product_id' })
   product: Product;
 }

@@ -14,7 +14,7 @@ import { StoresModule } from './stores/stores.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
-import { CartsModule } from './carts/carts.module';
+import { CartItemsModule } from './carts-item/cart-items.module';
 import { OrdersModule } from './orders/orders.module';
 import { DiscountsModule } from './discounts/discounts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
@@ -56,7 +56,7 @@ import { AdminModule } from './admin/admin.module';
     InventoryModule,
 
     // Phase 3: Cart & Order modules
-    CartsModule,
+    CartItemsModule,
     OrdersModule,
 
     // Phase 4: Discount modules

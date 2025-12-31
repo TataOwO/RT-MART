@@ -173,7 +173,6 @@ export class SellersService {
 
     // 创建默认商店
     const storeName = `${user.name}'s Store`;
-
     const defaultStore = this.storeRepository.create({
       sellerId: seller.sellerId,
       storeName: storeName,

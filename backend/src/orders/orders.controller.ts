@@ -35,7 +35,7 @@ export class OrdersController {
   @Post()
   async create(@Req() req: AuthRequest, @Body() createDto: CreateOrderDto) {
     const userId = req.user.userId;
-    return await this.ordersService.create(userId, createDto);
+    return await this.ordersService.createFromSnapshot(userId, createDto.cartSnapshot || {}, createDto as any);
   }
 
   @Get()
