@@ -9,7 +9,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // use helmet for security headers
-  app.use(helmet());
+  // Configure helmet to allow SSE connections
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Disable CSP to allow SSE
+      crossOriginEmbedderPolicy: false, // Allow cross-origin resources
+    }),
+  );
   app.use(cookieParser());
 
   // set global API prefix (so all routes will be /api/v1/...)
