@@ -12,7 +12,14 @@ import { ProductType } from '../product-types/entities/product-type.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Seller, Store, User, Order, Product, ProductType]),
+    TypeOrmModule.forFeature([
+      Seller,
+      Store,
+      User,
+      Order,
+      Product,
+      ProductType,
+    ]),
     forwardRef(() => UsersModule),
   ],
   controllers: [SellersController],

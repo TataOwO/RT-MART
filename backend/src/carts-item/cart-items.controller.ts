@@ -9,7 +9,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { CartsService } from './carts.service';
+import { CartItemsService } from './cart-items.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { BatchUpdateCartItemsDto } from './dto/batch-update-cart-items.dto';
@@ -18,12 +18,13 @@ import type { AuthRequest } from '../common/types';
 
 @Controller('carts')
 @UseGuards(JwtAccessGuard)
-export class CartsController {
-  constructor(private readonly cartsService: CartsService) {}
+export class CartItemsController {
+  constructor(private readonly cartsService: CartItemsService) {}
 
   @Get()
   async getCart(@Req() req: AuthRequest) {
-    return await this.cartsService.getOrCreateCart(req.user.userId);
+    const items = await this.cartsService.getCart(req.user.userId);
+    return { items };
   }
 
   @Get('summary')
@@ -34,6 +35,11 @@ export class CartsController {
   @Post('items')
   async addToCart(@Req() req: AuthRequest, @Body() addToCartDto: AddToCartDto) {
     return await this.cartsService.addToCart(req.user.userId, addToCartDto);
+  }
+
+  @Post('items/to-history')
+  async moveSelectedToHistory(@Req() req: AuthRequest) {
+    return await this.cartsService.moveSelectedToHistory(req.user.userId);
   }
 
   @Patch('items/batch')

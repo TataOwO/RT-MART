@@ -27,7 +27,10 @@ export class DiscountsController {
   @Roles(UserRole.SELLER)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Post()
-  async createSpecial(@Req() req: AuthRequest, @Body() createDto: CreateDiscountDto) {
+  async createSpecial(
+    @Req() req: AuthRequest,
+    @Body() createDto: CreateDiscountDto,
+  ) {
     return await this.discountsService.sellerCreate(createDto, req.user.userId);
   }
 
@@ -69,7 +72,10 @@ export class DiscountsController {
     @Query('storeIds') storeIds: string,
   ) {
     const storeIdArray = storeIds.split(',');
-    return await this.discountsService.getAvailableDiscounts(subtotal, storeIdArray);
+    return await this.discountsService.getAvailableDiscounts(
+      subtotal,
+      storeIdArray,
+    );
   }
 
   @Get('recommended')
@@ -78,7 +84,10 @@ export class DiscountsController {
     @Query('storeIds') storeIds: string,
   ) {
     const storeIdArray = storeIds.split(',');
-    return await this.discountsService.getRecommendedDiscounts(subtotal, storeIdArray);
+    return await this.discountsService.getRecommendedDiscounts(
+      subtotal,
+      storeIdArray,
+    );
   }
 
   @Get(':id')

@@ -67,7 +67,8 @@ export class StoresService implements OnModuleInit {
     }
 
     if (queryDto.search) {
-      const searchCondition = 'store.storeName LIKE :search OR store.storeId LIKE :search OR seller.name LIKE :search OR user.name LIKE :search';
+      const searchCondition =
+        'store.storeName LIKE :search OR store.storeId LIKE :search OR seller.name LIKE :search OR user.name LIKE :search';
       queryBuilder.andWhere(searchCondition, {
         search: `%${queryDto.search}%`,
       });
@@ -114,7 +115,10 @@ export class StoresService implements OnModuleInit {
     return store;
   }
 
-  async findBySeller(sellerId: string, includeDeleted: boolean = false): Promise<Store | null> {
+  async findBySeller(
+    sellerId: string,
+    includeDeleted: boolean = false,
+  ): Promise<Store | null> {
     const queryBuilder = this.storeRepository
       .createQueryBuilder('store')
       .where('store.sellerId = :sellerId', { sellerId })

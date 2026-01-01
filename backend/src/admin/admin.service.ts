@@ -41,11 +41,11 @@ export class AdminService {
     private readonly sellerRepository: Repository<Seller>,
   ) {}
 
-  async getDashboardStats(filters?: QueryDashboardDto): Promise<DashboardStats> {
+  async getDashboardStats(
+    filters?: QueryDashboardDto,
+  ): Promise<DashboardStats> {
     // Set default date range if not provided (last 12 months)
-    const endDate = filters?.endDate
-      ? new Date(filters.endDate)
-      : new Date();
+    const endDate = filters?.endDate ? new Date(filters.endDate) : new Date();
     const startDate = filters?.startDate
       ? new Date(filters.startDate)
       : new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000);
@@ -83,7 +83,10 @@ export class AdminService {
     };
   }
 
-  private async getTotalRevenue(startDate: Date, endDate: Date): Promise<number> {
+  private async getTotalRevenue(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
     const result = await this.orderRepository
       .createQueryBuilder('order')
       .select('SUM(order.totalAmount)', 'total')
@@ -160,7 +163,10 @@ export class AdminService {
     return activities;
   }
 
-  private async getRevenueChartData(startDate: Date, endDate: Date): Promise<ChartDataPoint[]> {
+  private async getRevenueChartData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ChartDataPoint[]> {
     // Get revenue for the specified date range
     const result = await this.orderRepository
       .createQueryBuilder('order')
@@ -179,7 +185,10 @@ export class AdminService {
     }));
   }
 
-  private async getUserGrowthChartData(startDate: Date, endDate: Date): Promise<ChartDataPoint[]> {
+  private async getUserGrowthChartData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ChartDataPoint[]> {
     // Get new users for the specified date range
     const result = await this.userRepository
       .createQueryBuilder('user')
@@ -197,7 +206,10 @@ export class AdminService {
     }));
   }
 
-  private async getOrderStatusChartData(startDate: Date, endDate: Date): Promise<ChartDataPoint[]> {
+  private async getOrderStatusChartData(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ChartDataPoint[]> {
     const result = await this.orderRepository
       .createQueryBuilder('order')
       .select('order.orderStatus', 'status')

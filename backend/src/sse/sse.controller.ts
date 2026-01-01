@@ -1,6 +1,5 @@
 import { Controller, Sse, Req, UseGuards, MessageEvent } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { Request } from 'express';
+import { Observable, finalize } from 'rxjs';
 import { SseService } from './sse.service';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthRequest } from '../common/types';
@@ -9,44 +8,26 @@ import type { AuthRequest } from '../common/types';
 export class SseController {
   constructor(private readonly sseService: SseService) {}
 
+  /**
+   * SSE events stream for notifications
+   * 修改理由：
+   * 1. 移除手動操作 Response (res) 物件，這會導致 "Cannot set headers after they are sent to the client" 錯誤。
+   * 2. 使用 NestJS 推薦的 RxJS Observable 模式，讓 NestJS 自動管理 SSE Headers 和心跳。
+   * 3. 使用 finalize 確保連線切斷時正確清理客戶端資源。
+   */
   @Sse('events')
   @UseGuards(JwtAccessGuard)
   events(@Req() req: AuthRequest): Observable<MessageEvent> {
-    return new Observable((observer) => {
-      const clientId = `${req.user.userId}-${Date.now()}`;
-      const userId = req.user.userId;
+    const userId = req.user.userId;
+    const clientId = `${userId}-${Date.now()}`;
 
-      // Set up SSE headers
-      const response = (req as any).res;
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
-      response.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-
-      // Add client to SSE service
-      this.sseService.addClient(clientId, response, userId);
-
-      // Handle client disconnect
-      req.on('close', () => {
+    // 向 Service 註冊並獲取事件流
+    return this.sseService.addClient(clientId, userId).pipe(
+      finalize(() => {
+        // 當 Observable 結束或訂閱取消時（連線切斷），移除客戶端
         this.sseService.removeClient(clientId);
-        observer.complete();
-      });
-
-      // Keep connection alive with heartbeat
-      const heartbeat = setInterval(() => {
-        if (!response.writableEnded) {
-          response.write(': heartbeat\n\n');
-        } else {
-          clearInterval(heartbeat);
-        }
-      }, 30000); // Send heartbeat every 30 seconds
-
-      // Cleanup on unsubscribe
-      return () => {
-        clearInterval(heartbeat);
-        this.sseService.removeClient(clientId);
-      };
-    });
+      }),
+    );
   }
 
   @Sse('health')

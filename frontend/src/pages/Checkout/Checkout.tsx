@@ -17,7 +17,6 @@ import type {
   PaymentMethod,
   CreateOrderRequest,
   CreateMultipleOrdersResponse,
-  DiscountRecommendation,
   ManualDiscountSelection,
 } from "@/types/order";
 import {
@@ -26,7 +25,10 @@ import {
   addAddress,
 } from "@/shared/services/addressService";
 import { createOrder } from "@/shared/services/orderService";
-import { getRecommendedDiscounts, getAllAvailableDiscounts } from "@/shared/services/discountService";
+import {
+  getRecommendedDiscounts,
+  getAllAvailableDiscounts,
+} from "@/shared/services/discountService";
 import { calculateDiscountAmounts } from "@/shared/utils/discountCalculator";
 import { groupOrdersByStore } from "@/shared/utils/groupOrdersByStore";
 import { useCart } from "@/shared/contexts/CartContext";
@@ -63,9 +65,11 @@ function Checkout() {
     useState<CreateMultipleOrdersResponse | null>(null);
 
   // 優惠碼狀態
-  const [appliedDiscounts, setAppliedDiscounts] = useState<ManualDiscountSelection | null>(null);
+  const [appliedDiscounts, setAppliedDiscounts] =
+    useState<ManualDiscountSelection | null>(null);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
-  const [hasUserInteractedWithDiscounts, setHasUserInteractedWithDiscounts] = useState(false);
+  const [hasUserInteractedWithDiscounts, setHasUserInteractedWithDiscounts] =
+    useState(false);
 
   // 按商店分組
   const storeGroups = useMemo(
@@ -81,7 +85,9 @@ function Checkout() {
 
         // 1. 獲取購物車傳來的商品和折扣
         const items = location.state?.items as CartItem[] | undefined;
-        const cartDiscounts = location.state?.appliedDiscounts as ManualDiscountSelection | undefined;
+        const cartDiscounts = location.state?.appliedDiscounts as
+          | ManualDiscountSelection
+          | undefined;
 
         if (!items || items.length === 0) {
           // 沒有商品，導回購物車
@@ -91,7 +97,12 @@ function Checkout() {
         setCheckoutItems(items);
 
         // 如果購物車有選擇折扣，使用購物車的折扣，並標記為已互動
-        if (cartDiscounts && (cartDiscounts.shipping || cartDiscounts.seasonal || cartDiscounts.special)) {
+        if (
+          cartDiscounts &&
+          (cartDiscounts.shipping ||
+            cartDiscounts.seasonal ||
+            cartDiscounts.special)
+        ) {
           setAppliedDiscounts(cartDiscounts);
           setHasUserInteractedWithDiscounts(true);
         }
@@ -131,7 +142,12 @@ function Checkout() {
     if (hasUserInteractedWithDiscounts) return;
 
     // 如果已經有折扣（從購物車帶過來的），不要覆蓋
-    if (appliedDiscounts && (appliedDiscounts.shipping || appliedDiscounts.seasonal || appliedDiscounts.special)) {
+    if (
+      appliedDiscounts &&
+      (appliedDiscounts.shipping ||
+        appliedDiscounts.seasonal ||
+        appliedDiscounts.special)
+    ) {
       return;
     }
 
@@ -140,7 +156,10 @@ function Checkout() {
         const subtotal = storeGroups.reduce((sum, g) => sum + g.subtotal, 0);
         const storeIds = storeGroups.map((g) => g.storeId);
 
-        const recommendation = await getRecommendedDiscounts(subtotal, storeIds);
+        const recommendation = await getRecommendedDiscounts(
+          subtotal,
+          storeIds
+        );
 
         if (recommendation.totalSavings > 0) {
           // 轉換為新格式（分離 seasonal 和 special）
@@ -228,7 +247,11 @@ function Checkout() {
       const allDiscounts = await getAllAvailableDiscounts(subtotal, storeIds);
 
       // 使用共用的折扣計算函數
-      const newSelection = calculateDiscountAmounts(selections, allDiscounts, subtotal);
+      const newSelection = calculateDiscountAmounts(
+        selections,
+        allDiscounts,
+        subtotal
+      );
 
       setAppliedDiscounts(newSelection);
       // 標記用戶已經手動選擇過折扣，之後不再自動推薦
@@ -395,7 +418,6 @@ function Checkout() {
               onChange={setPaymentMethod}
             />
           </section>
-
         </div>
 
         {/* 右側：訂單摘要 */}
@@ -454,23 +476,74 @@ function Checkout() {
         message={
           orderResponse ? (
             <>
-              <div style={{ fontWeight: 600 }}>已成功建立 {orderResponse.orders.length} 筆訂單</div>
-              <div style={{ marginTop: "0.75rem" }}>
-                {orderResponse.orders.map((order) => (
-                  <div key={order.orderId} style={{ marginBottom: "0.5rem" }}>
-                    <b>{order.storeName}</b>:{" "}
-                    {order.orderNumber || order.orderId}
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: "1rem", fontWeight: 500 }}>
-                總額：$ {orderResponse.totalAmount}
-              </div>
               <div
                 style={{
-                  marginTop: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "1.1rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                已成功建立 {orderResponse.orders.length} 筆訂單
+              </div>
+
+              <div
+                style={{
+                  marginTop: "1rem",
+                  backgroundColor: "#f8f9fa",
+                  padding: "1rem",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                {orderResponse.orders.map((order) => (
+                  <div
+                    key={order.orderId}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    <div style={{ textAlign: "left" }}>
+                      <div style={{ fontWeight: 600, color: "#333" }}>
+                        {order.storeName}
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "#6c757d" }}>
+                        單號: {order.orderNumber || order.orderId}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 600, color: "#e44d26" }}>
+                      $ {order.totalAmount.toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    paddingTop: "0.75rem",
+                    borderTop: "1px dashed #dee2e6",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  <span>總計金額</span>
+                  <span style={{ color: "#e44d26" }}>
+                    $ {orderResponse.totalAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "1.25rem",
                   fontSize: "0.875rem",
-                  color: "#666",
+                  color: "#6c757d",
+                  textAlign: "center",
                 }}
               >
                 {countdown} 秒後自動返回首頁...

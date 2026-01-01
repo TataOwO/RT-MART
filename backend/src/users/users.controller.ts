@@ -160,7 +160,9 @@ export class UsersController {
         const store = await this.storesService.findBySeller(seller.sellerId);
         if (store && !store.deletedAt) {
           await this.storesService.remove(store.storeId);
-          this.logger.log(`Suspended store ${store.storeId} for seller ${seller.sellerId}`);
+          this.logger.log(
+            `Suspended store ${store.storeId} for seller ${seller.sellerId}`,
+          );
         }
       }
     } catch (error) {
@@ -209,10 +211,12 @@ export class UsersController {
     this.logger.log(`Admin restoring suspended user ${id}`);
 
     // Get user info before restoration to check deletedAt timestamp
-    const userBeforeRestore = await this.usersService['userRepository'].findOne({
-      where: { userId: id },
-      withDeleted: true,
-    });
+    const userBeforeRestore = await this.usersService['userRepository'].findOne(
+      {
+        where: { userId: id },
+        withDeleted: true,
+      },
+    );
 
     if (!userBeforeRestore || !userBeforeRestore.deletedAt) {
       return {
@@ -230,22 +234,26 @@ export class UsersController {
     try {
       const seller = await this.sellersService.findByUserId(id);
       if (seller) {
-        const store = await this.storesService.findBySeller(seller.sellerId, true);
+        const store = await this.storesService.findBySeller(
+          seller.sellerId,
+          true,
+        );
         if (store && store.deletedAt) {
           // Check if store was deleted within 1 minute of user suspension
           const timeDiffMs = Math.abs(
-            new Date(store.deletedAt).getTime() - new Date(userDeletedAt).getTime()
+            new Date(store.deletedAt).getTime() -
+              new Date(userDeletedAt).getTime(),
           );
           const oneMinuteMs = 60 * 1000;
 
           if (timeDiffMs < oneMinuteMs) {
             await this.storesService.restore(store.storeId);
             this.logger.log(
-              `Restored store ${store.storeId} for seller ${seller.sellerId} (deleted within ${timeDiffMs}ms of user suspension)`
+              `Restored store ${store.storeId} for seller ${seller.sellerId} (deleted within ${timeDiffMs}ms of user suspension)`,
             );
           } else {
             this.logger.log(
-              `Store ${store.storeId} not auto-restored (time diff: ${timeDiffMs}ms > ${oneMinuteMs}ms)`
+              `Store ${store.storeId} not auto-restored (time diff: ${timeDiffMs}ms > ${oneMinuteMs}ms)`,
             );
           }
         }

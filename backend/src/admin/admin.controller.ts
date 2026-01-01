@@ -13,7 +13,9 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('dashboard/stats')
-  async getDashboardStats(@Query() queryDto: QueryDashboardDto): Promise<DashboardStats> {
+  async getDashboardStats(
+    @Query() queryDto: QueryDashboardDto,
+  ): Promise<DashboardStats> {
     return await this.adminService.getDashboardStats(queryDto);
   }
 }

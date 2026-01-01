@@ -221,7 +221,6 @@ export class SellersService {
 
     // 创建默认商店
     const storeName = `${user.name}'s Store`;
-
     const defaultStore = this.storeRepository.create({
       sellerId: seller.sellerId,
       storeName: storeName,
@@ -270,7 +269,12 @@ export class SellersService {
 
   async getDashboardData(
     userId: string,
-    filters: { period?: 'day' | 'week' | 'month'; startDate?: string; endDate?: string; productName?: string },
+    filters: {
+      period?: 'day' | 'week' | 'month';
+      startDate?: string;
+      endDate?: string;
+      productName?: string;
+    },
   ): Promise<DashboardData> {
     // Get seller's store
     const seller = await this.findByUserId(userId);
@@ -322,15 +326,27 @@ export class SellersService {
     }
 
     // Fetch all dashboard data in parallel
-    const [revenue, orderCount, chartData, categoryData, popularProducts, recentOrders] =
-      await Promise.all([
-        this.getRevenue(storeId, startDate, endDate, filters.productName),
-        this.getOrderCount(storeId, startDate, endDate, filters.productName),
-        this.getChartData(storeId, startDate, endDate, period, filters.productName),
-        this.getCategoryData(storeId, startDate, endDate, filters.productName),
-        this.getPopularProducts(storeId, startDate, endDate, filters.productName),
-        this.getRecentOrders(storeId),
-      ]);
+    const [
+      revenue,
+      orderCount,
+      chartData,
+      categoryData,
+      popularProducts,
+      recentOrders,
+    ] = await Promise.all([
+      this.getRevenue(storeId, startDate, endDate, filters.productName),
+      this.getOrderCount(storeId, startDate, endDate, filters.productName),
+      this.getChartData(
+        storeId,
+        startDate,
+        endDate,
+        period,
+        filters.productName,
+      ),
+      this.getCategoryData(storeId, startDate, endDate, filters.productName),
+      this.getPopularProducts(storeId, startDate, endDate, filters.productName),
+      this.getRecentOrders(storeId),
+    ]);
 
     return {
       revenue,
@@ -342,7 +358,12 @@ export class SellersService {
     };
   }
 
-  private async getRevenue(storeId: string, startDate: Date, endDate: Date, productName?: string): Promise<number> {
+  private async getRevenue(
+    storeId: string,
+    startDate: Date,
+    endDate: Date,
+    productName?: string,
+  ): Promise<number> {
     const query = this.orderRepository
       .createQueryBuilder('order')
       .select('SUM(order.totalAmount)', 'total')
@@ -350,37 +371,60 @@ export class SellersService {
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [
+          OrderStatus.PAID,
+          OrderStatus.PROCESSING,
+          OrderStatus.SHIPPED,
+          OrderStatus.DELIVERED,
+          OrderStatus.COMPLETED,
+        ],
       });
 
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
-          productName: `%${productName}%`,
-        });
+        .andWhere(
+          "JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName",
+          {
+            productName: `%${productName}%`,
+          },
+        );
     }
 
     const result = await query.getRawOne();
     return parseFloat(result?.total || '0');
   }
 
-  private async getOrderCount(storeId: string, startDate: Date, endDate: Date, productName?: string): Promise<number> {
+  private async getOrderCount(
+    storeId: string,
+    startDate: Date,
+    endDate: Date,
+    productName?: string,
+  ): Promise<number> {
     const query = this.orderRepository
       .createQueryBuilder('order')
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [
+          OrderStatus.PAID,
+          OrderStatus.PROCESSING,
+          OrderStatus.SHIPPED,
+          OrderStatus.DELIVERED,
+          OrderStatus.COMPLETED,
+        ],
       });
 
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
-          productName: `%${productName}%`,
-        });
+        .andWhere(
+          "JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName",
+          {
+            productName: `%${productName}%`,
+          },
+        );
     }
 
     return await query.getCount();
@@ -401,15 +445,24 @@ export class SellersService {
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [
+          OrderStatus.PAID,
+          OrderStatus.PROCESSING,
+          OrderStatus.SHIPPED,
+          OrderStatus.DELIVERED,
+          OrderStatus.COMPLETED,
+        ],
       });
 
     if (productName) {
       query
         .leftJoin('order.items', 'item')
-        .andWhere("JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName", {
-          productName: `%${productName}%`,
-        });
+        .andWhere(
+          "JSON_UNQUOTE(JSON_EXTRACT(item.product_snapshot, '$.product_name')) LIKE :productName",
+          {
+            productName: `%${productName}%`,
+          },
+        );
     }
 
     const orders = await query.getRawMany();
@@ -467,14 +520,23 @@ export class SellersService {
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [
+          OrderStatus.PAID,
+          OrderStatus.PROCESSING,
+          OrderStatus.SHIPPED,
+          OrderStatus.DELIVERED,
+          OrderStatus.COMPLETED,
+        ],
       })
       .groupBy('productType.productTypeId');
 
     if (productName) {
-      query.andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
-        productName: `%${productName}%`,
-      });
+      query.andWhere(
+        "item.productSnapshot->>'product_name' LIKE :productName",
+        {
+          productName: `%${productName}%`,
+        },
+      );
     }
 
     const result = await query.getRawMany();
@@ -505,16 +567,25 @@ export class SellersService {
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.orderStatus IN (:...statuses)', {
-        statuses: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        statuses: [
+          OrderStatus.PAID,
+          OrderStatus.PROCESSING,
+          OrderStatus.SHIPPED,
+          OrderStatus.DELIVERED,
+          OrderStatus.COMPLETED,
+        ],
       })
       .groupBy('product.productId')
       .orderBy('SUM(item.quantity)', 'DESC')
       .limit(5);
 
     if (productName) {
-      query.andWhere("item.productSnapshot->>'product_name' LIKE :productName", {
-        productName: `%${productName}%`,
-      });
+      query.andWhere(
+        "item.productSnapshot->>'product_name' LIKE :productName",
+        {
+          productName: `%${productName}%`,
+        },
+      );
     }
 
     const result = await query.getRawMany();
@@ -572,9 +643,7 @@ export class SellersService {
     const storeId = store.storeId;
 
     // Calculate date range (default: last 30 days)
-    const endDate = filters.endDate
-      ? new Date(filters.endDate)
-      : new Date();
+    const endDate = filters.endDate ? new Date(filters.endDate) : new Date();
     const startDate = filters.startDate
       ? new Date(filters.startDate)
       : new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -597,7 +666,9 @@ export class SellersService {
       .where('order.storeId = :storeId', { storeId })
       .andWhere('order.createdAt >= :startDate', { startDate })
       .andWhere('order.createdAt <= :endDate', { endDate })
-      .andWhere('order.orderStatus IN (:...statuses)', { statuses: validStatuses })
+      .andWhere('order.orderStatus IN (:...statuses)', {
+        statuses: validStatuses,
+      })
       .orderBy('order.createdAt', 'DESC');
 
     // Add product name filter if provided
@@ -614,7 +685,8 @@ export class SellersService {
     const csvRows: SalesReportItemDto[] = [];
 
     orders.forEach((order) => {
-      const discountCode = order.orderDiscounts?.[0]?.discount?.discountCode || null;
+      const discountCode =
+        order.orderDiscounts?.[0]?.discount?.discountCode || null;
 
       order.items.forEach((item) => {
         const productSnapshot = item.productSnapshot as any;

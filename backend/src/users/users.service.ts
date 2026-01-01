@@ -95,7 +95,8 @@ export class UsersService {
     }
 
     if (queryDto.search) {
-      const searchCondition = 'user.name LIKE :search OR user.loginId LIKE :search OR user.email LIKE :search OR user.userId LIKE :search';
+      const searchCondition =
+        'user.name LIKE :search OR user.loginId LIKE :search OR user.email LIKE :search OR user.userId LIKE :search';
       if (hasWhereCondition) {
         queryBuilder.andWhere(searchCondition, {
           search: `%${queryDto.search}%`,
@@ -109,13 +110,23 @@ export class UsersService {
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
-    console.log('[UsersService] Query result - total:', total, 'returned:', data.length);
-    console.log('[UsersService] First user (if any):', data[0] ? {
-      userId: data[0].userId,
-      name: data[0].name,
-      loginId: data[0].loginId,
-      deletedAt: data[0].deletedAt,
-    } : 'No users found');
+    console.log(
+      '[UsersService] Query result - total:',
+      total,
+      'returned:',
+      data.length,
+    );
+    console.log(
+      '[UsersService] First user (if any):',
+      data[0]
+        ? {
+            userId: data[0].userId,
+            name: data[0].name,
+            loginId: data[0].loginId,
+            deletedAt: data[0].deletedAt,
+          }
+        : 'No users found',
+    );
 
     return { data, total };
   }
@@ -132,7 +143,10 @@ export class UsersService {
     return user;
   }
 
-  async findByLoginId(loginId: string, includeSuspended: boolean = false): Promise<User | null> {
+  async findByLoginId(
+    loginId: string,
+    includeSuspended: boolean = false,
+  ): Promise<User | null> {
     if (includeSuspended) {
       return await this.userRepository.findOne({
         where: { loginId },
@@ -318,7 +332,9 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found or already suspended`);
+      throw new NotFoundException(
+        `User with ID ${id} not found or already suspended`,
+      );
     }
 
     // Note: Actual suspension logic (store suspension, order cancellation)
@@ -328,10 +344,10 @@ export class UsersService {
 
     // TODO: Send suspension email notification
 
-    return await this.userRepository.findOne({
+    return (await this.userRepository.findOne({
       where: { userId: id },
       withDeleted: true,
-    }) as User;
+    })) as User;
   }
 
   /**

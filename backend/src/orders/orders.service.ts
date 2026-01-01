@@ -4,19 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, LessThan } from 'typeorm';
+import { Repository, DataSource, LessThan, In } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
-import { OrderDiscount } from './entities/order-discount.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderFromSnapshotDto } from './dto/create-order-from-snapshot.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { QueryAdminOrderDto } from './dto/query-admin-order.dto';
-import { CartsService } from '../carts/carts.service';
+import { CartItemsService } from '../carts-item/cart-items.service';
 import { ShippingAddressesService } from '../shipping-addresses/shipping-addresses.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { DiscountsService } from '../discounts/discounts.service';
-import { DiscountType } from '../discounts/entities/discount.entity';
 import { SseService } from '../sse/sse.service';
 
 @Injectable()
@@ -26,7 +25,7 @@ export class OrdersService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
-    private readonly cartsService: CartsService,
+    private readonly cartsService: CartItemsService,
     private readonly shippingAddressesService: ShippingAddressesService,
     private readonly inventoryService: InventoryService,
     private readonly discountsService: DiscountsService,
@@ -34,129 +33,129 @@ export class OrdersService {
     private readonly sseService: SseService,
   ) {}
 
-  async create(userId: string, createDto: CreateOrderDto): Promise<Order> {
-    // 1. 取得購物車與收件地址（transaction 外）
-    const { cart } = await this.cartsService.getCartSummary(userId);
-    if (!cart.items?.length) throw new BadRequestException('Cart is empty');
+  // TODO: 付款等待 清空購物車邏輯
+  // 標準下單：從目前購物車建立
+  async create(userId: string, createDto: CreateOrderDto): Promise<Order[]> {
+    // 1. 從資料庫抓取目前購物車資料
+    const summary = await this.cartsService.getCartSummary(userId);
+    const cartItems = (summary.cart || []).filter((item: any) => item.selected);
 
+    if (cartItems.length === 0) {
+      throw new BadRequestException('No items selected for checkout');
+    }
+
+    // 2. 處理地址
     const shippingAddress = await this.shippingAddressesService.findOne(
       createDto.shippingAddressId,
       userId,
     );
 
-    // 2. 驗證折扣碼（transaction 外）
-    let validatedShippingDiscount: any = null;
-    let validatedProductDiscount: any = null;
+    if (!shippingAddress) {
+      throw new BadRequestException('Shipping address is required');
+    }
 
-    const cartItems = cart.items.filter((item) => item.selected);
-    if (!cartItems.length)
-      throw new BadRequestException('No items selected for checkout');
-
-    const totalSubtotal = cartItems.reduce(
-      (sum, item) => sum + Number(item.product.price) * item.quantity,
-      0,
+    // 3. 呼叫核心邏輯
+    const orders = await this.executeOrderCreation(
+      userId,
+      cartItems,
+      shippingAddress,
+      createDto,
     );
 
-    if (createDto.shippingDiscountCode) {
-      const validation = await this.discountsService.validateDiscount(
-        createDto.shippingDiscountCode,
-        totalSubtotal,
+    // 4. 一般下單完畢後，清理購物車
+    try {
+      await this.cartsService.removeSelectedItems(userId);
+    } catch (err: any) {
+      console.warn(
+        'Failed to clear cart items after order creation:',
+        err?.message || 'Unknown error',
       );
-      if (!validation.valid)
-        throw new BadRequestException(
-          `Shipping discount invalid: ${validation.reason}`,
-        );
-      validatedShippingDiscount = validation.discount;
     }
 
-    if (createDto.productDiscountCode) {
-      const validation = await this.discountsService.validateDiscount(
-        createDto.productDiscountCode,
-        totalSubtotal,
-      );
-      if (!validation.valid)
-        throw new BadRequestException(
-          `Product discount invalid: ${validation.reason}`,
-        );
-      validatedProductDiscount = validation.discount;
+    return orders;
+  }
+
+  // 歷史下單：從快照建立 (再次購買等功能)
+  async createFromSnapshot(
+    userId: string,
+    createDto: CreateOrderFromSnapshotDto,
+  ): Promise<Order[]> {
+    const items = createDto.cartSnapshot?.items || [];
+    if (items.length === 0) {
+      throw new BadRequestException('No items in snapshot');
     }
 
-    let shippingDiscountAmount = 0;
-    let productDiscountAmount = 0;
+    const shippingAddress = createDto.shippingAddressSnapshot;
+    if (!shippingAddress) {
+      throw new BadRequestException('Shipping address snapshot is required');
+    }
 
-    // 3. 用 transaction 創建訂單 + 訂單項目 + 折扣紀錄
-    const orders = await this.dataSource.transaction(async (manager) => {
-      const itemsByStore = new Map<string, typeof cartItems>();
-      for (const item of cartItems) {
-        const storeId = item.product.storeId;
-        if (!itemsByStore.has(storeId)) itemsByStore.set(storeId, []);
-        itemsByStore.get(storeId)!.push(item);
+    // 直接呼叫核心邏輯，不清理目前的購物車
+    return await this.executeOrderCreation(
+      userId,
+      items,
+      shippingAddress,
+      createDto,
+    );
+  }
+
+  /**
+   * 核心私有方法：負責事務處理、分組、庫存與資料庫操作
+   */
+  private async executeOrderCreation(
+    userId: string,
+    items: any[],
+    shippingAddress: any,
+    options: CreateOrderDto | CreateOrderFromSnapshotDto,
+  ): Promise<Order[]> {
+    // 依 storeId 分組
+    const itemsByStore = new Map<string, any[]>();
+    for (const it of items) {
+      const storeId = String(
+        it.product?.storeId || it.product?.store?.storeId || '0',
+      );
+      if (!itemsByStore.has(storeId)) {
+        itemsByStore.set(storeId, []);
       }
+      itemsByStore.get(storeId)!.push(it);
+    }
 
-      const savedOrders: Order[] = [];
+    const createdOrders: Order[] = [];
 
-      for (const [storeId, items] of itemsByStore.entries()) {
+    return await this.dataSource.transaction(async (manager) => {
+      for (const [storeId, storeItems] of itemsByStore.entries()) {
         let subtotal = 0;
 
-        // 4. 庫存原子化更新
-        for (const item of items) {
-          const result = await this.dataSource.manager.query(
-            `UPDATE inventory
-           SET quantity = quantity - ?, reserved = reserved + ?
-           WHERE product_id = ? AND quantity >= ?`,
-            [item.quantity, item.quantity, item.productId, item.quantity],
-          );
-          if (result.affectedRows === 0) {
-            throw new BadRequestException(
-              `Insufficient stock for product: ${item.product.productName}`,
-            );
-          }
+        // 庫存檢查與金額計算
+        for (const item of storeItems) {
+          const productId = item.productId || item.product?.productId;
 
-          subtotal += Number(item.product.price) * item.quantity;
-        }
+          // 庫存預扣
+          if (productId) {
+            const isAvailable =
+              await this.inventoryService.checkStockAvailability(
+                productId,
+                item.quantity,
+              );
 
-        // 計算折扣
-        let shippingDiscountAmount = validatedShippingDiscount
-          ? Number(
-              validatedShippingDiscount.shippingDiscount?.discountAmount || 0,
-            )
-          : 0;
-        let productDiscountAmount = 0;
-        if (validatedProductDiscount) {
-          if (validatedProductDiscount.discountType === 'seasonal') {
-            const rate = Number(
-              validatedProductDiscount.seasonalDiscount?.discountRate || 0,
-            );
-            const max = Number(
-              validatedProductDiscount.seasonalDiscount?.maxDiscountAmount ||
-                Infinity,
-            );
-            productDiscountAmount = Math.floor(Math.min(subtotal * rate, max));
-          } else if (validatedProductDiscount.discountType === 'special') {
-            if (validatedProductDiscount.specialDiscount?.storeId === storeId) {
-              const rate = Number(
-                validatedProductDiscount.specialDiscount?.discountRate || 0,
-              );
-              const max = Number(
-                validatedProductDiscount.specialDiscount?.maxDiscountAmount ||
-                  Infinity,
-              );
-              productDiscountAmount = Math.floor(
-                Math.min(subtotal * rate, max),
+            if (!isAvailable) {
+              throw new BadRequestException(
+                `Insufficient stock for product: ${item.product?.productName || item.product?.product_name || 'Unknown'}`,
               );
             }
+
+            await this.inventoryService.orderCreated(productId, item.quantity);
           }
+
+          subtotal +=
+            Number(item.product?.price || 0) * Number(item.quantity || 1);
         }
 
-        const totalDiscount = shippingDiscountAmount + productDiscountAmount;
-        const baseShippingFee = 60;
-        const shippingFee = Math.max(
-          baseShippingFee - shippingDiscountAmount,
-          0,
-        );
-        const totalAmount = subtotal + shippingFee - productDiscountAmount;
+        const shippingFee = 60;
+        const totalAmount = subtotal + shippingFee;
         const orderNumber = this.generateOrderNumber();
-        const isCashOnDelivery = createDto.paymentMethod === 'cash_on_delivery';
+
+        const isCashOnDelivery = options.paymentMethod === 'cash_on_delivery';
         const initialStatus = isCashOnDelivery
           ? OrderStatus.PAID
           : OrderStatus.PENDING_PAYMENT;
@@ -167,85 +166,41 @@ export class OrdersService {
           storeId,
           subtotal,
           shippingFee,
-          totalDiscount,
+          totalDiscount: 0,
           totalAmount,
-          paymentMethod: createDto.paymentMethod,
+          paymentMethod: options.paymentMethod || 'credit_card',
           shippingAddressSnapshot: shippingAddress,
-          notes: createDto.notes,
+          notes: options.notes,
           orderStatus: initialStatus,
-          paidAt: isCashOnDelivery ? new Date() : null,
         });
 
         const savedOrder = await manager.save(Order, order);
 
-        // 創建折扣紀錄（不更新 usage，usage 在 transaction 外）
-        if (validatedShippingDiscount && shippingDiscountAmount > 0) {
-          const orderDiscount = manager.create(OrderDiscount, {
-            orderId: savedOrder.orderId,
-            discountId: validatedShippingDiscount.discountId,
-            discountType: DiscountType.SHIPPING,
-            discountAmount: shippingDiscountAmount,
-          });
-          await manager.save(OrderDiscount, orderDiscount);
-        }
-
-        if (validatedProductDiscount && productDiscountAmount > 0) {
-          const orderDiscount = manager.create(OrderDiscount, {
-            orderId: savedOrder.orderId,
-            discountId: validatedProductDiscount.discountId,
-            discountType: validatedProductDiscount.discountType,
-            discountAmount: productDiscountAmount,
-          });
-          await manager.save(OrderDiscount, orderDiscount);
-        }
-
-        // 創建訂單項目
-        for (const item of items) {
+        for (const item of storeItems) {
           const orderItem = manager.create(OrderItem, {
             orderId: savedOrder.orderId,
-            productId: item.productId,
-            productSnapshot: {
-              productId: item.product.productId,
-              product_name: item.product.productName,
-              price: item.product.price,
-              images: item.product.images,
-            },
+            productId: item.productId || item.product?.productId,
+            productSnapshot: item.product,
             quantity: item.quantity,
-            originalPrice: item.product.price,
+            originalPrice: item.product?.price || 0,
             itemDiscount: 0,
-            unitPrice: item.product.price,
-            subtotal: Number(item.product.price) * item.quantity,
+            unitPrice: item.product?.price || 0,
+            subtotal:
+              Number(item.product?.price || 0) * Number(item.quantity || 1),
           });
           await manager.save(OrderItem, orderItem);
         }
 
-        savedOrders.push(savedOrder);
+        createdOrders.push(savedOrder);
       }
 
-      // 清空購物車（transaction 外也可）
-      await this.cartsService.removeSelectedItems(userId);
-
-      return savedOrders;
+      // 回傳包含關聯的訂單資料
+      const orderIds = createdOrders.map((o) => o.orderId);
+      return (await manager.find(Order, {
+        where: { orderId: In(orderIds), userId },
+        relations: ['store', 'items', 'items.product'],
+      })) as Order[];
     });
-
-    // 5. transaction 完成後更新折扣 usage（原子更新）
-    if (validatedShippingDiscount && shippingDiscountAmount > 0) {
-      await this.discountsService.incrementUsage(
-        validatedShippingDiscount.discountId,
-      );
-    }
-    if (validatedProductDiscount && productDiscountAmount > 0) {
-      await this.discountsService.incrementUsage(
-        validatedProductDiscount.discountId,
-      );
-    }
-
-    // 6️. 回傳第一筆訂單
-    const firstOrder = orders[0];
-    return this.orderRepository.findOne({
-      where: { orderId: firstOrder.orderId, userId },
-      relations: ['store', 'items', 'items.product'],
-    }) as Promise<Order>;
   }
 
   async findAll(
@@ -256,7 +211,7 @@ export class OrdersService {
     const limit = parseInt(queryDto.limit || '10', 10);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, string> = { userId };
+    const where: any = { userId };
 
     if (queryDto.status) {
       where.orderStatus = queryDto.status;
@@ -301,74 +256,93 @@ export class OrdersService {
     // Validate status transition
     this.validateStatusTransition(order.orderStatus, updateDto.status);
 
-    // Use transaction for status update with inventory changes
+    // Use transaction for status update
     const updatedOrder = await this.dataSource.transaction(async (manager) => {
-      order.orderStatus = updateDto.status;
-
-      // Update timestamps based on status
-      switch (updateDto.status) {
-        case OrderStatus.PAID:
-          order.paidAt = new Date();
-          // Payment confirmed, inventory already reserved
-          break;
-        case OrderStatus.SHIPPED:
-          order.shippedAt = new Date();
-          // Release reserved inventory when shipped
-          for (const item of order.items || []) {
-            if (item.productId) {
-              await this.inventoryService.orderShipped(
-                item.productId,
-                item.quantity,
-              );
-            }
-          }
-          break;
-        case OrderStatus.DELIVERED:
-          order.deliveredAt = new Date();
-          break;
-        case OrderStatus.COMPLETED:
-          order.completedAt = new Date();
-          break;
-        case OrderStatus.CANCELLED:
-          order.cancelledAt = new Date();
-          // Release reserved inventory (restore quantity, decrease reserved)
-          for (const item of order.items || []) {
-            if (item.productId) {
-              await this.inventoryService.orderCancel(
-                item.productId,
-                item.quantity,
-              );
-            }
-          }
-          break;
-      }
-
+      await this.applyStatusChange(manager, order, updateDto.status);
       return await manager.save(Order, order);
     });
 
-    // Send SSE notification to buyer and sellers after transaction completes
+    // Send SSE notification
+    this.notifyOrderUpdate(updatedOrder);
+
+    return updatedOrder;
+  }
+
+  /**
+   * 統一處理狀態變更的副作用（時間戳、庫存）
+   */
+  private async applyStatusChange(
+    manager: any,
+    order: Order,
+    newStatus: OrderStatus,
+  ): Promise<void> {
+    order.orderStatus = newStatus;
+
+    switch (newStatus) {
+      case OrderStatus.PAID:
+        order.paidAt = new Date();
+        break;
+      case OrderStatus.SHIPPED:
+        order.shippedAt = new Date();
+        // 釋放預留庫存（實際出貨）
+        for (const item of order.items || []) {
+          if (item.productId) {
+            await this.inventoryService.orderShipped(
+              item.productId,
+              item.quantity,
+            );
+          }
+        }
+        break;
+      case OrderStatus.DELIVERED:
+        order.deliveredAt = new Date();
+        break;
+      case OrderStatus.COMPLETED:
+        order.completedAt = new Date();
+        break;
+      case OrderStatus.CANCELLED:
+        order.cancelledAt = new Date();
+        // 退回預留庫存
+        for (const item of order.items || []) {
+          if (item.productId) {
+            await this.inventoryService.orderCancel(
+              item.productId,
+              item.quantity,
+            );
+          }
+        }
+        break;
+    }
+  }
+
+  /**
+   * 統一發送 SSE 通知
+   */
+  private notifyOrderUpdate(order: Order): void {
     try {
-      // Get seller user IDs from order items (store.sellerId)
-      const sellerIds = updatedOrder.items
-        ? [...new Set(updatedOrder.items.map(item => item.product?.store?.sellerId).filter(Boolean))]
+      const sellerIds = order.items
+        ? [
+            ...new Set(
+              order.items
+                .map((item) => item.product?.store?.sellerId)
+                .filter(Boolean),
+            ),
+          ]
         : [];
 
       this.sseService.notifyOrderUpdate(
-        updatedOrder.orderId,
-        updatedOrder.userId,
+        order.orderId,
+        order.userId,
         sellerIds as string[],
         {
-          orderNumber: updatedOrder.orderNumber,
-          status: updatedOrder.orderStatus,
+          orderNumber: order.orderNumber,
+          status: order.orderStatus,
           updatedAt: new Date().toISOString(),
         },
       );
     } catch (error) {
-      // Log SSE error but don't fail the order update
-      console.error('Failed to send SSE notification for order update:', error);
+      console.error('Failed to send SSE notification:', error);
     }
-
-    return updatedOrder;
   }
 
   async cancelOrder(id: string, userId: string): Promise<Order> {
@@ -556,7 +530,7 @@ export class OrdersService {
     };
   }
 
-  async adminCancelOrder(id: string, reason?: string): Promise<any> {
+  async adminCancelOrder(id: string, _reason?: string): Promise<any> {
     const order = await this.orderRepository.findOne({
       where: { orderId: id },
       relations: ['items'],
@@ -566,20 +540,8 @@ export class OrdersService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
-    // Admin can cancel any order (skip user check)
-    return await this.dataSource.transaction(async (manager) => {
-      order.orderStatus = OrderStatus.CANCELLED;
-      order.cancelledAt = new Date();
-
-      // Release reserved inventory (restore quantity, decrease reserved)
-      for (const item of order.items || []) {
-        if (item.productId) {
-          await this.inventoryService.orderCancel(
-            item.productId,
-            item.quantity,
-          );
-        }
-      }
+    const updatedOrder = await this.dataSource.transaction(async (manager) => {
+      await this.applyStatusChange(manager, order, OrderStatus.CANCELLED);
 
       // TODO: Send email notification with reason using nodeMailer
       // if (reason) {
@@ -588,6 +550,9 @@ export class OrdersService {
 
       return await manager.save(Order, order);
     });
+
+    this.notifyOrderUpdate(updatedOrder);
+    return updatedOrder;
   }
 
   async updateAdminOrderStatus(
@@ -596,46 +561,20 @@ export class OrdersService {
   ): Promise<any> {
     const order = await this.orderRepository.findOne({
       where: { orderId: id },
+      relations: ['items'], // 需要 items 來處理庫存
     });
 
     if (!order) {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
-    // Admin can update to any status (skip status transition validation)
-    return await this.dataSource.transaction(async (manager) => {
-      order.orderStatus = updateDto.status;
-
-      // Update corresponding timestamp based on new status
-      switch (updateDto.status) {
-        case OrderStatus.PAID:
-          order.paidAt = new Date();
-          break;
-        case OrderStatus.SHIPPED:
-          order.shippedAt = new Date();
-          break;
-        case OrderStatus.DELIVERED:
-          order.deliveredAt = new Date();
-          break;
-        case OrderStatus.COMPLETED:
-          order.completedAt = new Date();
-          break;
-        case OrderStatus.CANCELLED:
-          order.cancelledAt = new Date();
-          // Release reserved inventory (restore quantity, decrease reserved)
-          for (const item of order.items || []) {
-            if (item.productId) {
-              await this.inventoryService.orderCancel(
-                item.productId,
-                item.quantity,
-              );
-            }
-          }
-          break;
-      }
-
+    const updatedOrder = await this.dataSource.transaction(async (manager) => {
+      await this.applyStatusChange(manager, order, updateDto.status);
       return await manager.save(Order, order);
     });
+
+    this.notifyOrderUpdate(updatedOrder);
+    return updatedOrder;
   }
 
   async findAnomalies(): Promise<any[]> {
@@ -755,46 +694,19 @@ export class OrdersService {
     // Validate seller can make this status transition
     this.validateSellerStatusTransition(order.orderStatus, status);
 
-    // Use transaction for status update with inventory changes
-    return await this.dataSource.transaction(async (manager) => {
-      order.orderStatus = status;
+    // Use transaction for status update
+    const updatedOrder = await this.dataSource.transaction(async (manager) => {
       if (note) {
         order.notes = note;
       }
-
-      // Update timestamps based on status
-      switch (status) {
-        case OrderStatus.SHIPPED:
-          order.shippedAt = new Date();
-          // Release reserved inventory when shipped
-          for (const item of order.items || []) {
-            if (item.productId) {
-              await this.inventoryService.orderShipped(
-                item.productId,
-                item.quantity,
-              );
-            }
-          }
-          break;
-        case OrderStatus.DELIVERED:
-          order.deliveredAt = new Date();
-          break;
-        case OrderStatus.CANCELLED:
-          order.cancelledAt = new Date();
-          // Release reserved inventory (restore quantity, decrease reserved)
-          for (const item of order.items || []) {
-            if (item.productId) {
-              await this.inventoryService.orderCancel(
-                item.productId,
-                item.quantity,
-              );
-            }
-          }
-          break;
-      }
-
+      await this.applyStatusChange(manager, order, status);
       return await manager.save(Order, order);
     });
+
+    // Send SSE notification
+    this.notifyOrderUpdate(updatedOrder);
+
+    return updatedOrder;
   }
 
   /**

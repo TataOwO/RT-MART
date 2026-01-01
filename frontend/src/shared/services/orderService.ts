@@ -155,20 +155,22 @@ export const createOrderApi = async (
       payload.productDiscountCode = orderData.discountCodes.product;
     }
 
-    const response = await post<BackendOrder>('/orders', payload);
+    const response = await post<BackendOrder[]>('/orders', payload);
 
-    // 目前後端僅返回單個訂單物件
+    // 計算總金額（所有拆分訂單的加總）
+    const totalAmount = response.reduce((sum, order) => sum + Number(order.totalAmount), 0);
+
     return {
       success: true,
       message: '成功建立訂單',
-      orders: [{
-        orderId: response.orderId,
-        orderNumber: response.orderNumber,
-        storeId: response.storeId,
-        storeName: response.store?.storeName || '商店',
-        totalAmount: Number(response.totalAmount),
-      }],
-      totalAmount: Number(response.totalAmount),
+      orders: response.map((order) => ({
+        orderId: order.orderId,
+        orderNumber: order.orderNumber,
+        storeId: order.storeId,
+        storeName: order.store?.storeName || '商店',
+        totalAmount: Number(order.totalAmount),
+      })),
+      totalAmount: totalAmount,
     };
   } catch (error) {
     console.error('[API Error] createOrderApi:', error);

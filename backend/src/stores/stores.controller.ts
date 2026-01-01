@@ -51,11 +51,16 @@ export class StoresController {
   @Get()
   async findAll(@Query() queryDto: QueryStoreDto) {
     const { data, total } = await this.storesService.findAll(queryDto);
-    console.log('[StoresController] findAll - first store:', data[0] ? {
-      storeId: data[0].storeId,
-      storeName: data[0].storeName,
-      deletedAt: data[0].deletedAt,
-    } : 'No stores found');
+    console.log(
+      '[StoresController] findAll - first store:',
+      data[0]
+        ? {
+            storeId: data[0].storeId,
+            storeName: data[0].storeName,
+            deletedAt: data[0].deletedAt,
+          }
+        : 'No stores found',
+    );
     return {
       data: plainToInstance(StoreResponseDto, data),
       total,

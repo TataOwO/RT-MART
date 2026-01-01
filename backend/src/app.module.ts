@@ -14,12 +14,13 @@ import { StoresModule } from './stores/stores.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
-import { CartsModule } from './carts/carts.module';
+import { CartItemsModule } from './carts-item/cart-items.module';
 import { OrdersModule } from './orders/orders.module';
 import { DiscountsModule } from './discounts/discounts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CartHistoryModule } from './cart-history/cart-history.module';
 import { AdminModule } from './admin/admin.module';
+import { ReviewModule } from './review/review.module';
 import { HealthModule } from './health/health.module';
 import { SseModule } from './sse/sse.module';
 
@@ -60,7 +61,7 @@ import { SseModule } from './sse/sse.module';
     InventoryModule,
 
     // Phase 3: Cart & Order modules
-    CartsModule,
+    CartItemsModule,
     OrdersModule,
 
     // Phase 4: Discount modules
@@ -71,6 +72,7 @@ import { SseModule } from './sse/sse.module';
     CartHistoryModule,
 
     AdminModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
