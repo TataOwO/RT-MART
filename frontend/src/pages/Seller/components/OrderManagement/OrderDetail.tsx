@@ -5,6 +5,7 @@ import Icon from "@/shared/components/Icon";
 import Alert from "@/shared/components/Alert";
 import Select from "@/shared/components/Select";
 import Dialog from "@/shared/components/Dialog";
+import ItemListCard from "@/shared/components/ItemListCard";
 import sellerService from "@/shared/services/sellerService";
 import { AlertType } from "@/types";
 import { Order, OrderStatus } from "@/types/order";
@@ -255,23 +256,19 @@ function OrderDetail() {
           <h2 className={styles.sectionTitle}>訂單商品</h2>
           <div className={styles.productList}>
             {order.items.map((item) => (
-              <div key={item.id} className={styles.productItem}>
-                <img
-                  src={item.productImage || "/placeholder-product.png"}
-                  alt={item.productName}
-                  className={styles.productImage}
-                />
-                <div className={styles.productInfo}>
-                  <h4 className={styles.productName}>{item.productName}</h4>
-                  <div className={styles.productMeta}>
-                    <span>NT$ {item.price.toLocaleString()}</span>
-                    <span>x {item.quantity}</span>
-                  </div>
-                </div>
-                <div className={styles.productTotal}>
-                  NT$ {(item.price * item.quantity).toLocaleString()}
-                </div>
-              </div>
+              <ItemListCard
+                key={item.id}
+                variant="order-detail"
+                item={{
+                  id: item.id,
+                  productId: item.productId,
+                  productName: item.productName,
+                  productImage: item.productImage,
+                  price: item.price,
+                  quantity: item.quantity,
+                }}
+                onClick={() => navigate(`/product/${item.productId}`)}
+              />
             ))}
           </div>
         </section>
