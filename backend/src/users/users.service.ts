@@ -57,6 +57,7 @@ export class UsersService {
 
   /**
    * Create user with already hashed password (for email verification flow)
+   * Note: This method assumes email/loginId validation was done before sending verification code
    */
   async createWithHash(createUserDto: {
     loginId: string;
@@ -66,21 +67,7 @@ export class UsersService {
     phoneNumber?: string;
     role: UserRole;
   }): Promise<User> {
-    // Check if loginId or email already exists (excluding soft-deleted users)
-    const existingUser = await this.userRepository.findOne({
-      where: [
-        { loginId: createUserDto.loginId, deletedAt: IsNull() },
-        { email: createUserDto.email, deletedAt: IsNull() },
-      ],
-    });
-
-    if (existingUser) {
-      if (existingUser.loginId === createUserDto.loginId) {
-        throw new ConflictException('Login ID already exists');
-      }
-      throw new ConflictException('Email already exists');
-    }
-
+    // No duplicate check here - validation already done in email verification flow
     const user = this.userRepository.create({
       ...createUserDto,
       phoneNumber: formatPhoneNumber(createUserDto.phoneNumber),

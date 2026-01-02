@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   css: {
@@ -20,8 +20,15 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     port: 5173,
+    watch: {
+      usePolling: true,
+      // Reduce polling interval to save memory
+      interval: 1000,
+      // Ignore unnecessary directories
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**']
+    },
     hmr: {
       protocol: 'ws',
       host: 'localhost',

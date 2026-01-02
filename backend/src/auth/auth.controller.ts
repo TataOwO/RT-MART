@@ -54,9 +54,10 @@ export class AuthController {
       await this.emailVerificationService.verifyCode(verifyDto);
 
     // Create user account with the stored registration data
-    const user = await this.authService.registerWithVerifiedEmail(
-      verificationResult.metadata,
-    );
+    const user = await this.authService.registerWithVerifiedEmail({
+      ...verificationResult.metadata,
+      email: verificationResult.email,
+    });
 
     // Auto-login: generate tokens for the newly created user
     const loginResult = await this.authService.generateTokensForUser(user);

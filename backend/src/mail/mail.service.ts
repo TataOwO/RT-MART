@@ -145,11 +145,46 @@ export class MailService {
     code: string,
     expiryMinutes: number,
   ): Promise<void> {
-    await this.sendMail(email, 'Email Verification Code - RT-MART', 'verification-code', {
-      code,
-      expiryMinutes,
-      email,
-    });
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.log(
+        `驗證碼 for ${email}: ${code} (有效期 ${expiryMinutes} 分鐘)`,
+      );
+      console.log('\n=================================');
+      console.log(`EMAIL VERIFICATION CODE`);
+      console.log(`Email: ${email}`);
+      console.log(`Code: ${code}`);
+      console.log(`Expires in: ${expiryMinutes} minutes`);
+      console.log('=================================\n');
+    }
+    try {
+      await this.sendMail(
+        email,
+        'Email Verification Code - RT-MART',
+        'verification-code',
+        {
+          code,
+          expiryMinutes,
+          email,
+        },
+      );
+      this.logger.log(`✅ Verification email sent successfully to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to send verification email to ${email}: ${error.message}`,
+        error.stack,
+      );
+
+      // In development, don't throw error - code is already logged to console
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.warn(
+          '⚠️  Email sending failed, but continuing in development mode. Use the code from console above.',
+        );
+        return; // Don't throw in development
+      }
+
+      // In production, throw error
+      throw error;
+    }
   }
 
   async sendUserSuspensionEmail(
@@ -158,12 +193,17 @@ export class MailService {
     reason: string,
     expiresAt?: Date,
   ): Promise<void> {
-    await this.sendMail(email, 'Account Suspension Notice - RT-MART', 'user-suspended', {
-      name,
-      reason,
-      expiresAt,
-      isPermanent: !expiresAt,
-    });
+    await this.sendMail(
+      email,
+      'Account Suspension Notice - RT-MART',
+      'user-suspended',
+      {
+        name,
+        reason,
+        expiresAt,
+        isPermanent: !expiresAt,
+      },
+    );
   }
 
   async sendStoreSuspensionEmail(
@@ -172,12 +212,17 @@ export class MailService {
     reason: string,
     expiresAt?: Date,
   ): Promise<void> {
-    await this.sendMail(email, 'Store Suspension Notice - RT-MART', 'store-suspended', {
-      storeName,
-      reason,
-      expiresAt,
-      isPermanent: !expiresAt,
-    });
+    await this.sendMail(
+      email,
+      'Store Suspension Notice - RT-MART',
+      'store-suspended',
+      {
+        storeName,
+        reason,
+        expiresAt,
+        isPermanent: !expiresAt,
+      },
+    );
   }
 
   async sendOrderCancelledToBuyer(

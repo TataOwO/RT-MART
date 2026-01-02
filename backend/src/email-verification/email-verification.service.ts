@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan } from 'typeorm';
@@ -19,6 +20,7 @@ import {
 import { SendVerificationCodeDto } from './dto/send-verification-code.dto';
 import { VerifyCodeDto } from './dto/verify-code.dto';
 import { MailService } from '../mail/mail.service';
+import { UsersService } from '../users/users.service';
 import mailConfig from '../mail/mail.config';
 
 @Injectable()
@@ -29,6 +31,7 @@ export class EmailVerificationService {
     @InjectRepository(EmailVerification)
     private readonly verificationRepository: Repository<EmailVerification>,
     private readonly mailService: MailService,
+    private readonly usersService: UsersService,
     @Inject(mailConfig.KEY)
     private config: ConfigType<typeof mailConfig>,
   ) {}
@@ -44,6 +47,17 @@ export class EmailVerificationService {
     sendCodeDto: SendVerificationCodeDto,
   ): Promise<{ message: string }> {
     const { email, loginId, password, name, phoneNumber, purpose } = sendCodeDto;
+
+    // Check if email or loginId already exists in the User table
+    const existingUserByEmail = await this.usersService.findByEmail(email);
+    const existingUserByLoginId = await this.usersService.findByLoginId(loginId);
+
+    if (existingUserByEmail || existingUserByLoginId) {
+      if (existingUserByLoginId) {
+        throw new ConflictException('Login ID already exists');
+      }
+      throw new ConflictException('Email already exists');
+    }
 
     // Check rate limiting (max 3 codes per hour per email)
     const oneHourAgo = new Date(Date.now() - 3600000);

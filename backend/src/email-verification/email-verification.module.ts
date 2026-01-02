@@ -5,6 +5,7 @@ import { EmailVerificationService } from './email-verification.service';
 import { EmailVerificationController } from './email-verification.controller';
 import { EmailVerification } from './entities/email-verification.entity';
 import { MailModule } from '../mail/mail.module';
+import { UsersModule } from '../users/users.module';
 import mailConfig from '../mail/mail.config';
 
 @Module({
@@ -12,6 +13,7 @@ import mailConfig from '../mail/mail.config';
     TypeOrmModule.forFeature([EmailVerification]),
     ConfigModule.forFeature(mailConfig),
     MailModule,
+    UsersModule,
   ],
   controllers: [EmailVerificationController],
   providers: [EmailVerificationService],

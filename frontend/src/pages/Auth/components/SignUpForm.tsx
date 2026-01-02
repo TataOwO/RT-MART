@@ -96,19 +96,19 @@ const SignUpForm = ({ onSendCode, onVerifyCode, onResendCode, isLoading }: SignU
       }
     );
 
-  const handleVerifyCode = async () => {
-    if (verificationCode.length !== 6) {
-      setCodeError('請輸入完整的 6 位數驗證碼');
+  const handleVerifyCode = async (code: string) => {
+    if (code.length !== 6) {
+      setCodeError("請輸入完整的 6 位數驗證碼");
       return;
     }
 
-    setCodeError('');
+    setCodeError("");
     try {
-      await onVerifyCode(values.email, verificationCode);
+      await onVerifyCode(values.email, code);
       // 驗證成功，AuthContext 會處理登入和跳轉
     } catch (error: any) {
-      setCodeError(error.message || '驗證碼錯誤或已過期');
-      setVerificationCode('');
+      setCodeError(error.message || "驗證碼錯誤或已過期");
+      setVerificationCode("");
     }
   };
 
@@ -156,7 +156,9 @@ const SignUpForm = ({ onSendCode, onVerifyCode, onResendCode, isLoading }: SignU
 
         <div className={styles.verificationHeader}>
           <h3>驗證您的 Email</h3>
-          <p>我們已將驗證碼發送至 <strong>{values.email}</strong></p>
+          <p>
+            我們已將驗證碼發送至 <strong>{values.email}</strong>
+          </p>
         </div>
 
         <CountdownTimer
@@ -171,7 +173,7 @@ const SignUpForm = ({ onSendCode, onVerifyCode, onResendCode, isLoading }: SignU
             value={verificationCode}
             onChange={(code) => {
               setVerificationCode(code);
-              setCodeError('');
+              setCodeError("");
             }}
             onComplete={handleVerifyCode}
             disabled={isLoading || isCodeExpired}
@@ -183,10 +185,12 @@ const SignUpForm = ({ onSendCode, onVerifyCode, onResendCode, isLoading }: SignU
           <Button
             variant="primary"
             fullWidth
-            onClick={handleVerifyCode}
-            disabled={isLoading || verificationCode.length !== 6 || isCodeExpired}
+            onClick={() => handleVerifyCode(verificationCode)}
+            disabled={
+              isLoading || verificationCode.length !== 6 || isCodeExpired
+            }
           >
-            {isLoading ? '驗證中...' : '確認驗證'}
+            {isLoading ? "驗證中..." : "確認驗證"}
           </Button>
 
           <Button
