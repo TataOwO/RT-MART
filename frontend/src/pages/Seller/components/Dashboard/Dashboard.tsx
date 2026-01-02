@@ -134,16 +134,6 @@ function Dashboard() {
           onQuickSelect={handleQuickSelect}
           activeQuickSelector={activeQuickSelector}
         />
-
-        <div className={styles.productFilter}>
-          <FormInput
-            name="productName"
-            label="商品名稱"
-            placeholder="搜尋商品..."
-            value={filters.productName || ''}
-            onChange={(e) => handleFilterChange('productName', e.target.value)}
-          />
-        </div>
       </div>
 
       {/* 營業概況 */}

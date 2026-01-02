@@ -39,14 +39,6 @@
   }
 }
 
-.productFilter {
-  max-width: 400px;
-
-  @include mobile {
-    max-width: 100%;
-  }
-}
-
 .section {
   background: $bg-secondary;
   border-radius: $border-radius-lg;
