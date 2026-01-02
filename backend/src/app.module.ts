@@ -23,6 +23,8 @@ import { AdminModule } from './admin/admin.module';
 import { ReviewModule } from './review/review.module';
 import { HealthModule } from './health/health.module';
 import { SseModule } from './sse/sse.module';
+import { MailModule } from './mail/mail.module';
+import { EmailVerificationModule } from './email-verification/email-verification.module';
 
 @Module({
   imports: [

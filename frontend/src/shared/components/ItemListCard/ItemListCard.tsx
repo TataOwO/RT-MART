@@ -183,7 +183,7 @@ function ItemListCard(props: ItemListCardProps) {
     );
   }
 
-  // 訂單詳情變體（唯讀模式）
+  // 訂單詳情變體（唯讀模式，不顯示圖片）
   if (variant === "order-detail") {
     const subtotal = item.price * item.quantity;
 
@@ -192,15 +192,6 @@ function ItemListCard(props: ItemListCardProps) {
         className={`${styles.itemListCard} ${className || ""}`}
         data-variant="order-detail"
       >
-        {/* Product Image */}
-        <div className={styles.productImage} onClick={onClick}>
-          {item.productImage ? (
-            <img src={item.productImage} alt={item.productName} />
-          ) : (
-            <div className={styles.placeholder}>商品圖片</div>
-          )}
-        </div>
-
         {/* Product Info */}
         <div className={styles.productInfo}>
           {/* Product Name */}

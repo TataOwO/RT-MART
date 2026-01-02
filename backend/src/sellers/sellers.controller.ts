@@ -17,6 +17,7 @@ import { SellersService, DashboardData } from './sellers.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { VerifySellerDto } from './dto/verify-seller.dto';
+import { RejectSellerDto } from './dto/reject-seller.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -116,8 +117,11 @@ export class SellersController {
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Post(':sellerId/reject')
-  async reject(@Param('sellerId') sellerId: string) {
-    return await this.sellersService.reject(sellerId);
+  async reject(
+    @Param('sellerId') sellerId: string,
+    @Body() rejectDto: RejectSellerDto,
+  ) {
+    return await this.sellersService.reject(sellerId, rejectDto);
   }
 
   @Roles(UserRole.ADMIN)

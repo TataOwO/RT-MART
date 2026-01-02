@@ -10,6 +10,7 @@ import { Seller } from './entities/seller.entity';
 import { CreateSellerDto } from './dto/create-seller.dto';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { VerifySellerDto } from './dto/verify-seller.dto';
+import { RejectSellerDto } from './dto/reject-seller.dto';
 import { UsersService } from '../users/users.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Store } from '../stores/entities/store.entity';
@@ -19,6 +20,7 @@ import { Product } from '../products/entities/product.entity';
 import { ProductType } from '../product-types/entities/product-type.entity';
 import { QuerySellerDashboardDto } from './dto/query-seller-dashboard.dto';
 import { SalesReportItemDto } from './dto/sales-report-item.dto';
+import { MailService } from '../mail/mail.service';
 
 export interface DashboardData {
   revenue: number;
@@ -73,6 +75,7 @@ export class SellersService {
     @InjectRepository(ProductType)
     private readonly productTypeRepository: Repository<ProductType>,
     private readonly usersService: UsersService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(createSellerDto: CreateSellerDto): Promise<Seller> {
@@ -237,7 +240,7 @@ export class SellersService {
     return await this.storeRepository.save(defaultStore);
   }
 
-  async reject(sellerId: string): Promise<Seller> {
+  async reject(sellerId: string, rejectDto: RejectSellerDto): Promise<Seller> {
     const seller = await this.findOne(sellerId);
 
     if (seller.verified) {
@@ -251,7 +254,17 @@ export class SellersService {
     seller.rejectedAt = new Date();
     seller.updatedAt = new Date();
 
-    // TODO: Send rejection email via NodeMail (future implementation)
+    // Send rejection email to applicant
+    try {
+      await this.mailService.sendSellerApplicationRejection(
+        seller.user.email,
+        seller.user.name,
+        rejectDto.reason,
+      );
+    } catch (error) {
+      // Log error but don't fail the rejection process
+      console.error('Failed to send rejection email:', error);
+    }
 
     return await this.sellerRepository.save(seller);
   }

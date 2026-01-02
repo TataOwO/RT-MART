@@ -55,6 +55,27 @@ export class UsersService {
     return await this.userRepository.save(user);
   }
 
+  /**
+   * Create user with already hashed password (for email verification flow)
+   * Note: This method assumes email/loginId validation was done before sending verification code
+   */
+  async createWithHash(createUserDto: {
+    loginId: string;
+    passwordHash: string;
+    name: string;
+    email: string;
+    phoneNumber?: string;
+    role: UserRole;
+  }): Promise<User> {
+    // No duplicate check here - validation already done in email verification flow
+    const user = this.userRepository.create({
+      ...createUserDto,
+      phoneNumber: formatPhoneNumber(createUserDto.phoneNumber),
+    });
+
+    return await this.userRepository.save(user);
+  }
+
   async findAll(
     queryDto: QueryUserDto,
   ): Promise<{ data: User[]; total: number }> {
