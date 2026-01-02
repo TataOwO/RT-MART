@@ -125,9 +125,8 @@ function Cart() {
     }
   };
 
-  // 更新數量
+  // 更新數量（只在 blur 時調用，此時數量已經是有效的數字）
   const handleQuantityChange = async (id: string, quantity: number) => {
-    
     if (quantity < 1) return;
 
     try {

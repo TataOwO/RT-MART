@@ -17,6 +17,19 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   const today = new Date().toISOString().split('T')[0];
   const [activeTab, setActiveTab] = useState<'quick' | 'custom'>('quick');
 
+  // 本地狀態管理日期輸入
+  const [localStartDate, setLocalStartDate] = useState(startDate);
+  const [localEndDate, setLocalEndDate] = useState(endDate);
+
+  // 同步外部 props 到本地狀態
+  useEffect(() => {
+    setLocalStartDate(startDate);
+  }, [startDate]);
+
+  useEffect(() => {
+    setLocalEndDate(endDate);
+  }, [endDate]);
+
   // Sync tab with activeQuickSelector state
   useEffect(() => {
     if (activeQuickSelector) {
@@ -29,6 +42,28 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   const handleQuickButtonClick = (period: 'day' | 'week' | 'month' | 'year') => {
     if (onQuickSelect) {
       onQuickSelect(period);
+    }
+  };
+
+  // 處理本地日期變更
+  const handleStartDateChange = (value: string) => {
+    setLocalStartDate(value);
+  };
+
+  const handleEndDateChange = (value: string) => {
+    setLocalEndDate(value);
+  };
+
+  // 只在失去焦點時觸發回調
+  const handleStartDateBlur = () => {
+    if (localStartDate !== startDate) {
+      onStartDateChange(localStartDate);
+    }
+  };
+
+  const handleEndDateBlur = () => {
+    if (localEndDate !== endDate) {
+      onEndDateChange(localEndDate);
     }
   };
 
@@ -101,9 +136,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
                     <input
                       type="date"
                       id="startDate"
-                      value={startDate}
-                      onChange={(e) => onStartDateChange(e.target.value)}
-                      max={endDate || today}
+                      value={localStartDate}
+                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      onBlur={handleStartDateBlur}
+                      max={localEndDate || today}
                       className={styles.dateInput}
                     />
                   </div>
@@ -112,9 +148,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
                     <input
                       type="date"
                       id="endDate"
-                      value={endDate}
-                      onChange={(e) => onEndDateChange(e.target.value)}
-                      min={startDate}
+                      value={localEndDate}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
+                      onBlur={handleEndDateBlur}
+                      min={localStartDate}
                       max={today}
                       className={styles.dateInput}
                     />
@@ -131,9 +168,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
             <input
               type="date"
               id="startDate"
-              value={startDate}
-              onChange={(e) => onStartDateChange(e.target.value)}
-              max={endDate || today}
+              value={localStartDate}
+              onChange={(e) => handleStartDateChange(e.target.value)}
+              onBlur={handleStartDateBlur}
+              max={localEndDate || today}
               className={styles.dateInput}
             />
           </div>
@@ -142,9 +180,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
             <input
               type="date"
               id="endDate"
-              value={endDate}
-              onChange={(e) => onEndDateChange(e.target.value)}
-              min={startDate}
+              value={localEndDate}
+              onChange={(e) => handleEndDateChange(e.target.value)}
+              onBlur={handleEndDateBlur}
+              min={localStartDate}
               max={today}
               className={styles.dateInput}
             />
