@@ -4,7 +4,7 @@ import {
   Inject,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';

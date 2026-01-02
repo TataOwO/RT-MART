@@ -2,13 +2,14 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  TooManyRequestsException,
+  HttpException,
+  HttpStatus,
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ConfigType } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import {
@@ -54,8 +55,9 @@ export class EmailVerificationService {
     });
 
     if (recentCodes >= this.config.verification.rateLimit) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         `Too many verification attempts. Please try again in 1 hour.`,
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
