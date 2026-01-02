@@ -4,6 +4,7 @@ import { SellersService } from './sellers.service';
 import { SellersController } from './sellers.controller';
 import { Seller } from './entities/seller.entity';
 import { UsersModule } from '../users/users.module';
+import { MailModule } from '../mail/mail.module';
 import { Store } from '../stores/entities/store.entity';
 import { User } from '../users/entities/user.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -21,6 +22,7 @@ import { ProductType } from '../product-types/entities/product-type.entity';
       ProductType,
     ]),
     forwardRef(() => UsersModule),
+    MailModule,
   ],
   controllers: [SellersController],
   providers: [SellersService],

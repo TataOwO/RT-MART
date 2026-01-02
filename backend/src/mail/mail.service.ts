@@ -60,6 +60,7 @@ export class MailService {
         'store-suspended.hbs',
         'order-cancelled-buyer.hbs',
         'order-cancelled-seller.hbs',
+        'seller-application-rejected.hbs',
       ];
 
       for (const templateFile of templateFiles) {
@@ -221,6 +222,22 @@ export class MailService {
         reason,
         expiresAt,
         isPermanent: !expiresAt,
+      },
+    );
+  }
+
+  async sendSellerApplicationRejection(
+    email: string,
+    name: string,
+    reason: string,
+  ): Promise<void> {
+    await this.sendMail(
+      email,
+      'Seller Application Review Result - RT-MART',
+      'seller-application-rejected',
+      {
+        name,
+        reason,
       },
     );
   }
