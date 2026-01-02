@@ -373,20 +373,10 @@ export const deactivateProduct = async (id: string): Promise<void> => {
 const transformOrderItem = (item: any) => {
   const snapshot = item.productSnapshot || {};
 
-  // 嘗試從不同的可能欄位獲取圖片 URL
-  let productImage = '';
-
-  if (snapshot.images && Array.isArray(snapshot.images) && snapshot.images.length > 0) {
-    // Product entity has images relation loaded
-    const firstImage = snapshot.images[0];
-    productImage = firstImage.imageUrl || firstImage.image_url || '';
-  }
-
   return {
     id: item.orderItemId,
     productId: item.productId || snapshot.productId || snapshot.product_id,
     productName: snapshot.product_name || snapshot.productName || 'Unknown Product',
-    productImage,
     quantity: item.quantity || 0,
     price: Number(item.unitPrice || item.price || 0),
   };
@@ -396,6 +386,21 @@ const transformOrderItem = (item: any) => {
  * 轉換後端訂單數據為前端格式
  */
 const transformOrder = (order: any) => {
+  let shippingAddress = order.shippingAddressSnapshot;
+
+  // Convert snake_case to camelCase for shippingAddress fields
+  if (shippingAddress && typeof shippingAddress === 'object') {
+    shippingAddress = {
+      recipientName: shippingAddress.recipient_name,
+      phone: shippingAddress.phone,
+      city: shippingAddress.city,
+      district: shippingAddress.district,
+      postalCode: shippingAddress.postal_code,
+      addressLine1: shippingAddress.address_line1,
+      addressLine2: shippingAddress.address_line2,
+    };
+  }
+
   const transformed: any = {
     orderId: order.orderId,
     orderNumber: order.orderNumber,
@@ -403,7 +408,7 @@ const transformOrder = (order: any) => {
     storeId: order.storeId,
     storeName: order.store?.storeName || 'Unknown Store',
     status: order.orderStatus,
-    shippingAddress: order.shippingAddressSnapshot,
+    shippingAddress: shippingAddress,
     paymentMethod: order.paymentMethod,
     note: order.notes || '',
     subtotal: Number(order.subtotal || 0),
@@ -635,47 +640,6 @@ const transformDiscount = (d: any): Discount => ({
   createdAt: d.createdAt,
 });
 
-// ========== Mock Data (Keep for UI parts not yet connected) ==========
-
-function generateMockChartData(period: SalesPeriod) {
-  const labels = period === 'day' ?
-    Array.from({length: 24}, (_, i) => `${i}:00`) :
-    period === 'week' ?
-    ['週一', '週二', '週三', '週四', '週五', '週六', '週日'] :
-    Array.from({length: 30}, (_, i) => `${i+1}日`);
-
-  return labels.map(label => ({
-    label,
-    value: Math.floor(Math.random() * 10000) + 5000
-  }));
-}
-
-function generateMockCategoryData() {
-  return [
-    { label: '電子產品', value: 45000 },
-    { label: '服飾配件', value: 28000 },
-    { label: '食品飲料', value: 15000 },
-    { label: '居家生活', value: 22000 },
-    { label: '運動休閒', value: 18000 }
-  ];
-}
-
-const MOCK_POPULAR_PRODUCTS = [
-  { id: '3', name: '智能手環', image: 'https://picsum.photos/100/100?random=3', salesCount: 200, revenue: 179800 },
-  { id: '1', name: '無線藍牙耳機', image: 'https://picsum.photos/100/100?random=1', salesCount: 150, revenue: 194850 }
-];
-
-const MOCK_RECENT_ORDERS: RecentOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'ORD20250115001',
-    buyerName: '王小明',
-    itemCount: 2,
-    totalAmount: 1598,
-    status: 'paid',
-    createdAt: '2025-01-15 14:30'
-  }
-];
 
 export default {
   applyToBeSeller,
