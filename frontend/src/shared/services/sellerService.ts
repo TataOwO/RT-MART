@@ -370,14 +370,27 @@ export const deactivateProduct = async (id: string): Promise<void> => {
 /**
  * 轉換後端訂單項目數據為前端格式
  */
-const transformOrderItem = (item: any) => ({
-  id: item.orderItemId,
-  productId: item.productId || item.productSnapshot?.productId,
-  productName: item.productSnapshot?.product_name || item.productSnapshot?.productName || 'Unknown Product',
-  productImage: item.productSnapshot?.images?.[0]?.imageUrl || '',
-  quantity: item.quantity || 0,
-  price: Number(item.unitPrice || item.price || 0),
-});
+const transformOrderItem = (item: any) => {
+  const snapshot = item.productSnapshot || {};
+
+  // 嘗試從不同的可能欄位獲取圖片 URL
+  let productImage = '';
+
+  if (snapshot.images && Array.isArray(snapshot.images) && snapshot.images.length > 0) {
+    // Product entity has images relation loaded
+    const firstImage = snapshot.images[0];
+    productImage = firstImage.imageUrl || firstImage.image_url || '';
+  }
+
+  return {
+    id: item.orderItemId,
+    productId: item.productId || snapshot.productId || snapshot.product_id,
+    productName: snapshot.product_name || snapshot.productName || 'Unknown Product',
+    productImage,
+    quantity: item.quantity || 0,
+    price: Number(item.unitPrice || item.price || 0),
+  };
+};
 
 /**
  * 轉換後端訂單數據為前端格式

@@ -657,7 +657,7 @@ export class OrdersService {
   /**
    * Get single order detail for seller
    */
-  async findSellerOrder(sellerId: string, orderId: string): Promise<Order> {
+  async findSellerOrder(sellerId: string, orderId: string): Promise<any> {
     const order = await this.orderRepository.findOne({
       where: { orderId },
       relations: ['store', 'store.seller', 'user', 'items', 'items.product'],
@@ -674,7 +674,41 @@ export class OrdersService {
       );
     }
 
-    return order;
+    // Format the order response with proper item structure
+    return {
+      orderId: order.orderId,
+      orderNumber: order.orderNumber,
+      userId: order.userId,
+      storeId: order.storeId,
+      storeName: order.store?.storeName || 'Unknown Store',
+      orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      shippingAddressSnapshot: order.shippingAddressSnapshot,
+      notes: order.notes,
+      subtotal: parseFloat(order.subtotal.toString()),
+      shippingFee: parseFloat(order.shippingFee.toString()),
+      totalDiscount: parseFloat(order.totalDiscount.toString()),
+      totalAmount: parseFloat(order.totalAmount.toString()),
+      items: (order.items || []).map((item) => {
+        const snapshot = item.productSnapshot as any;
+        return {
+          orderItemId: item.orderItemId,
+          productId: item.productId,
+          productSnapshot: snapshot,
+          quantity: item.quantity,
+          originalPrice: parseFloat(item.originalPrice.toString()),
+          unitPrice: parseFloat(item.unitPrice.toString()),
+          subtotal: parseFloat(item.subtotal.toString()),
+        };
+      }),
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      paidAt: order.paidAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      completedAt: order.completedAt,
+      cancelledAt: order.cancelledAt,
+    };
   }
 
   /**
